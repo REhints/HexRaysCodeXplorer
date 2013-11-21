@@ -2,7 +2,7 @@
 	REhints <info@rehints.com>
 	All rights reserved.
 	
-	============================================================================
+	==============================================================================
 	
 	This file is part of HexRaysCodeXplorer
 
@@ -19,10 +19,13 @@
  	You should have received a copy of the GNU General Public License
  	along with this program.  If not, see
  	<http://www.gnu.org/licenses/>.
+
+	==============================================================================
 */
 
 #include "Common.h"
 #include "ObjectType.h"
+#include <struct.hpp>
 
 struct type_builder_t : public ctree_parentee_t
 {
@@ -42,6 +45,8 @@ struct type_builder_t : public ctree_parentee_t
 	int idaapi visit_expr(cexpr_t *e);
 
 	char * get_structure(char * name, char * buffer, int buffer_size);
+
+	tid_t get_structure(char * name=NULL);
 
 	int get_structure_size();
 
@@ -355,13 +360,13 @@ char * type_builder_t::get_structure(char * name, char * bufferr, int buffer_siz
 	{
 		if(structure[i].offset > offs)
 		{
-			buffer += sprintf_s(buffer, buffer_size - (int)(buffer - bufferr), "\tchar\tfiller_%d[%d];\r\n", i, structure[i].offset - offs);
+			buffer += sprintf_s(buffer, buffer_size - (int)(buffer - bufferr), "\\* %X \\*\tchar\tfiller_%d[%d];\r\n", offs, i, structure[i].offset - offs);
 			offs = structure[i].offset;
 		}
 		
 		if(structure[i].offset == offs)
 		{
-			buffer += sprintf_s(buffer, buffer_size - (int)(buffer - bufferr), "\t%s\tfield_%d;\r\n", get_type_nm(structure[i].size), i);
+			buffer += sprintf_s(buffer, buffer_size - (int)(buffer - bufferr), "\\* %X \\*\t%s\tfield_%d;\r\n", offs, get_type_nm(structure[i].size), i);
 			offs += structure[i].size;
 		}
 	}
@@ -369,6 +374,48 @@ char * type_builder_t::get_structure(char * name, char * bufferr, int buffer_siz
 	buffer += sprintf_s(buffer, buffer_size - (int)(buffer - bufferr), "}");
 
 	return NULL;
+}
+
+tid_t type_builder_t::get_structure(char * name)
+{
+	tid_t struct_type_id = add_struc(BADADDR, name);
+	if (struct_type_id != 0 || struct_type_id != -1)
+	{
+		struc_t * struc = get_struc(struct_type_id);
+		if(struc != NULL)
+		{
+			sort_fields(structure);
+			int offs = 0;
+			opinfo_t opinfo;
+			opinfo.tid = struct_type_id;
+			
+			for(unsigned int i = 0 ; i < structure.size() ; i ++)
+			{
+				if(structure[i].offset > offs)
+				{
+					offs = structure[i].offset;
+				}
+		
+				flags_t member_flgs = 0;
+				if(structure[i].size == 1)
+					member_flgs = byteflag();
+				else if (structure[i].size == 2)
+					member_flgs = wordflag();
+				else if (structure[i].size == 4)
+					member_flgs = dwrdflag();
+				else if (structure[i].size == 8)
+					member_flgs = qwrdflag();
+
+				char field_name[258];
+				memset(field_name, 0x00, sizeof(field_name));
+				sprintf_s(field_name, sizeof(field_name), "field_%d", i);
+
+				int iRet = add_struc_member(struc, field_name, structure[i].offset, member_flgs, NULL, structure[i].size);
+				offs += structure[i].size;
+			}
+		}
+	}
+	return struct_type_id;
 }
 
 
@@ -398,10 +445,29 @@ bool idaapi reconstruct_type(void *ud)
 			// traverse the ctree structure
 			type_bldr.apply_to(&vu.cfunc->body, NULL);
 
-			// get the structure description
-			char buffr[MAXSTR*10];
-			type_bldr.get_structure("STRUCTURE_TYPE", buffr, sizeof(buffr));
-			msg("%s", buffr);
+
+			tid_t struct_type_id = type_bldr.get_structure(NULL);
+			if(struct_type_id != 0 || struct_type_id != -1)
+			{
+				char struct_name[MAXSTR];
+				memset(struct_name, 0x00, sizeof(struct_name));
+				get_struc_name(struct_type_id, struct_name, sizeof(struct_name));
+				va_list va;
+				va_end(va);
+				char * type_name = vaskstr(0, struct_name, "Enter type name", va);
+				if(type_name != NULL)
+				{
+					set_struc_name(struct_type_id, type_name);
+
+					// get the structure description
+					char buffr[MAXSTR*10];
+					type_bldr.get_structure(type_name, buffr, sizeof(buffr));
+					msg("%s", buffr);
+				}
+
+				
+
+			}
 		}
 	}
 	else

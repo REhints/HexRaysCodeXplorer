@@ -2,7 +2,7 @@
 	REhints <info@rehints.com>
 	All rights reserved.
 	
-	============================================================================
+	==============================================================================
 	
 	This file is part of HexRaysCodeXplorer
 
@@ -19,6 +19,8 @@
  	You should have received a copy of the GNU General Public License
  	along with this program.  If not, see
  	<http://www.gnu.org/licenses/>.
+
+	==============================================================================
 */
 
 
@@ -271,8 +273,8 @@ static bool idaapi decompile_func(vdui_t &vu)
 static bool idaapi display_objects(void *ud)
 {
 	vdui_t &vu = *(vdui_t *)ud;
-	search_vtbl();
-	custom_form_init();
+	search_objects();
+	object_explorer_form_init();
 
 	return true;
 }
@@ -331,6 +333,9 @@ int idaapi init(void)
 	inited = true;
 	hotcode_dg = get_key_code(hotkey_dg); // convert the hotkey to binary form
 	hotcode_rt = get_key_code(hotkey_rt); // convert the hotkey to binary form
+
+	msg(
+		"\nHexRaysCodeXplorer plugin by @REhints loaded.\n\n\n");
 
 	return PLUGIN_KEEP;
 }
