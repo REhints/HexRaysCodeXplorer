@@ -1,7 +1,7 @@
 HexRaysCodeXplorer
 ==================
 
-Hex-Rays Decompiler plugin for better code navigation
+Hex-Rays Decompiler plugin for better code navigation :octocat:
 
 __Authors and Contributors__: 
 Aleksandr Matrosov ([@matrosov](https://github.com/matrosov)); Eugene Rodionov ([@rodionov](https://github.com/rodionov)) 
@@ -17,6 +17,10 @@ __Here are the main features of the plugin:__
 ![2](img/2.png)
 
   The reconstructed structure is displayed in “Output window”. Detailed information about type Reconstruction feature is provided in the blog post “[Type REconstruction in HexRaysCodeXplorer](http://rehints.com/2013-09-02-Type-REconstruction-in-HexRaysCodeXplorer.html)”.
+
+  From version 1.1 supporting auto reconstruction type into IDA local types storage.
+
+![6](img/7.png)
   
 * C-tree graph visualization – a special tree-like structure representing a decompiled routine in c_itemt terms. Useful feature for understanding how the decompiler works. The highlighted graph node corresponds to the current cursor position in the HexRays Pseudocode window:
 
@@ -29,3 +33,11 @@ __Here are the main features of the plugin:__
 * Object Explorer – useful interface for navigation through virtual tables (VTBL) structures. Object Explorer outputs VTBL information into IDA custom view window. The output window is shown by choosing «Object Explorer» option in right-button mouse click context menu:
 
 ![5](img/5.png)
+
+__From version 1.1 was inluded folowing features:__
+* auto structures for VTBL into IDA local types
+* click on VTBL and jump to code
+* ObjectExplorer hints for VTBL
+* start suporting RTTI objects parsing
+
+![7](img/7.jpg)
