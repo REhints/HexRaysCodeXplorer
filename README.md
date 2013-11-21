@@ -20,7 +20,7 @@ __Here are the main features of the plugin:__
 
   From version 1.1 supporting auto reconstruction type into IDA local types storage.
 
-![6](img/7.png)
+![6](img/6.png)
   
 * C-tree graph visualization – a special tree-like structure representing a decompiled routine in c_itemt terms. Useful feature for understanding how the decompiler works. The highlighted graph node corresponds to the current cursor position in the HexRays Pseudocode window:
 
