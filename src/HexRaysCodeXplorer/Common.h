@@ -26,6 +26,31 @@
 
 #pragma warning (disable: 4996 4800 )
 
+#ifdef __LINUX__
+#include <stdint.h>
+#define UINT uint32_t
+#define PUINT uint32_t *
+#define CHAR int8_t
+#define UCHAR uint8_t
+#define TCHAR uint8_t
+#define WCHAR wchar_t
+#define BOOL bool
+#define TRUE true
+#define FALSE false
+#define LPCSTR char *const
+#define LPCTSTR char *const
+#define LPSTR char *
+#define DWORD uint32_t
+#define PDWORD DWORD*
+#define PVOID void*
+
+#define IN
+#define OUT
+
+/* Ugly but ... */
+#define sprintf_s snprintf
+#endif
+
 #include <hexrays.hpp>
 #include <ida.hpp>
 #include <idp.hpp>
