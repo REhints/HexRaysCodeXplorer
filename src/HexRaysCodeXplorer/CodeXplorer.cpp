@@ -190,22 +190,26 @@ static bool idaapi display_graph(void *ud)
 	netnode id;
 	id.create();
 
-	// get function name
-	qstring title = gi->title;//"Funcion ctree graph";
+	qstring title = gi->title;
 
 	HWND hwnd = NULL;
 	TForm *form = create_tform(title.c_str(), &hwnd);
 	
-	gi->vu = (vdui_t *)ud;
-	gi->form = form;
-	gi->gv = create_graph_viewer(form, id, gr_callback, gi, 0);
-	open_tform(form, FORM_TAB  | FORM_MENU | FORM_QWIDGET);
-	viewer_fit_window(gi->gv);
+	if (hwnd != NULL)
+	{
+		gi->vu = (vdui_t *)ud;
+		gi->form = form;
+		gi->gv = create_graph_viewer(form, id, gr_callback, gi, 0);
+		open_tform(form, FORM_TAB | FORM_MENU | FORM_QWIDGET);
+
+		if (gi->gv != NULL)
+			viewer_fit_window(gi->gv);
+	}
 	
 	return true;
 }
 
-// Get poinyter to func_t by routine name
+// Get pointer to func_t by routine name
 func_t * get_func_by_name(const char *func_name)
 {
 	func_t * result_func = NULL;
@@ -247,7 +251,7 @@ static bool idaapi decompile_func(vdui_t &vu)
 	  {
 		  cexpr_t *e = (cexpr_t *)highlight;
 		  
-		  // retireve the name of the routine
+		  // retrieve the name of the routine
 		  char tmp[1024];
 		  memset(tmp, 0x00, sizeof(tmp));
 		  e->print1(tmp, sizeof(tmp), NULL);
@@ -269,7 +273,7 @@ static bool idaapi decompile_func(vdui_t &vu)
   return true;                    
 }
 
-//display Class Explorer
+//display Object Explorer
 static bool idaapi display_objects(void *ud)
 {
 	vdui_t &vu = *(vdui_t *)ud;

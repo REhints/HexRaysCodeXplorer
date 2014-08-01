@@ -136,12 +136,12 @@ BOOL get_vtbl_info(ea_t ea_address, VTBL_info_t &vtbl_info)
 
 qvector <VTBL_info_t> vtbl_t_list;
 qvector <qstring> vtbl_list; // list of vtables for ObjectExplrer view
-static BOOL process_vtbl(ea_t &ea_rdata)
+static BOOL process_vtbl(ea_t &ea_sect)
 {
 	VTBL_info_t vftable_info_t;
-	if(get_vtbl_info(ea_rdata, vftable_info_t))
+	if(get_vtbl_info(ea_sect, vftable_info_t))
 	{
-		ea_rdata = vftable_info_t.ea_end;
+		ea_sect = vftable_info_t.ea_end;
 		ea_t ea_assumed;
 		verify_32_t((vftable_info_t.ea_begin - 4), ea_assumed);
 
@@ -164,7 +164,7 @@ static BOOL process_vtbl(ea_t &ea_rdata)
 		return(FALSE);
 	}
 
-	ea_rdata += sizeof(UINT);	
+	ea_sect += sizeof(UINT);	
 	return(FALSE);
 }
 
@@ -226,7 +226,7 @@ tid_t create_vtbl_struct(ea_t vtbl_addr, char* vtbl_name, uval_t idx, unsigned i
 
 //---------------------------------------------------------------------------
 // RTTI code parsing 
-// (simple code init in v1.1 will be refactore in the folowing vesrions)
+// (simple code init in v1.1 will be redevelop in the following versions)
 //---------------------------------------------------------------------------
 
 // Find RTTI objects by signature
@@ -278,11 +278,22 @@ void process_rtti()
 //---------------------------------------------------------------------------
 void search_objects()
 {
-	segment_t *rdata_seg = get_segm_by_name(".rdata");
-	ea_t ea_rdata = rdata_seg->startEA;
+	segment_t *text_seg = get_segm_by_name(".text");
 
-	while (ea_rdata <= rdata_seg->endEA)
-		process_vtbl(ea_rdata);
+	if (text_seg != NULL)
+	{
+		ea_t ea_text = text_seg->startEA;
+		while (ea_text <= text_seg->endEA)
+			process_vtbl(ea_text);
+	}
+
+	segment_t *rdata_seg = get_segm_by_name(".rdata");
+	if (rdata_seg != NULL)
+	{
+		ea_t ea_rdata = rdata_seg->startEA;
+		while (ea_rdata <= rdata_seg->endEA)
+			process_vtbl(ea_rdata);
+	}
 
 	process_rtti();
 }
@@ -322,23 +333,30 @@ static bool idaapi ct_rtti_window_click(TCustomControl *v, int shift, void *ud)
 
 static bool idaapi show_rtti_window_cb(void *ud)
 {
-	HWND hwnd = NULL;
-	TForm *form = create_tform("RTTI Objects List", &hwnd);
+	if (!rtti_list.empty() && !rtti_addr.empty())
+	{
+		HWND hwnd = NULL;
+		TForm *form = create_tform("RTTI Objects List", &hwnd);
 
-	object_explorer_info_t *si = new object_explorer_info_t(form);
+		object_explorer_info_t *si = new object_explorer_info_t(form);
 
-	qvector <qstring>::iterator rtti_iter;
-	for (rtti_iter = rtti_list.begin(); rtti_iter != rtti_list.end(); rtti_iter++)
-		si->sv.push_back(simpleline_t(*rtti_iter));
+		qvector <qstring>::iterator rtti_iter;
+		for (rtti_iter = rtti_list.begin(); rtti_iter != rtti_list.end(); rtti_iter++)
+			si->sv.push_back(simpleline_t(*rtti_iter));
 
-	simpleline_place_t s1;
-	simpleline_place_t s2(si->sv.size() - 1);
-	si->cv = create_custom_viewer("", NULL, &s1, &s2, &s1, 0, &si->sv);
-	si->codeview = create_code_viewer(form, si->cv, CDVF_STATUSBAR);
-	set_custom_viewer_handlers(si->cv, NULL, NULL, ct_rtti_window_click, NULL, NULL, si);
-	open_tform(form, FORM_ONTOP | FORM_RESTORE);
+		simpleline_place_t s1;
+		simpleline_place_t s2(si->sv.size() - 1);
+		si->cv = create_custom_viewer("", NULL, &s1, &s2, &s1, 0, &si->sv);
+		si->codeview = create_code_viewer(form, si->cv, CDVF_STATUSBAR);
+		set_custom_viewer_handlers(si->cv, NULL, NULL, ct_rtti_window_click, NULL, NULL, si);
+		open_tform(form, FORM_ONTOP | FORM_RESTORE);
 
-	return true;
+		return true;
+	}
+
+	warning("HexRaysCodeXplorer don't find any RTTI objects inside");
+
+	return false;
 }
 //////////////////////////////////////////////////////////////////////////
 
@@ -347,8 +365,6 @@ static void idaapi ct_object_explorer_popup(TCustomControl *v, void *ud)
 {
 	set_custom_viewer_popup_menu(v, NULL);
 	add_custom_viewer_popup_item(v, "Make VTBL_Srtruct", "S", make_vtbl_struct_cb, ud);
-	//add_custom_viewer_popup_item(v, "Make VTBL_Srtruct for all found tables", "Shift + S", make_struct_cb, ud);
-	//add_custom_viewer_popup_item(v, "Dump to File", "D", make_struct_cb, ud);
 	add_custom_viewer_popup_item(v, "Show RTTI objects list", "R", show_rtti_window_cb, ud);
 }
 
@@ -455,28 +471,33 @@ int idaapi ui_object_explorer_callback(void *ud, int code, va_list va)
 
 void object_explorer_form_init()
 {
-	HWND hwnd = NULL;  
-	TForm *form = create_tform("Object Explorer", &hwnd);
-	if ( hwnd == NULL )
+	if (!vtbl_list.empty() && !vtbl_t_list.empty())
 	{
-		warning("Object Explorer window already open. Switching to it.");
-		form = find_tform("Object Explorer");
-		if ( form != NULL )
-			switchto_tform(form, true);
-		return;
+		HWND hwnd = NULL;
+		TForm *form = create_tform("Object Explorer", &hwnd);
+		if (hwnd == NULL)
+		{
+			warning("Object Explorer window already open. Switching to it.");
+			form = find_tform("Object Explorer");
+			if (form != NULL)
+				switchto_tform(form, true);
+			return;
+		}
+
+		object_explorer_info_t *si = new object_explorer_info_t(form);
+
+		qvector <qstring>::iterator vtbl_iter;
+		for (vtbl_iter = vtbl_list.begin(); vtbl_iter != vtbl_list.end(); vtbl_iter++)
+			si->sv.push_back(simpleline_t(*vtbl_iter));
+
+		simpleline_place_t s1;
+		simpleline_place_t s2(si->sv.size() - 1);
+		si->cv = create_custom_viewer("", NULL, &s1, &s2, &s1, 0, &si->sv);
+		si->codeview = create_code_viewer(form, si->cv, CDVF_STATUSBAR);
+		set_custom_viewer_handlers(si->cv, ct_object_explorer_keyboard, ct_object_explorer_popup, ct_object_explorer_click, NULL, NULL, si);
+		hook_to_notification_point(HT_UI, ui_object_explorer_callback, si);
+		open_tform(form, FORM_TAB | FORM_MENU | FORM_RESTORE);
 	}
-
-	object_explorer_info_t *si = new object_explorer_info_t(form);
-	
-	qvector <qstring>::iterator vtbl_iter;
-	for ( vtbl_iter = vtbl_list.begin(); vtbl_iter != vtbl_list.end(); vtbl_iter++ )
-		si->sv.push_back(simpleline_t(*vtbl_iter));
-
-	simpleline_place_t s1;
-	simpleline_place_t s2(si->sv.size()-1);
-	si->cv = create_custom_viewer("", NULL, &s1, &s2, &s1, 0, &si->sv);
-	si->codeview = create_code_viewer(form, si->cv, CDVF_STATUSBAR);
-	set_custom_viewer_handlers(si->cv, ct_object_explorer_keyboard, ct_object_explorer_popup, ct_object_explorer_click, NULL, NULL, si);
-	hook_to_notification_point(HT_UI, ui_object_explorer_callback, si);
-	open_tform(form, FORM_TAB|FORM_MENU|FORM_RESTORE);
+	else
+		warning("HexRaysCodeXplorer don't find any virtual tables inside");
 }

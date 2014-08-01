@@ -61,14 +61,14 @@ struct type_builder_t : public ctree_parentee_t
 
 int get_idx_type_size(cexpr_t *idx_expr)
 {
-	char buff[MAXSTR];
-	print_type_to_one_line(buff, MAXSTR, idati, idx_expr->type.u_str());
+	qstring *buf;
+	idx_expr->type.print(buf);
 	
-	if(strstr(buff, "char"))
+	if(strstr(buf->c_str(), "char"))
 		return 1;
-	else if(strstr(buff, "short"))
+	else if(strstr(buf->c_str(), "short"))
 		return 2;
-	else if(strstr(buff, "int"))
+	else if(strstr(buf->c_str(), "int"))
 		return 4;
 
 	return 0;

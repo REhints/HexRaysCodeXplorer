@@ -110,7 +110,12 @@ char * callgraph_t::get_node_label(int n, char *buf, int bufsize) const
 		  // For typed expressions, the third line will have
 		  // the expression type in human readable form
 		  APPCHAR(ptr, endp, '\n');
-		  if ( print_type_to_one_line(ptr, endp-ptr, idati, e->type.u_str()) != T_NORMAL )
+		  qstring out;
+		  if (e->type.print(&out))
+		  {
+			  APPEND(ptr, endp, out.c_str());
+		  }
+		  else
 		  { // could not print the type?
 			APPCHAR(ptr, endp, '?');
 			APPZERO(ptr, endp);
@@ -118,12 +123,11 @@ char * callgraph_t::get_node_label(int n, char *buf, int bufsize) const
 
 		  if(e->type.is_ptr())
 			{
-				typestring ptr_rem = remove_pointer(e->type);
+				tinfo_t ptr_rem = remove_pointer(e->type);
 				if(ptr_rem.is_struct())
 				{
 					qstring typenm;
-
-					print_type_to_qstring(&typenm, "prefix ", 0,0, PRTYPE_MULTI | PRTYPE_TYPE | PRTYPE_SEMI, idati, ptr_rem.u_str());
+					ptr_rem.print(&typenm, "prefix ", 0, 0, PRTYPE_MULTI | PRTYPE_TYPE | PRTYPE_SEMI);
 				}
 			}
 		}
@@ -168,9 +172,8 @@ callgraph_t::nodeinfo_t *callgraph_t::get_info(int nid)
 	if(pfn == highlighted)
 		fi.color = 2000;
 	else
-		fi.color = 1;//bgcolors.prolog_color;//calc_bg_color(pfn->startEA);
+		fi.color = 1;
 
-    //fi.ea = pfn->startEA;
 	fi.ea = 0;
 
     it = cached_funcs.insert(cached_funcs.end(), std::make_pair(nid, fi));
@@ -255,7 +258,7 @@ bool graph_info_t::get_title(ea_t func_ea, size_t num_inst, qstring *out)
   if ( get_func_name(func_ea, func_name, sizeof(func_name)) == NULL )
     return false;
 
-  out->sprnt("Call graph of: %s %d", func_name, num_inst);
+  out->sprnt("ctree graph of: %s %d", func_name, num_inst);
   
   return true;
 }

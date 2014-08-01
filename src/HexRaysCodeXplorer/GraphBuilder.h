@@ -24,6 +24,8 @@
 
 #pragma once
 
+#include "Common.h"
+
 // function call graph creator class
 class callgraph_t
 {
