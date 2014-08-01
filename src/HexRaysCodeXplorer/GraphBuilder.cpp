@@ -26,7 +26,9 @@
 #include "Common.h"
 #include "GraphBuilder.h"
 
+#ifndef __LINUX__
 #include <windows.h>
+#endif
 #include <list>
 #include <map>
 

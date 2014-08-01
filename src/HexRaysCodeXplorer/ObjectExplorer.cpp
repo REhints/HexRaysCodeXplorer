@@ -39,7 +39,9 @@
 
 #include <string.h>
 #include <stdarg.h>
+#ifndef __LINUX__
 #include <tchar.h>
+#endif
 
 
 //---------------------------------------------------------------------------
@@ -88,7 +90,7 @@ BOOL get_vtbl_info(ea_t ea_address, VTBL_info_t &vtbl_info)
 		if(!is_move_xref)
 			return(FALSE);
 
-		ZeroMemory(&vtbl_info, sizeof(VTBL_info_t));
+		memset(&vtbl_info, 0, sizeof(VTBL_info_t));
 
 		get_name(BADADDR, ea_address, vtbl_info.vtbl_name, (MAXSTR - 1));
 
@@ -403,7 +405,7 @@ static char* get_vtbl_hint(int line_num)
 {
 	current_line_pos = line_num;
 	char tag_lines [4096];
-	ZeroMemory(tag_lines, sizeof(tag_lines));
+	memset(tag_lines, 0, sizeof(tag_lines));
 	
 	if (isEnabled(vtbl_t_list[line_num].ea_begin))
 	{

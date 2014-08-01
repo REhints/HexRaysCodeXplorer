@@ -27,7 +27,7 @@
 #include <graph.hpp>
 
 // Hex-Rays API pointer
-hexdsp_t *hexdsp = NULL;
+extern hexdsp_t *hexdsp;
 
 static bool inited = false;
 
@@ -129,6 +129,10 @@ class cfunc_graph_t : public gdl_graph_t
 	int  idaapi pred(int b, int i) const { return preds[b][i]; }
 public:
 	cfunc_graph_t(const citem_t *_highlight) : highlight(_highlight) {}
+	char *idaapi get_node_label(int n, char *buf, int bufsize);
+	bool idaapi print_edge(FILE *fp, int i, int j);
+	bgcolor_t idaapi get_node_color(int n);
+	void idaapi print_node_attributes(FILE *fp, int n);
 	int idaapi size(void) const { return preds.size(); }
 	int add_node(void)
 	{
