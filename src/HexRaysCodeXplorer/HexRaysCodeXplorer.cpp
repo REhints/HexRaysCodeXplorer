@@ -24,10 +24,10 @@
 
 #include "HexRaysCodeXplorer.h"
 
-itemrefs_t items;
+hexdsp_t *hexdsp = NULL;
 
   // Display a graph node. Feel free to modify this function to fine tune the node display.
-  char *idaapi get_node_label(int n, char *buf, int bufsize)
+  char * idaapi cfunc_graph_t::get_node_label(int n, char *buf, int bufsize)
   {
     char *ptr = buf;
     char *endp = buf + bufsize;
@@ -105,7 +105,7 @@ itemrefs_t items;
 
 
   // Display a graph edge.
-  bool idaapi print_edge(FILE *fp, int i, int j) const
+  bool idaapi cfunc_graph_t::print_edge(FILE *fp, int i, int j)
   {
     qfprintf(fp, "edge: { sourcename: \"%d\" targetname: \"%d\" ", i, j);
     const char *label = NULL;
@@ -124,7 +124,7 @@ itemrefs_t items;
     return true;
   }
   // Determine the node color. Feel free to change it.
-  bgcolor_t idaapi get_node_color(int n) const
+  bgcolor_t idaapi cfunc_graph_t::get_node_color(int n)
   {
     const citem_t *item = items[n];
     if ( item == highlight )
@@ -143,13 +143,12 @@ itemrefs_t items;
     return DEFCOLOR;
   }
   // Print the node color.
-  void idaapi print_node_attributes(FILE *fp, int n) const
+  void idaapi cfunc_graph_t::print_node_attributes(FILE *fp, int n)
   {
     bgcolor_t c = get_node_color(n);
     if ( c != DEFCOLOR )
       qfprintf(fp, " color: %s", get_color_name(c));
   }
-};
 
 //--------------------------------------------------------------------------
 // Helper class to build graph from ctree.

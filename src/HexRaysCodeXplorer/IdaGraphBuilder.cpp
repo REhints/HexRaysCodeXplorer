@@ -22,12 +22,17 @@
 */
 
 
+#include "Common.h"
 #include "IdaGraphBuilder.h"
 #include "HexRaysCodeXplorer.h"
 
+#include <string>
+
+#ifndef __LINUX__
 #include <windows.h>
-
-
+#else
+#define RGB(r,g,b) ((bgcolor_t)(((char)(r)|((uint16_t)((char)(g))<<8))|(((uint32_t)(char)(b))<<16)))
+#endif
 
 //typedef std::map<obj_name, obj_addr> graph_nodes;
 
