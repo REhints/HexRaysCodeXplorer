@@ -1,4 +1,4 @@
-/*	Copyright (c) 2013
+/*	Copyright (c) 2014
 	REhints <info@rehints.com>
 	All rights reserved.
 	
@@ -44,6 +44,9 @@ static ushort hotcode_ce;
 
 static const char hotkey_rt[] = "R";
 static ushort hotcode_rt;
+
+static const char hotkey_gd[] = "D";
+static ushort hotcode_gd;
 
 
 
@@ -116,7 +119,7 @@ static int idaapi gr_callback(void *ud, int code, va_list va)
   switch ( code )
   {
     // refresh user-defined graph nodes and edges
-  case grcode_user_refresh:
+	case grcode_user_refresh:
     // in:  mutable_graph_t *g
     // out: success
     {
@@ -126,7 +129,6 @@ static int idaapi gr_callback(void *ud, int code, va_list va)
         break;
 
 	  graph_builder_t gb(*fg);       // Graph builder helper class
-      //fg->walk_func(f);
 	  gb.apply_to(&gi->vu->cfunc->body, NULL);
 
       mutable_graph_t *mg = va_arg(va, mutable_graph_t *);
@@ -172,6 +174,39 @@ static int idaapi gr_callback(void *ud, int code, va_list va)
 	  }
     }
     break;
+
+	case grcode_user_hint:
+	{
+		DECLARE_GI_VARS;
+		va_arg(va, mutable_graph_t *);
+		int mousenode = va_argi(va, int);
+		int to = va_argi(va, int);
+		int from = va_argi(va, int);
+		char **hint = va_arg(va, char **);
+
+		callgraph_t::nodeinfo_t *ni = fg->get_info(mousenode);
+		result = ni != NULL;
+		if (result && ni->ea != 0xFFFFFFFF)
+		{
+			qstring s = get_text_disasm(ni->ea);
+			*hint = qstrdup(s.c_str());
+		}
+	}
+	break;
+
+	case grcode_dblclicked:
+	{
+		DECLARE_GI_VARS;
+		graph_viewer_t *v = va_arg(va, graph_viewer_t *);
+		selection_item_t *s = va_arg(va, selection_item_t *);
+
+		callgraph_t::nodeinfo_t *ni = fg->get_info(s->node);
+		result = ni != NULL;
+		if (result && s->is_node && ni->ea != 0xFFFFFFFF)
+			jumpto(ni->ea);
+	}
+	break;
+
   }
   return (int)result;
 }
@@ -184,7 +219,6 @@ static bool idaapi display_graph(void *ud)
 	// Determine the ctree item to highlight
 	vu.get_current_item(USE_KEYBOARD);
 	citem_t *highlight = vu.item.is_citem() ? vu.item.e : NULL;
-	
 	graph_info_t *gi = graph_info_t::create(vu.cfunc->entry_ea, highlight);
 		
 	netnode id;
@@ -194,6 +228,14 @@ static bool idaapi display_graph(void *ud)
 
 	HWND hwnd = NULL;
 	TForm *form = create_tform(title.c_str(), &hwnd);
+	if (hwnd == NULL)
+	{
+		warning("Ctree Graph window already open. Switching to it.");
+		form = find_tform(title.c_str());
+		if (form != NULL)
+			switchto_tform(form, true);
+		return true;
+	}
 	
 	if (hwnd != NULL)
 	{
@@ -201,9 +243,8 @@ static bool idaapi display_graph(void *ud)
 		gi->form = form;
 		gi->gv = create_graph_viewer(form, id, gr_callback, gi, 0);
 		open_tform(form, FORM_TAB | FORM_MENU | FORM_QWIDGET);
-
-		if (gi->gv != NULL)
-			viewer_fit_window(gi->gv);
+		
+		viewer_fit_window(gi->gv);
 	}
 	
 	return true;
@@ -237,6 +278,7 @@ func_t * get_func_by_name(const char *func_name)
 	}
 	return result_func;
 }
+
 
 static bool idaapi decompile_func(vdui_t &vu)
 {
@@ -273,7 +315,49 @@ static bool idaapi decompile_func(vdui_t &vu)
   return true;                    
 }
 
-//display Object Explorer
+
+// extract ctree custom view
+static bool idaapi ctree_into_custom_view(void *ud) // TODO
+{
+	vdui_t &vu = *(vdui_t *)ud;
+	
+	
+	vu.get_current_item(USE_KEYBOARD);
+	citem_t *highlight = vu.item.is_citem() ? vu.item.e : NULL;
+
+	if (highlight != NULL)
+	{
+		// if it is an expression
+		if (highlight->is_expr())
+		{
+			cexpr_t *e = (cexpr_t *)highlight;
+
+			// retrieve the name of the routine
+			char tmp[1024];
+			memset(tmp, 0x00, sizeof(tmp));
+			e->print1(tmp, sizeof(tmp), NULL);
+			tag_remove(tmp, tmp, sizeof(tmp));
+		}
+	}
+
+	return true;
+}
+
+
+// show disassembly line for ctree->item
+static bool idaapi decompiled_line_to_disasm(void *ud)
+{
+	vdui_t &vu = *(vdui_t *)ud;
+	vu.ctree_to_disasm();
+
+	vu.get_current_item(USE_KEYBOARD);
+	citem_t *highlight = vu.item.is_citem() ? vu.item.e : NULL;
+
+	return true;
+}
+
+
+// display Object Explorer
 static bool idaapi display_objects(void *ud)
 {
 	vdui_t &vu = *(vdui_t *)ud;
@@ -296,6 +380,7 @@ static int idaapi callback(void *, hexrays_event_t event, va_list va)
         add_custom_viewer_popup_item(vu.ct, "Display Graph", hotkey_dg, display_graph, &vu);
 		add_custom_viewer_popup_item(vu.ct, "Object Explorer", hotkey_ce, display_objects, &vu);
 		add_custom_viewer_popup_item(vu.ct, "REconstruct Type", hotkey_rt, reconstruct_type, &vu);
+		add_custom_viewer_popup_item(vu.ct, "Goto Disasm", hotkey_gd, decompiled_line_to_disasm, &vu);
       }
       break;
 
@@ -307,12 +392,13 @@ static int idaapi callback(void *, hexrays_event_t event, va_list va)
         // check for the hotkey
         if ( lookup_key_code(keycode, shift, true) == hotcode_dg && shift == 0 )
           return display_graph(&vu);
-		if ( lookup_key_code(keycode, shift, true) == hotcode_dg && shift == 0 )
+		if ( lookup_key_code(keycode, shift, true) == hotcode_ce && shift == 0 )
 			return display_objects(&vu);
 		if ( lookup_key_code(keycode, shift, true) == hotcode_rt && shift == 0 )
           return reconstruct_type(&vu);
       }
       break;
+
 	case hxe_double_click:
 		{
 			vdui_t &vu = *va_arg(va, vdui_t *);

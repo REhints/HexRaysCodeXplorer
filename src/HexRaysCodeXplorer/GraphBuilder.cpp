@@ -1,4 +1,4 @@
-/*	Copyright (c) 2013
+/*	Copyright (c) 2014
 	REhints <info@rehints.com>
 	All rights reserved.
 	
@@ -25,6 +25,7 @@
 
 #include "Common.h"
 #include "GraphBuilder.h"
+#include "ObjectExplorer.h"
 
 #include <windows.h>
 #include <list>
@@ -49,6 +50,7 @@ void callgraph_t::create_edge(int id1, int id2)
 	edges.push_back(edge_t(id1, id2));
 }
 
+
 char * callgraph_t::get_node_label(int n, char *buf, int bufsize) const
 {
 	int_ea_map_t::const_iterator it = node2ea.find(n);
@@ -64,47 +66,54 @@ char * callgraph_t::get_node_label(int n, char *buf, int bufsize) const
 		APPEND(ptr, endp, get_ctype_name(item->op));
 		const cexpr_t *e = (const cexpr_t *)item;
 		const cinsn_t *i = (const cinsn_t *)item;
-		
+
 		// For some item types, display additional information
-		switch ( item->op )
+		switch (item->op)
 		{
-		  case cot_ptr     : // *x
-		  case cot_memptr  : // x->m
-			// Display access size for pointers
-			ptr += qsnprintf(ptr, endp-ptr, ".%d", e->ptrsize);
-			if ( item->op == cot_ptr )
-			  break;
-		  case cot_memref  : // x.m
-			// Display member offset for structure fields
-			ptr += qsnprintf(ptr, endp-ptr, " (m=%d)", e->m);
+		case cot_call:
+			char buf[MAXSTR];
+			if (get_func_name(e->x->obj_ea, buf, sizeof(buf)) == NULL)
+				ptr += qsnprintf(ptr, endp - ptr, " sub_%a", e->x->obj_ea);
+			ptr += qsnprintf(ptr, endp - ptr, " %s", buf);
 			break;
-		  case cot_obj     : // v
-		  case cot_var     : // l
+		case cot_ptr: // *x
+		case cot_memptr: // x->m
+			// Display access size for pointers
+			ptr += qsnprintf(ptr, endp - ptr, ".%d", e->ptrsize);
+			if (item->op == cot_ptr)
+				break;
+		case cot_memref: // x.m
+			// Display member offset for structure fields
+			ptr += qsnprintf(ptr, endp - ptr, " (m=%d)", e->m);
+			break;
+		case cot_obj: // v
+		case cot_var: // l
 			// Display object size for local variables and global data
-			ptr += qsnprintf(ptr, endp-ptr, ".%d", e->refwidth);
-		  case cot_num     : // n
-		  case cot_helper  : // arbitrary name
-		  case cot_str     : // string constant
+			ptr += qsnprintf(ptr, endp - ptr, ".%d", e->refwidth);
+		case cot_num: // n
+		case cot_helper: // arbitrary name
+		case cot_str: // string constant
 			// Display helper names and number values
 			APPCHAR(ptr, endp, ' ');
-			e->print1(ptr, endp-ptr, NULL);
+			e->print1(ptr, endp - ptr, NULL);
 			tag_remove(ptr, ptr, 0);
 			ptr = tail(ptr);
 			break;
-		 case cit_goto:
+		case cit_goto:
 			// Display target label number for gotos
-			ptr += qsnprintf(ptr, endp-ptr, " LABEL_%d", i->cgoto->label_num);
+			ptr += qsnprintf(ptr, endp - ptr, " LABEL_%d", i->cgoto->label_num);
 			break;
-		 case cit_asm:
+		case cit_asm:
 			// Display instruction block address and size for asm-statements
-			ptr += qsnprintf(ptr, endp-ptr, " %a.%"FMT_Z, *i->casm->begin(), i->casm->size());
+			ptr += qsnprintf(ptr, endp - ptr, " %a.%"FMT_Z, *i->casm->begin(), i->casm->size());
 			break;
-		  default:
+		default:
 			break;
 		}
     
 		// The second line of the node contains the item address
 		ptr += qsnprintf(ptr, endp-ptr, "\nea: %a", item->ea);
+
 		if ( item->is_expr() && !e->type.empty() )
 		{
 		  // For typed expressions, the third line will have
@@ -115,7 +124,7 @@ char * callgraph_t::get_node_label(int n, char *buf, int bufsize) const
 		  {
 			  APPEND(ptr, endp, out.c_str());
 		  }
-		  else
+		  else 
 		  { // could not print the type?
 			APPCHAR(ptr, endp, '?');
 			APPZERO(ptr, endp);
@@ -135,6 +144,7 @@ char * callgraph_t::get_node_label(int n, char *buf, int bufsize) const
 	
 	return buf;
 }
+
 
 callgraph_t::nodeinfo_t *callgraph_t::get_info(int nid)
 {
@@ -166,15 +176,23 @@ callgraph_t::nodeinfo_t *callgraph_t::get_info(int nid)
 	if(get_node_label(nid, buf, MAXSTR))
 		fi.name = buf;
 	else
-		fi.name = "?";
+		fi.name = "?unknown";
 
     // get color
-	if(pfn == highlighted)
+	if(pfn == highlighted) // highlight element with current cursor position 
 		fi.color = 2000;
 	else
 		fi.color = 1;
 
-	fi.ea = 0;
+	#define CL_DARKBLUE      ((0  )+  (0  <<8)+  (128<<16)) 
+	if (pfn->op == cit_expr)
+		fi.color = CL_DARKBLUE;
+	#define CL_BLUE          ((0  )+  (0  <<8)+  (255<<16))
+	if (pfn->op == cit_block)
+		fi.color = CL_BLUE;
+	
+
+	fi.ea = pfn->ea;
 
     it = cached_funcs.insert(cached_funcs.end(), std::make_pair(nid, fi));
     ret = &it->second;

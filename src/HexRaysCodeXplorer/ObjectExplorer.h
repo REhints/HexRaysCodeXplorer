@@ -1,4 +1,4 @@
-/*	Copyright (c) 2013
+/*	Copyright (c) 2014
 	REhints <info@rehints.com>
 	All rights reserved.
 	
@@ -134,3 +134,5 @@ struct RTTICompleteObjectLocator
 ea_t find_RTTI(ea_t start_ea, ea_t end_ea);
 char* get_demangle_name(ea_t class_addr);
 void process_rtti();
+
+LPCTSTR get_text_disasm(ea_t ea);

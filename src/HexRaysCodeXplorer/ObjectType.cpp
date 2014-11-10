@@ -1,4 +1,4 @@
-/*	Copyright (c) 2013
+/*	Copyright (c) 2014
 	REhints <info@rehints.com>
 	All rights reserved.
 	
@@ -27,6 +27,98 @@
 #include "ObjectType.h"
 #include <struct.hpp>
 
+/*
+	Representation of the reconstructed type
+*/
+struct type_reference {
+	tinfo_t type;
+
+	// offset of the referenced field by the helper, if any
+	int hlpr_off;
+
+	// size of the referenced field by the helper, if any
+	int hlpr_size;
+
+	// offset of the field after all checks
+	int final_off;
+
+	// size of the field after all checks
+	int final_size;
+
+	void idaapi init(cexpr_t *e);
+
+	void idaapi update_hlpr(int off, int num);
+
+	void idaapi update_type(cexpr_t *e);
+
+	int idaapi update_offset(int offset);
+
+	int idaapi update_size(int offset);
+
+	int idaapi get_type_increment_val();
+
+	int idaapi get_offset();
+
+	int idaapi get_size();
+};
+
+void idaapi type_reference::init(cexpr_t *e) {
+	type = e->type;
+	hlpr_off = 0;
+	final_off = 0;
+
+	hlpr_size = 0;
+	final_size = 0;
+}
+
+void idaapi type_reference::update_type(cexpr_t *e) {
+	type = e->type;
+}
+
+int idaapi type_reference::get_type_increment_val() {
+	if(type.is_ptr()) {
+		ptr_type_data_t ptr_deets;
+		if(type.get_ptr_details(&ptr_deets)) {
+			return ptr_deets.obj_type.get_size();
+		}
+	} else if (type.is_array()) {
+		return 1;
+	} else {
+		return 1;
+	}
+}
+
+int idaapi type_reference::update_offset(int offset) {
+	int update_factor = get_type_increment_val();
+	final_off += update_factor * offset;
+
+	return final_off;
+}
+
+int idaapi type_reference::update_size(int size) {
+	final_size = size;
+	return final_size;
+}
+
+int idaapi type_reference::get_offset()
+{
+	return final_off + hlpr_off;
+}
+
+int idaapi type_reference::get_size()
+{
+	if(hlpr_size != 0)
+		return hlpr_size;
+	else
+		return final_size;
+}
+
+void idaapi type_reference::update_hlpr(int off, int num)
+{
+	hlpr_off = off;
+	hlpr_size = num;
+}
+
 struct type_builder_t : public ctree_parentee_t
 {
  	cexpr_t *highl_expr;
@@ -41,7 +133,6 @@ struct type_builder_t : public ctree_parentee_t
 
 	std::vector<struct_filed> structure; 
 	
-
 	int idaapi visit_expr(cexpr_t *e);
 
 	char * get_structure(char * name, char * buffer, int buffer_size);
@@ -56,12 +147,12 @@ struct type_builder_t : public ctree_parentee_t
 
 	bool idaapi check_helper(citem_t *parent, int &offs, int &size);
 
-	bool idaapi check_ptr(struct_filed &str_fld);
+	bool idaapi check_ptr(cexpr_t *e, struct_filed &str_fld);
 };
 
 int get_idx_type_size(cexpr_t *idx_expr)
 {
-	qstring *buf;
+	qstring *buf = NULL;
 	idx_expr->type.print(buf);
 	
 	if(strstr(buf->c_str(), "char"))
@@ -173,67 +264,72 @@ bool idaapi type_builder_t::check_memptr(struct_filed &str_fld)
 	return false;
 }
 
-bool idaapi type_builder_t::check_ptr(struct_filed &str_fld)
+bool idaapi type_builder_t::check_ptr(cexpr_t *e, struct_filed &str_fld)
 {
+	type_reference referInfo;
+	referInfo.init(e);
+
+	qstring dbg_info;
+
+	bool done = false;
+
+	int par_size = parents.size();
 	// check if it has at least three parents
-	if ( parents.size() > 2 )
+	if ( par_size > 2 )
 	{
-		citem_t *parent_1 = parents.back();
 		int offset = 0;
 		int parent_idx = 1;
 
-		// if its parent is addition 
-		if(parent_1->is_expr() && (parent_1->op == cot_add))
-		{
-			parent_idx ++;
-			cexpr_t *expr_2 = (cexpr_t *)parent_1;
-				
-			// get index_value
-			char buff[MAXSTR];
-			expr_2->y->print1(buff, MAXSTR, NULL);
-			tag_remove(buff, buff, 0);
-			offset = atoi(buff);
-		}
+		int num = 0;
+		int off = 0;
 
-		citem_t *parent_3 = parents[parents.size() - parent_idx];
-		if(parent_3->is_expr() && (parent_3->op == cot_cast))
-			parent_idx ++;
-			
-		citem_t *parent_4 = parents[parents.size() - parent_idx];
-		if(parent_4->is_expr() && (parent_4->op == cot_ptr))
-		{
-			parent_idx ++;
-			citem_t *parent_5 = parents[parents.size() - parent_idx];
+		for (size_t i = 0 ; i < parents.size() - 1 ; i ++) {
+			citem_t *parent_i = parents[parents.size() - i - 1];
 
-			int num_hlpr = 0;
-			int off_hlpr = 0;
-			
-			bool bHelper = check_helper(parent_5, off_hlpr, num_hlpr);
-			if(bHelper)
-				parent_idx ++;
-
-			citem_t *parent_6 = parents[parents.size() - parent_idx];
-			if(parent_6->is_expr() && (parent_6->op == cot_asg))
+			// if its parent is addition 
+			if(parent_i->is_expr() && (parent_i->op == cot_add))
 			{
-				cexpr_t *expr_4 = (cexpr_t *)parent_4;	
+				cexpr_t *expr_2 = (cexpr_t *)parent_i;
+				
+				// get index_value
+				char buff[MAXSTR];
+				expr_2->y->print1(buff, MAXSTR, NULL);
+				tag_remove(buff, buff, 0);
+				offset = atoi(buff);
 
-				if(bHelper)
-				{
-					str_fld.offset = offset + off_hlpr;
-					str_fld.size = num_hlpr;
-				}
-				else
-				{
-					str_fld.offset = offset;
-					str_fld.size = expr_4->ptrsize;
-				}
-
-				return true;
+				referInfo.update_offset(offset);
+			} else if(parent_i->is_expr() && (parent_i->op == cot_cast)) {
+				referInfo.update_type((cexpr_t *)parent_i);
+			} else if(parent_i->is_expr() && check_helper((cexpr_t *)parent_i, off, num)) {
+				referInfo.update_hlpr(off, num);
+			} else if(parent_i->is_expr() && (parent_i->op == cot_ptr)) {
+				referInfo.update_size(((cexpr_t *)parent_i)->ptrsize);
+				done = true;
+				break;
+			} else if(parent_i->is_expr() && (parent_i->op == cot_memptr)) {
+				referInfo.update_offset(((cexpr_t *)parent_i)->m);
+				referInfo.update_size(((cexpr_t *)parent_i)->ptrsize);
+				done = true;
+				break;
+			} else if(parent_i->is_expr() && (parent_i->op == cot_asg)) {
+				done = true;
+				break;
+			} else if(parent_i->is_expr() && (parent_i->op == cot_call)) {
+				done = true;
+				break;
 			}
 		}
 	}
 
-	return false;
+	if(done) {
+		str_fld.offset = referInfo.get_offset();
+		str_fld.size = referInfo.get_size();
+		if (str_fld.size == 0) {
+			str_fld.size = 4;
+		}
+	}
+
+	return done;
 }
 
 bool idaapi type_builder_t::check_idx(struct_filed &str_fld)
@@ -288,14 +384,9 @@ int idaapi type_builder_t::visit_expr(cexpr_t *e)
 		if(!strcmp(expr_name, highl_expr_name))
 		{
 			struct_filed str_fld;
-			
-			if(check_memptr(str_fld))
-				structure.push_back(str_fld);
-			else if(check_idx(str_fld))
-				structure.push_back(str_fld);
-			else if(check_ptr(str_fld))
-				structure.push_back(str_fld);
 
+			if(check_ptr(e, str_fld))
+				structure.push_back(str_fld);
 		}
 	}
 
@@ -326,9 +417,9 @@ char * get_type_nm(int sz)
 	{
 	case 1:
 		return "char";
-		case 2:
+	case 2:
 		return "short";
-		case 4:
+	case 4:
 		return "int";
 	}
 
@@ -360,13 +451,13 @@ char * type_builder_t::get_structure(char * name, char * bufferr, int buffer_siz
 	{
 		if(structure[i].offset > offs)
 		{
-			buffer += sprintf_s(buffer, buffer_size - (int)(buffer - bufferr), "\\* %X \\*\tchar\tfiller_%d[%d];\r\n", offs, i, structure[i].offset - offs);
+			buffer += sprintf_s(buffer, buffer_size - (int)(buffer - bufferr), "\\* 0x%X \\*\tchar\tfiller_%d[%d];\r\n", offs, i, structure[i].offset - offs);
 			offs = structure[i].offset;
 		}
 		
 		if(structure[i].offset == offs)
 		{
-			buffer += sprintf_s(buffer, buffer_size - (int)(buffer - bufferr), "\\* %X \\*\t%s\tfield_%d;\r\n", offs, get_type_nm(structure[i].size), i);
+			buffer += sprintf_s(buffer, buffer_size - (int)(buffer - bufferr), "\\* 0x%X \\*\t%s\tfield_%d;\r\n", offs, get_type_nm(structure[i].size), i);
 			offs += structure[i].size;
 		}
 	}
@@ -464,9 +555,6 @@ bool idaapi reconstruct_type(void *ud)
 					type_bldr.get_structure(type_name, buffr, sizeof(buffr));
 					msg("%s", buffr);
 				}
-
-				
-
 			}
 		}
 	}
