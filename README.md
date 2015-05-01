@@ -22,7 +22,7 @@ __Here are the main features of the plugin:__
 
   The reconstructed structure is displayed in “Output window”. Detailed information about type Reconstruction feature is provided in the blog post “[Type REconstruction in HexRaysCodeXplorer](http://rehints.com/2013-09-02-Type-REconstruction-in-HexRaysCodeXplorer.html)”.
 
-  From version 1.1 supporting auto reconstruction type into IDA local types storage.
+Also CodeXplorer plugin supports auto REconstruction type into IDA local types storage.
 
 ![6](img/6.png)
   
