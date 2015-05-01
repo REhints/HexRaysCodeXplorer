@@ -45,13 +45,9 @@ __Here are the main features of the plugin:__
 __Object Explorer supports folowing features:__
 * Auto structures generation for VTBL into IDA local types
 
-*![9](img/9.png)
-
 * Navigation in virtual table list and jump to VTBL address into "IDA View" window by click
 
 * Show hints for current position in virtual table list
-
-![10](img/10.png)
 
 * Shows cross-references list by click into menu on "Show XREFS to VTBL"
 
