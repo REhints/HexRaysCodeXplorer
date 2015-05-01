@@ -55,7 +55,7 @@ __Object Explorer supports folowing features:__
 
 * Basic RTTI objects parsing
 
-![7](img/7.jpg)
+![7](img/7.png)
 
 __Conference talks about CodeXplorer plugin:__
 * **2015**
