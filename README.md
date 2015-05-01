@@ -1,18 +1,22 @@
-HexRaysCodeXplorer
-==================
+<pre>  _  _         ___               ___         _    __  __     _                 
+ | || |_____ _| _ \__ _ _  _ ___/ __|___  __| |___\ \/ /_ __| |___ _ _ ___ _ _ 
+ | __ / -_) \ /   / _` | || (_-< (__/ _ \/ _` / -_)>  <| '_ \ / _ \ '_/ -_) '_|
+ |_||_\___/_\_\_|_\__,_|\_, /__/\___\___/\__,_\___/_/\_\ .__/_\___/_| \___|_|  
+                        |__/                           |_|                     </pre>
+===============================================================================
 
-Hex-Rays Decompiler plugin for better code navigation :octocat:
+Hex-Rays Decompiler plugin for better code navigation in RE process of C++ applications or code reconstruction of modern malware as Stuxnet, Flame, Equation ... :octocat:
 
-__Authors and Contributors__: 
-Aleksandr Matrosov ([@matrosov](https://github.com/matrosov)); Eugene Rodionov ([@rodionov](https://github.com/rodionov)) 
+__Contributors__: 
+Alex Matrosov ([@matrosov](https://github.com/matrosov)) and Eugene Rodionov ([@rodionov](https://github.com/rodionov)) 
 
-__HexRaysCodeXplorer__ - Hex-Rays Decompiler plugin for easier code navigation. Right-click context menu in the Pseudocode window shows HexRaysCodeXplorer plugin commands: 
+__HexRaysCodeXplorer__ - Hex-Rays Decompiler plugin for easier code navigation. Right-click context menu in the Pseudocode window shows CodeXplorer plugin commands: 
 
 ![1](img/1.png)
 
 __Here are the main features of the plugin:__
 
-* Automatic type REconstruction for C++ objects. To be able to reconstruct a type using HexRaysCodeXplorer one needs to select the variable holding pointer to the instance of position independed code or to an object and by right-button mouse click select from the context menu «REconstruct Type» option:
+* ***Automatic type REconstruction*** for C++ objects. To be able to reconstruct a type using HexRaysCodeXplorer one needs to select the variable holding pointer to the instance of position independed code or to an object and by right-button mouse click select from the context menu «REconstruct Type» option:
 
 ![2](img/2.png)
 
@@ -22,22 +26,46 @@ __Here are the main features of the plugin:__
 
 ![6](img/6.png)
   
-* C-tree graph visualization – a special tree-like structure representing a decompiled routine in c_itemt terms. Useful feature for understanding how the decompiler works. The highlighted graph node corresponds to the current cursor position in the HexRays Pseudocode window:
+* ***C-tree graph visualization*** – a special tree-like structure representing a decompiled routine in citem_t terms (hexrays.hpp). Useful feature for understanding how the decompiler works. The highlighted graph node corresponds to the current cursor position in the HexRays Pseudocode window:
 
 ![3](img/3.png)
 
-* Navigation through virtual function calls in HexRays Pseudocode window. After representing C++ objects by C-structures this feature make possible navigation by mouse clicking to the virtual function calls as structure fields:
+* ***Navigation through virtual function calls*** in HexRays Pseudocode window. After representing C++ objects by C-structures this feature make possible navigation by mouse clicking to the virtual function calls as structure fields:
 
 ![4](img/4.png)
 
-* Object Explorer – useful interface for navigation through virtual tables (VTBL) structures. Object Explorer outputs VTBL information into IDA custom view window. The output window is shown by choosing «Object Explorer» option in right-button mouse click context menu:
+* ***Jump to Disasm*** - small feature for navigate to assembly code into "IDA View window" from current Pseudocode line position. It is help to find a place in assembly code associated with decompiled line. 
+
+![8](img/8.png)
+
+* ***Object Explorer*** – useful interface for navigation through virtual tables (VTBL) structures. Object Explorer outputs VTBL information into IDA custom view window. The output window is shown by choosing «Object Explorer» option in right-button mouse click context menu:
 
 ![5](img/5.png)
 
-__From version 1.1 was inluded folowing features:__
-* auto structures for VTBL into IDA local types
-* click on VTBL and jump to code
-* ObjectExplorer hints for VTBL
-* start suporting RTTI objects parsing
+__Object Explorer supports folowing features:__
+* Auto structures generation for VTBL into IDA local types
+
+*![9](img/9.png)
+
+* Navigation in virtual table list and jump to VTBL address into "IDA View" window by click
+
+* Show hints for current position in virtual table list
+
+![10](img/10.png)
+
+* Shows cross-references list by click into menu on "Show XREFS to VTBL"
+
+![11](img/11.png)
+
+* Basic RTTI objects parsing
 
 ![7](img/7.jpg)
+
+__Conference talks about CodeXplorer plugin:__
+* **2015**
+ * "Object Oriented Code RE with HexraysCodeXplorer", NSEC [[slides]]()
+* **2014**
+ * "HexRaysCodeXplorer: object oriented RE for fun and profit", H2HC [[slides]](https://github.com/REhints/Publications/blob/master/Conferences/ZeroNights'2013/ZN_2013_pdf.pdf)
+* **2013**
+ * "HexRaysCodeXplorer: make object-oriented RE easier", ZeroNights [[slides]](https://github.com/REhints/Publications/blob/master/Conferences/ZeroNights'2013/ZN_2013_pdf.pdf)
+ * "Reconstructing Gapz: Position-Independent Code Analysis Problem", REcon [[slides]](https://github.com/REhints/Publications/blob/master/Conferences/RECON'2013/RECON_2013.pdf)
