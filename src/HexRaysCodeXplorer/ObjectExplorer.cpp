@@ -1,4 +1,4 @@
-/*	Copyright (c) 2014
+/*	Copyright (c) 2013-2015
 	REhints <info@rehints.com>
 	All rights reserved.
 	
@@ -90,7 +90,8 @@ BOOL get_vtbl_info(ea_t ea_address, VTBL_info_t &vtbl_info)
 
 		ZeroMemory(&vtbl_info, sizeof(VTBL_info_t));
 
-		get_name(BADADDR, ea_address, vtbl_info.vtbl_name, (MAXSTR - 1));
+		//get_name(BADADDR, ea_address, vtbl_info.vtbl_name, (MAXSTR - 1));
+		get_ea_name(&vtbl_info.vtbl_name, ea_address);
 
 		ea_t ea_start = vtbl_info.ea_begin = ea_address;
 		while(TRUE)
@@ -149,10 +150,10 @@ static BOOL process_vtbl(ea_t &ea_sect)
 		{
 			if(has_user_name(getFlags(vftable_info_t.ea_begin)))
 			{							
-				get_short_name(BADADDR, vftable_info_t.ea_begin, vftable_info_t.vtbl_name, (MAXSTR - 1));
+				vftable_info_t.vtbl_name = get_short_name(vftable_info_t.ea_begin);
 
 				qstring vtbl_info_str;
-				vtbl_info_str.cat_sprnt("0x%x - 0x%x:  %s   method count: %u", vftable_info_t.ea_begin, vftable_info_t.ea_end, vftable_info_t.vtbl_name, vftable_info_t.methods);
+				vtbl_info_str.cat_sprnt(" 0x%x - 0x%x:  %s  methods count: %u", vftable_info_t.ea_begin, vftable_info_t.ea_end, vftable_info_t.vtbl_name, vftable_info_t.methods);
 				vtbl_list.push_back(vtbl_info_str);
 
 				vtbl_t_list.push_back(vftable_info_t);
@@ -190,8 +191,7 @@ tid_t create_vtbl_struct(ea_t vtbl_addr, char* vtbl_name, uval_t idx, unsigned i
 	while (TRUE)
 	{
 		offset = ea - vtbl_addr;
-		char method_name[MAXSTR];
-		memset(method_name, 0, sizeof(method_name));
+		qstring method_name;
 		ea_t method_ea = get_long(ea);
 
 		if (method_ea == 0) break;
@@ -201,8 +201,8 @@ tid_t create_vtbl_struct(ea_t vtbl_addr, char* vtbl_name, uval_t idx, unsigned i
 		char* struc_member_name = NULL;
 		if (isFunc(method_flags))
 		{
-			if (get_short_name(BADADDR, method_ea, method_name, sizeof(method_name)))
-				struc_member_name = method_name;
+			if ((method_name = get_short_name(method_ea)) != NULL)
+				struc_member_name = (char*)method_name.c_str();
 		}
 
 		add_struc_member(new_struc, NULL, offset, dwrdflag(), NULL, 4);
@@ -210,7 +210,8 @@ tid_t create_vtbl_struct(ea_t vtbl_addr, char* vtbl_name, uval_t idx, unsigned i
 		{
 			if (!set_member_name(new_struc, offset, struc_member_name))
 			{
-				get_name(NULL, method_ea, method_name, sizeof(method_name));
+				//get_name(NULL, method_ea, method_name, sizeof(method_name));
+				get_ea_name(&method_name, method_ea);
 				set_member_name(new_struc, offset, struc_member_name);
 			}
 		}
@@ -267,7 +268,7 @@ void process_rtti()
 		rtti_addr.push_back(rtd);
 
 		qstring tmp;
-		tmp.cat_sprnt("0x%x:  %s", rtd, name);
+		tmp.cat_sprnt(" 0x%x:  %s", rtd, name);
 		rtti_list.push_back(tmp);
 	}
 }
@@ -308,9 +309,9 @@ static int current_line_pos = NULL;
 static bool idaapi make_vtbl_struct_cb(void *ud)
 {	
 	VTBL_info_t vtbl_t = vtbl_t_list[current_line_pos];
-	tid_t id = add_struc(BADADDR, vtbl_t.vtbl_name);
+	tid_t id = add_struc(BADADDR, vtbl_t.vtbl_name.c_str());
 
-	create_vtbl_struct(vtbl_t.ea_begin, vtbl_t.vtbl_name, id);
+	create_vtbl_struct(vtbl_t.ea_begin, (char*)vtbl_t.vtbl_name.c_str(), id);
 
 	return true;
 }
@@ -348,16 +349,82 @@ static bool idaapi show_rtti_window_cb(void *ud)
 		simpleline_place_t s2(si->sv.size() - 1);
 		si->cv = create_custom_viewer("", NULL, &s1, &s2, &s1, 0, &si->sv);
 		si->codeview = create_code_viewer(form, si->cv, CDVF_STATUSBAR);
-		set_custom_viewer_handlers(si->cv, NULL, NULL, ct_rtti_window_click, NULL, NULL, si);
+		set_custom_viewer_handlers(si->cv, NULL, NULL, NULL, ct_rtti_window_click, NULL, NULL, si);
 		open_tform(form, FORM_ONTOP | FORM_RESTORE);
 
 		return true;
 	}
 
-	warning("HexRaysCodeXplorer don't find any RTTI objects inside");
+	warning("ObjectExplorer not found any RTTI objects ...");
 
 	return false;
 }
+
+
+// Popup window with VTBL XREFS
+qvector<qstring> xref_list;
+qvector<ea_t> xref_addr;
+static void get_xrefs_to_vtbl()
+{
+	ea_t cur_vt_ea = vtbl_t_list[current_line_pos].ea_begin;
+	for (ea_t addr = get_first_dref_to(cur_vt_ea); addr != BADADDR; addr = get_next_dref_to(cur_vt_ea, addr))
+	{
+		qstring name;
+		get_func_name2(&name, addr);
+
+		xref_addr.push_back(addr);
+
+		qstring tmp;
+		tmp.cat_sprnt(" 0x%x:  %s", addr, name);
+		xref_list.push_back(tmp);
+	}
+}
+
+
+static bool idaapi ct_vtbl_xrefs_window_click(TCustomControl *v, int shift, void *ud)
+{
+	int x, y;
+	place_t *place = get_custom_viewer_place(v, true, &x, &y);
+	simpleline_place_t *spl = (simpleline_place_t *)place;
+	int line_num = spl->n;
+
+	ea_t cur_xref_ea = xref_addr[line_num];
+	jumpto(cur_xref_ea);
+
+	return true;
+}
+
+
+static bool idaapi show_vtbl_xrefs_window_cb(void *ud)
+{
+	get_xrefs_to_vtbl();
+	if (!xref_list.empty())
+	{
+		HWND hwnd = NULL;
+		TForm *form = create_tform(vtbl_t_list[current_line_pos].vtbl_name.c_str(), &hwnd);
+
+		object_explorer_info_t *si = new object_explorer_info_t(form);
+
+		qvector <qstring>::iterator xref_iter;
+		for (xref_iter = xref_list.begin(); xref_iter != xref_list.end(); xref_iter++)
+			si->sv.push_back(simpleline_t(*xref_iter));
+
+		simpleline_place_t s1;
+		simpleline_place_t s2(si->sv.size() - 1);
+		si->cv = create_custom_viewer("", NULL, &s1, &s2, &s1, 0, &si->sv);
+		si->codeview = create_code_viewer(form, si->cv, CDVF_STATUSBAR);
+		set_custom_viewer_handlers(si->cv, NULL, NULL, NULL, ct_vtbl_xrefs_window_click, NULL, NULL, si);
+		open_tform(form, FORM_ONTOP | FORM_RESTORE);
+
+		return true;
+	}
+
+	warning("ObjectExplorer not found any xrefs here ...");
+
+	return false;
+}
+
+
 //////////////////////////////////////////////////////////////////////////
 
 
@@ -366,6 +433,8 @@ static void idaapi ct_object_explorer_popup(TCustomControl *v, void *ud)
 	set_custom_viewer_popup_menu(v, NULL);
 	add_custom_viewer_popup_item(v, "Make VTBL_Srtruct", "S", make_vtbl_struct_cb, ud);
 	add_custom_viewer_popup_item(v, "Show RTTI objects list", "R", show_rtti_window_cb, ud);
+	add_custom_viewer_popup_item(v, "Show all XREFS to VTBL", "X", show_vtbl_xrefs_window_cb, ud);
+
 }
 
 
@@ -378,6 +447,18 @@ static bool idaapi ct_object_explorer_keyboard(TCustomControl * /*v*/, int key, 
 		{
 		case IK_ESCAPE:
 			close_tform(si->form, FORM_SAVE | FORM_CLOSE_LATER);
+			return true;
+
+		case 82: // R
+			show_rtti_window_cb(ud);
+			return true;
+
+		case 83: // S
+			make_vtbl_struct_cb(ud);
+			return true;
+
+		case 88: // X
+			show_vtbl_xrefs_window_cb(ud);
 			return true;
 		}
 	}
@@ -494,10 +575,10 @@ void object_explorer_form_init()
 		simpleline_place_t s2(si->sv.size() - 1);
 		si->cv = create_custom_viewer("", NULL, &s1, &s2, &s1, 0, &si->sv);
 		si->codeview = create_code_viewer(form, si->cv, CDVF_STATUSBAR);
-		set_custom_viewer_handlers(si->cv, ct_object_explorer_keyboard, ct_object_explorer_popup, ct_object_explorer_click, NULL, NULL, si);
+		set_custom_viewer_handlers(si->cv, ct_object_explorer_keyboard, ct_object_explorer_popup, NULL, ct_object_explorer_click, NULL, NULL, si);
 		hook_to_notification_point(HT_UI, ui_object_explorer_callback, si);
 		open_tform(form, FORM_TAB | FORM_MENU | FORM_RESTORE);
 	}
 	else
-		warning("HexRaysCodeXplorer don't find any virtual tables inside");
+		warning("ObjectExplorer not found any virtual tables here ...");
 }

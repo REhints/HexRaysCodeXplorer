@@ -1,4 +1,4 @@
-/*	Copyright (c) 2014
+/*	Copyright (c) 2013-2015
 	REhints <info@rehints.com>
 	All rights reserved.
 	
@@ -152,7 +152,7 @@ struct type_builder_t : public ctree_parentee_t
 
 int get_idx_type_size(cexpr_t *idx_expr)
 {
-	qstring *buf = NULL;
+	qstring *buf;
 	idx_expr->type.print(buf);
 	
 	if(strstr(buf->c_str(), "char"))
@@ -540,12 +540,11 @@ bool idaapi reconstruct_type(void *ud)
 			tid_t struct_type_id = type_bldr.get_structure(NULL);
 			if(struct_type_id != 0 || struct_type_id != -1)
 			{
-				char struct_name[MAXSTR];
-				memset(struct_name, 0x00, sizeof(struct_name));
-				get_struc_name(struct_type_id, struct_name, sizeof(struct_name));
+				qstring struct_name;
+				struct_name = get_struc_name(struct_type_id);
 				va_list va;
 				va_end(va);
-				char * type_name = vaskstr(0, struct_name, "Enter type name", va);
+				char * type_name = vaskstr(0, struct_name.c_str(), "Enter type name", va);
 				if(type_name != NULL)
 				{
 					set_struc_name(struct_type_id, type_name);

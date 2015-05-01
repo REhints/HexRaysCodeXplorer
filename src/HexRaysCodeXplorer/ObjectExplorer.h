@@ -1,4 +1,4 @@
-/*	Copyright (c) 2014
+/*	Copyright (c) 2013-2015
 	REhints <info@rehints.com>
 	All rights reserved.
 	
@@ -47,7 +47,7 @@ void object_explorer_form_init();
 // VTBL 
 struct VTBL_info_t
 {
-	char vtbl_name[MAXSTR];
+	qstring vtbl_name;
 	ea_t ea_begin;
 	ea_t ea_end;
 	UINT methods;

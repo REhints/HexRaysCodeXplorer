@@ -1,4 +1,4 @@
-/*	Copyright (c) 2014
+/*	Copyright (c) 2013-2015
 	REhints <info@rehints.com>
 	All rights reserved.
 	
@@ -36,16 +36,16 @@ hexdsp_t *hexdsp = NULL;
 static bool inited = false;
 
 // Hotkey for the new command
-static const char hotkey_dg[] = "G";
+static const char hotkey_dg[] = "T";
 static ushort hotcode_dg;
 
-static const char hotkey_ce[] = "E";
+static const char hotkey_ce[] = "O";
 static ushort hotcode_ce;
 
 static const char hotkey_rt[] = "R";
 static ushort hotcode_rt;
 
-static const char hotkey_gd[] = "D";
+static const char hotkey_gd[] = "J";
 static ushort hotcode_gd;
 
 
@@ -186,7 +186,7 @@ static int idaapi gr_callback(void *ud, int code, va_list va)
 
 		callgraph_t::nodeinfo_t *ni = fg->get_info(mousenode);
 		result = ni != NULL;
-		if (result && ni->ea != 0xFFFFFFFF)
+		if (result && ni->ea != BADADDR)
 		{
 			qstring s = get_text_disasm(ni->ea);
 			*hint = qstrdup(s.c_str());
@@ -202,7 +202,7 @@ static int idaapi gr_callback(void *ud, int code, va_list va)
 
 		callgraph_t::nodeinfo_t *ni = fg->get_info(s->node);
 		result = ni != NULL;
-		if (result && s->is_node && ni->ea != 0xFFFFFFFF)
+		if (result && s->is_node && ni->ea != BADADDR)
 			jumpto(ni->ea);
 	}
 	break;
@@ -320,8 +320,6 @@ static bool idaapi decompile_func(vdui_t &vu)
 static bool idaapi ctree_into_custom_view(void *ud) // TODO
 {
 	vdui_t &vu = *(vdui_t *)ud;
-	
-	
 	vu.get_current_item(USE_KEYBOARD);
 	citem_t *highlight = vu.item.is_citem() ? vu.item.e : NULL;
 
@@ -380,22 +378,23 @@ static int idaapi callback(void *, hexrays_event_t event, va_list va)
         add_custom_viewer_popup_item(vu.ct, "Display Graph", hotkey_dg, display_graph, &vu);
 		add_custom_viewer_popup_item(vu.ct, "Object Explorer", hotkey_ce, display_objects, &vu);
 		add_custom_viewer_popup_item(vu.ct, "REconstruct Type", hotkey_rt, reconstruct_type, &vu);
-		add_custom_viewer_popup_item(vu.ct, "Goto Disasm", hotkey_gd, decompiled_line_to_disasm, &vu);
+		add_custom_viewer_popup_item(vu.ct, "Jump to Disasm", hotkey_gd, decompiled_line_to_disasm, &vu);
       }
       break;
 
-    case hxe_keyboard:
+	case hxe_keyboard:
       {
         vdui_t &vu = *va_arg(va, vdui_t *);
         int keycode = va_arg(va, int);
-        int shift = va_arg(va, int);
         // check for the hotkey
-        if ( lookup_key_code(keycode, shift, true) == hotcode_dg && shift == 0 )
+		if (keycode == hotcode_dg)
           return display_graph(&vu);
-		if ( lookup_key_code(keycode, shift, true) == hotcode_ce && shift == 0 )
+		if (keycode == hotcode_ce)
 			return display_objects(&vu);
-		if ( lookup_key_code(keycode, shift, true) == hotcode_rt && shift == 0 )
+		if (keycode == hotcode_rt)
           return reconstruct_type(&vu);
+		if (keycode == hotcode_gd)
+			return decompiled_line_to_disasm(&vu);
       }
       break;
 
@@ -421,9 +420,10 @@ int idaapi init(void)
 	const char *hxver = get_hexrays_version();
 	msg("Hex-rays version %s has been detected, %s ready to use\n", hxver, PLUGIN.wanted_name);
 	inited = true;
-	hotcode_dg = get_key_code(hotkey_dg); // convert the hotkey to binary form
-	hotcode_rt = get_key_code(hotkey_rt); // convert the hotkey to binary form
-
+	hotcode_dg = 84; // T
+	hotcode_ce = 79; // O
+	hotcode_rt = 82; // R
+	hotcode_gd = 74; // J
 	msg(
 		"\nHexRaysCodeXplorer plugin by @REhints loaded.\n\n\n");
 
