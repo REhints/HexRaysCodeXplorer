@@ -135,6 +135,7 @@ BOOL get_vtbl_info(ea_t ea_address, VTBL_info_t &vtbl_info)
 }
 
 
+
 qvector <VTBL_info_t> vtbl_t_list;
 qvector <qstring> vtbl_list; // list of vtables for ObjectExplrer view
 static BOOL process_vtbl(ea_t &ea_sect)
@@ -153,7 +154,7 @@ static BOOL process_vtbl(ea_t &ea_sect)
 				vftable_info_t.vtbl_name = get_short_name(vftable_info_t.ea_begin);
 
 				qstring vtbl_info_str;
-				vtbl_info_str.cat_sprnt(" 0x%x - 0x%x:  %s  methods count: %u", vftable_info_t.ea_begin, vftable_info_t.ea_end, vftable_info_t.vtbl_name, vftable_info_t.methods);
+				vtbl_info_str.cat_sprnt(" 0x%x - 0x%x:  %s  methods count: %d", vftable_info_t.ea_begin, vftable_info_t.ea_end, vftable_info_t.vtbl_name.c_str(), vftable_info_t.methods);
 				vtbl_list.push_back(vtbl_info_str);
 
 				vtbl_t_list.push_back(vftable_info_t);
@@ -169,8 +170,26 @@ static BOOL process_vtbl(ea_t &ea_sect)
 	return(FALSE);
 }
 
+bool get_vbtbl_by_ea(ea_t vtbl_addr, VTBL_info_t &vtbl) {
+	bool result = false;
 
-tid_t create_vtbl_struct(ea_t vtbl_addr, char* vtbl_name, uval_t idx, unsigned int* vtbl_len = NULL)
+	search_objects(false);
+
+	qvector <VTBL_info_t>::iterator vtbl_iter;
+
+	for (vtbl_iter = vtbl_t_list.begin(); vtbl_iter != vtbl_t_list.end(); vtbl_iter++) {
+		if ((*vtbl_iter).ea_begin == vtbl_addr) {
+			vtbl =  *vtbl_iter;
+			result = true;
+			break;
+		}
+	}
+
+	return result;
+}
+
+
+tid_t create_vtbl_struct(ea_t vtbl_addr, ea_t vtbl_addr_end, char* vtbl_name, uval_t idx, unsigned int* vtbl_len)
 {
 	qstring struc_name = vtbl_name;
 	tid_t id = add_struc(BADADDR, struc_name.c_str());
@@ -188,7 +207,7 @@ tid_t create_vtbl_struct(ea_t vtbl_addr, char* vtbl_name, uval_t idx, unsigned i
 
 	ea_t ea = vtbl_addr;
 	int offset = 0;
-	while (TRUE)
+	while (ea < vtbl_addr_end)
 	{
 		offset = ea - vtbl_addr;
 		qstring method_name;
@@ -201,7 +220,8 @@ tid_t create_vtbl_struct(ea_t vtbl_addr, char* vtbl_name, uval_t idx, unsigned i
 		char* struc_member_name = NULL;
 		if (isFunc(method_flags))
 		{
-			if ((method_name = get_short_name(method_ea)) != NULL)
+			method_name = get_short_name(method_ea);
+			if (method_name.length() != 0)
 				struc_member_name = (char*)method_name.c_str();
 		}
 
@@ -277,26 +297,33 @@ void process_rtti()
 //---------------------------------------------------------------------------
 // Handle VTBL & RTTI 
 //---------------------------------------------------------------------------
-void search_objects()
+
+bool bScaned = false;
+
+void search_objects(bool bForce)
 {
-	segment_t *text_seg = get_segm_by_name(".text");
+	if(!bScaned || bForce) {
+		segment_t *text_seg = get_segm_by_name(".text");
 
-	if (text_seg != NULL)
-	{
-		ea_t ea_text = text_seg->startEA;
-		while (ea_text <= text_seg->endEA)
-			process_vtbl(ea_text);
+		if (text_seg != NULL)
+		{
+			ea_t ea_text = text_seg->startEA;
+			while (ea_text <= text_seg->endEA)
+				process_vtbl(ea_text);
+		}
+
+		segment_t *rdata_seg = get_segm_by_name(".rdata");
+		if (rdata_seg != NULL)
+		{
+			ea_t ea_rdata = rdata_seg->startEA;
+			while (ea_rdata <= rdata_seg->endEA)
+				process_vtbl(ea_rdata);
+		}
+
+		process_rtti();
+
+		bScaned = true;
 	}
-
-	segment_t *rdata_seg = get_segm_by_name(".rdata");
-	if (rdata_seg != NULL)
-	{
-		ea_t ea_rdata = rdata_seg->startEA;
-		while (ea_rdata <= rdata_seg->endEA)
-			process_vtbl(ea_rdata);
-	}
-
-	process_rtti();
 }
 
 
@@ -311,7 +338,7 @@ static bool idaapi make_vtbl_struct_cb(void *ud)
 	VTBL_info_t vtbl_t = vtbl_t_list[current_line_pos];
 	tid_t id = add_struc(BADADDR, vtbl_t.vtbl_name.c_str());
 
-	create_vtbl_struct(vtbl_t.ea_begin, (char*)vtbl_t.vtbl_name.c_str(), id);
+	create_vtbl_struct(vtbl_t.ea_begin, vtbl_t.ea_end, (char*)vtbl_t.vtbl_name.c_str(), id);
 
 	return true;
 }

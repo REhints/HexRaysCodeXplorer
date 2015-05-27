@@ -304,10 +304,12 @@ static bool idaapi decompile_func(vdui_t &vu)
 		  while((proc_name > tmp) && (*(proc_name - 1) != '>'))
 			  proc_name --;
 
-		  func_t * func = get_func_by_name(proc_name);
-		  if(func != NULL)
-		  {
-			  vdui_t * decompiled_window = open_pseudocode(func->startEA, -1);
+		  if (proc_name != tmp) {
+			  func_t * func = get_func_by_name(proc_name);
+			  if(func != NULL)
+			  {
+				  vdui_t * decompiled_window = open_pseudocode(func->startEA, -1);
+			  }
 		  }
 	  }
   }
