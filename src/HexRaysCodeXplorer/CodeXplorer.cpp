@@ -28,6 +28,7 @@
 #include "GraphBuilder.h"
 #include "ObjectExplorer.h"
 #include "ObjectType.h"
+#include <name.hpp>
 
 
 // Hex-Rays API pointer
@@ -257,17 +258,16 @@ func_t * get_func_by_name(const char *func_name)
 	size_t func_total = get_func_qty();
 	if(func_total > 0)
 	{
-		char tmp[1024];
+		qstring s;
 		for (unsigned int i = 0 ; i < func_total - 1 ; i ++)
 		{
 			func_t * func = getn_func(i);
 			if(func != NULL)
 			{
-				memset(tmp, 0x00, sizeof(tmp));
-				char *func_n = get_func_name(func->startEA, tmp, sizeof(tmp));
-				if(func_n != NULL)
+				ssize_t length = get_visible_name(&s, func->startEA);
+				if (length > 0)
 				{
-					if(!strcmp(func_name, func_n))
+					if(!strcmp(func_name, s.c_str()))
 					{
 						result_func = func;
 						break;
