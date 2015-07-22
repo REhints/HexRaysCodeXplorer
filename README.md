@@ -12,7 +12,14 @@
 Hex-Rays Decompiler plugin for better code navigation in RE process of C++ applications or code reconstruction of modern malware as Stuxnet, Flame, Equation ... :octocat:
 
 __Contributors__: 
-Alex Matrosov ([@matrosov](https://github.com/matrosov)) and Eugene Rodionov ([@rodionov](https://github.com/rodionov)) 
+
+Alex Matrosov ([@matrosov](https://github.com/matrosov))
+
+Eugene Rodionov ([@rodionov](https://github.com/rodionov)) 
+
+Rodrigo Branco ([@rrbranco](https://github.com/rrbranco))
+
+Gabriel Barbosa ([@gabrielnb](https://github.com/gabrielnb))
 
 __HexRaysCodeXplorer__ - Hex-Rays Decompiler plugin for easier code navigation. Right-click context menu in the Pseudocode window shows CodeXplorer plugin commands: 
 
