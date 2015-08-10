@@ -74,7 +74,7 @@ __Object Explorer supports folowing features:__
 
 __Conference talks about CodeXplorer plugin:__
 * **2015**
- * "Distributing the REconstruction of High-Level IR for Large Scale Malware Analysis", BHUS [slides] 
+ * "Distributing the REconstruction of High-Level IR for Large Scale Malware Analysis", BHUS [[slides]](https://github.com/REhints/Publications/blob/master/Conferences/BH'2015/BH_2015.pdf) 
  * "Object Oriented Code RE with HexraysCodeXplorer", NSEC [[slides]](https://github.com/REhints/Publications/raw/master/Conferences/Nsec'2015/nsec_2015.pdf)
 * **2014**
  * "HexRaysCodeXplorer: object oriented RE for fun and profit", H2HC [[slides]](https://github.com/REhints/Publications/blob/master/Conferences/ZeroNights'2013/ZN_2013_pdf.pdf)
