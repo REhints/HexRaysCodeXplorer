@@ -23,11 +23,19 @@
 	==============================================================================
 */
 
-
 #include "Common.h"
 #include "GraphBuilder.h"
 #include "ObjectExplorer.h"
-#include "ObjectType.h"
+#include "TypeReconstructor.h"
+#include "TypeExtractor.h"
+#include "CtreeExtractor.h"
+#include "Utility.h"
+
+#include "Debug.h"
+
+extern plugin_t PLUGIN;
+
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 
 
 // Hex-Rays API pointer
@@ -37,16 +45,27 @@ static bool inited = false;
 
 // Hotkey for the new command
 static const char hotkey_dg[] = "T";
-static ushort hotcode_dg;
+static int hotcode_dg;
 
 static const char hotkey_ce[] = "O";
-static ushort hotcode_ce;
+static int hotcode_ce;
 
 static const char hotkey_rt[] = "R";
-static ushort hotcode_rt;
+static int hotcode_rt;
 
 static const char hotkey_gd[] = "J";
-static ushort hotcode_gd;
+static int hotcode_gd;
+
+static const char hotkey_et[] = "S";
+static int hotcode_et;
+
+static const char hotkey_ec[] = "C";
+static int hotcode_ec;
+
+static const char hotkey_vc[] = "V";
+static int hotcode_vc;
+
+static const char * crypto_prefix_param = "CRYPTO";
 
 
 
@@ -75,6 +94,7 @@ int graph_builder_t::add_node(citem_t *i)
   if ( reverse.find(i) != reverse.end() )
   {
     warning("bad ctree - duplicate nodes!");
+	logmsg(DEBUG, "bad ctree - duplicate nodes!");
     return -1;
   }
 
@@ -212,6 +232,7 @@ static int idaapi gr_callback(void *ud, int code, va_list va)
 }
 
 
+// Display ctree graph for current decompiled function
 static bool idaapi display_graph(void *ud)
 {
 	vdui_t &vu = *(vdui_t *)ud;
@@ -231,6 +252,7 @@ static bool idaapi display_graph(void *ud)
 	if (hwnd == NULL)
 	{
 		warning("Ctree Graph window already open. Switching to it.");
+		logmsg(DEBUG, "Ctree Graph window already open. Switching to it.");
 		form = find_tform(title.c_str());
 		if (form != NULL)
 			switchto_tform(form, true);
@@ -250,9 +272,10 @@ static bool idaapi display_graph(void *ud)
 	return true;
 }
 
+
 // Get pointer to func_t by routine name
 func_t * get_func_by_name(const char *func_name)
-{
+{ 
 	func_t * result_func = NULL;
 	size_t func_total = get_func_qty();
 	if(func_total > 0)
@@ -280,6 +303,24 @@ func_t * get_func_by_name(const char *func_name)
 }
 
 
+static char* get_expr_name(citem_t *citem) 
+{
+	static char citem_name[1024];
+	memset(citem_name, 0x00, sizeof(citem_name));
+	if (citem->is_expr())
+	{
+		cexpr_t *e = (cexpr_t *)citem;
+
+		// retrieve the name of the routine
+		e->print1(citem_name, sizeof(citem_name), NULL);
+		tag_remove(citem_name, citem_name, sizeof(citem_name));
+
+		return citem_name;
+	}
+	return citem_name;
+}
+
+
 static bool idaapi decompile_func(vdui_t &vu)
 {
   // Determine the ctree item to highlight
@@ -292,19 +333,14 @@ static bool idaapi decompile_func(vdui_t &vu)
 	  if(highlight->is_expr())
 	  {
 		  cexpr_t *e = (cexpr_t *)highlight;
-		  
-		  // retrieve the name of the routine
-		  char tmp[1024];
-		  memset(tmp, 0x00, sizeof(tmp));
-		  e->print1(tmp, sizeof(tmp), NULL);
-		  tag_remove(tmp, tmp, sizeof(tmp));
 
-		  char *proc_name = tmp + strlen(tmp);
+		  char *citem_name = get_expr_name(highlight);
+		  char *proc_name = citem_name + strlen(citem_name);
 
-		  while((proc_name > tmp) && (*(proc_name - 1) != '>'))
+		  while((proc_name > citem_name) && (*(proc_name - 1) != '>'))
 			  proc_name --;
 
-		  if (proc_name != tmp) {
+		  if (proc_name != citem_name) {
 			  func_t * func = get_func_by_name(proc_name);
 			  if(func != NULL)
 			  {
@@ -315,32 +351,6 @@ static bool idaapi decompile_func(vdui_t &vu)
   }
   
   return true;                    
-}
-
-
-// extract ctree custom view
-static bool idaapi ctree_into_custom_view(void *ud) // TODO
-{
-	vdui_t &vu = *(vdui_t *)ud;
-	vu.get_current_item(USE_KEYBOARD);
-	citem_t *highlight = vu.item.is_citem() ? vu.item.e : NULL;
-
-	if (highlight != NULL)
-	{
-		// if it is an expression
-		if (highlight->is_expr())
-		{
-			cexpr_t *e = (cexpr_t *)highlight;
-
-			// retrieve the name of the routine
-			char tmp[1024];
-			memset(tmp, 0x00, sizeof(tmp));
-			e->print1(tmp, sizeof(tmp), NULL);
-			tag_remove(tmp, tmp, sizeof(tmp));
-		}
-	}
-
-	return true;
 }
 
 
@@ -357,6 +367,30 @@ static bool idaapi decompiled_line_to_disasm(void *ud)
 }
 
 
+// extract ctree to custom view
+static bool idaapi current_citem_to_custom_view(void *ud)
+{
+	vdui_t &vu = *(vdui_t *)ud;
+	vu.get_current_item(USE_KEYBOARD);
+	citem_t *highlight_item = vu.item.is_citem() ? vu.item.e : NULL;
+	ctree_dumper_t ctree_dump;
+
+	if (highlight_item != NULL)
+	{
+		char ctree_item[MAXSTR];
+		ctree_dump.parse_ctree_item(highlight_item, ctree_item, MAXSTR);
+
+		if (highlight_item->is_expr())
+		{
+			cexpr_t *e = (cexpr_t *)highlight_item;
+			qstring item_name = get_expr_name(highlight_item);
+			show_citem_custom_view(&vu, ctree_item, item_name);
+		}
+	}
+	return true;
+}
+
+
 // display Object Explorer
 static bool idaapi display_objects(void *ud)
 {
@@ -366,6 +400,7 @@ static bool idaapi display_objects(void *ud)
 
 	return true;
 }
+
 
 //--------------------------------------------------------------------------
 // This callback handles various hexrays events.
@@ -377,9 +412,12 @@ static int idaapi callback(void *, hexrays_event_t event, va_list va)
       {
         vdui_t &vu = *va_arg(va, vdui_t *);
         // add new command to the popup menu
-        add_custom_viewer_popup_item(vu.ct, "Display Graph", hotkey_dg, display_graph, &vu);
+        add_custom_viewer_popup_item(vu.ct, "Display Ctree Graph", hotkey_dg, display_graph, &vu);
 		add_custom_viewer_popup_item(vu.ct, "Object Explorer", hotkey_ce, display_objects, &vu);
 		add_custom_viewer_popup_item(vu.ct, "REconstruct Type", hotkey_rt, reconstruct_type, &vu);
+		add_custom_viewer_popup_item(vu.ct, "Extract Types to File", hotkey_et, extract_all_types, &vu);
+		add_custom_viewer_popup_item(vu.ct, "Extract Ctrees to File", hotkey_ec, extract_all_ctrees, &vu);
+		add_custom_viewer_popup_item(vu.ct, "Ctree Item View", hotkey_vc, current_citem_to_custom_view, &vu);
 		add_custom_viewer_popup_item(vu.ct, "Jump to Disasm", hotkey_gd, decompiled_line_to_disasm, &vu);
       }
       break;
@@ -395,6 +433,12 @@ static int idaapi callback(void *, hexrays_event_t event, va_list va)
 			return display_objects(&vu);
 		if (keycode == hotcode_rt)
           return reconstruct_type(&vu);
+		if (keycode == hotcode_et)
+			return extract_all_types(&vu);
+		if (keycode == hotcode_ec)
+			return extract_all_ctrees(&vu);
+		if (keycode == hotcode_vc)
+			return current_citem_to_custom_view(&vu);
 		if (keycode == hotcode_gd)
 			return decompiled_line_to_disasm(&vu);
       }
@@ -412,22 +456,85 @@ static int idaapi callback(void *, hexrays_event_t event, va_list va)
   return 0;
 }
 
+void parse_plugin_options(qstring &options, bool &dump_types, bool &dump_ctrees, qstring &crypto_prefix) {
+	 qvector<qstring> params;
+	 qstring splitter = ":";
+	 split_qstring(options, splitter, params);
+
+	 dump_types = false;
+	 dump_ctrees = false;
+	 crypto_prefix = "";
+	 
+	 for (qvector<qstring>::iterator param_iter = params.begin() ; param_iter != params.end() ; param_iter ++) {
+		 if ((*param_iter) == "dump_types") {
+			 dump_types = true;
+		 } else if ((*param_iter) == "dump_ctrees") {
+			 dump_ctrees = true;
+		 } else if (((*param_iter).length() > strlen(crypto_prefix_param)) && ((*param_iter).find(crypto_prefix_param) == 0)) {
+			 crypto_prefix = (*param_iter).substr(strlen(crypto_prefix_param));
+		 } else {
+			 qstring message = "Invalid argument: ";
+			 message += (*param_iter) + "\n";
+			 logmsg(INFO, message.c_str());
+		 }
+	 }
+}
+
 //--------------------------------------------------------------------------
 // Initialize the plugin.
 int idaapi init(void)
 {
+	logmsg(INFO, "\nHexRaysCodeXplorer plugin by @REhints loaded.\n\n\n");
+
 	if ( !init_hexrays_plugin() )
-    return PLUGIN_SKIP; // no decompiler
+		return PLUGIN_SKIP; // no decompiler
+	bool dump_types = false,
+	     dump_ctrees = false;
+	qstring crypto_prefix;
+	
+	qstring options = get_plugin_options(PLUGIN.wanted_name);
+	parse_plugin_options(options, dump_types, dump_ctrees, crypto_prefix);
+
 	install_hexrays_callback(callback, NULL);
 	const char *hxver = get_hexrays_version();
-	msg("Hex-rays version %s has been detected, %s ready to use\n", hxver, PLUGIN.wanted_name);
+	logmsg(INFO, "Hex-rays version %s has been detected, %s ready to use\n", hxver, PLUGIN.wanted_name);
 	inited = true;
 	hotcode_dg = 84; // T
 	hotcode_ce = 79; // O
 	hotcode_rt = 82; // R
 	hotcode_gd = 74; // J
-	msg(
-		"\nHexRaysCodeXplorer plugin by @REhints loaded.\n\n\n");
+	hotcode_et = 83; // S
+	hotcode_ec = 67; // C
+	hotcode_vc = 86; // V
+
+	static const char hotkey_vc[] = "V";
+	static int hotcode_vc;
+	
+	if (dump_ctrees || dump_types) {
+		autoWait();
+
+		if (dump_types) {
+			qstring options_msg = "Dumping types\n";
+			logmsg(DEBUG, options_msg.c_str());
+			extract_all_types(NULL);
+			
+			int file_id = qcreate("codexplorer_types_done", 511);
+			if (file_id != -1)
+				qclose(file_id);
+		}
+
+		if (dump_ctrees) {
+			logmsg(DEBUG, "Dumping ctrees\n");
+			dump_funcs_ctree(NULL, crypto_prefix);
+			
+			int file_id = qcreate("codexplorer_ctrees_done", 511);
+			if (file_id != -1)
+				qclose(file_id);
+		}
+
+		logmsg(INFO, "\nHexRaysCodeXplorer plugin by @REhints exiting...\n\n\n");
+		//qexit(0);
+	}
 
 	return PLUGIN_KEEP;
 }
@@ -437,6 +544,7 @@ void idaapi term(void)
 {
   if ( inited )
   {
+    logmsg(INFO, "\nHexRaysCodeXplorer plugin by @REhints terminated.\n\n\n");
     remove_hexrays_callback(callback, NULL);
     term_hexrays_plugin();
   }
@@ -450,7 +558,7 @@ void idaapi run(int)
 }
 
 //--------------------------------------------------------------------------
-static char comment[] = "HexRaysCodeXplorer plugin";
+static char comment[] = "HexRaysCodeXplorer plugin by @REhints";
 
 //--------------------------------------------------------------------------
 //
@@ -467,6 +575,6 @@ plugin_t PLUGIN =
   comment,              // long comment about the plugin
                         // it could appear in the status line or as a hint
   "",                   // multiline help about the plugin
-  "HexRaysCodeXplorer", // the preferred short name of the plugin
+  "HexRaysCodeXplorer by @REhints", // the preferred short name of the plugin (PLUGIN.wanted_name)
   ""                    // the preferred hotkey to run the plugin
 };

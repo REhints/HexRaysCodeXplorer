@@ -22,56 +22,20 @@
 	==============================================================================
 */
 
-#ifndef __H_COMMON__
-#define __H_COMMON__
+#ifndef __H_TYPEEXTRACTOR__
+#define __H_TYPEEXTRACTOR__
 
 #pragma once
 
-#ifndef __LINUX__
-#pragma warning (disable: 4996 4800 )
-#else
-#pragma GCC diagnostic ignored "-fpermissive"
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-#endif
+#include "ObjectExplorer.h"
 
-#ifndef __LINUX__
-#include <windows.h>
-#include <tchar.h>
-#else
-#include "Linux.h"
-#endif
+bool idaapi extract_all_types(void *ud);
 
-#include <hexrays.hpp>
-#include <ida.hpp>
-#include <idp.hpp>
-#include <graph.hpp>
-#include <loader.hpp>
-#include <kernwin.hpp>
-#include <netnode.hpp>
-#include <gdl.hpp>
-#include <struct.hpp>
-#include <bytes.hpp>
-#include <xref.hpp>
-#include <name.hpp>
-#include <funcs.hpp>
-#include <segment.hpp>
-#include <search.hpp>
-#include <auto.hpp>
-#include <entry.hpp>
-#include <demangle.hpp>
+bool idaapi find_var(void *ud);
+bool idaapi find_var(cfuncptr_t cfunc, qstring vtbl_name, qstring &var_name);
 
-#include <cstring>
-#include <cstdarg>
-#include <cstdint>
+tid_t idaapi merge_types(qvector<qstring> types_to_merge, qstring type_name);
 
-#include <iterator>
-#include <string>
-#include <vector>
-#include <list>
-#include <set>
-#include <map>
-#include <iostream>
-#include <sstream>
+void idaapi dump_type_info(int file_id, VTBL_info_t vtbl_info, qstring type_name);
 
 #endif
-

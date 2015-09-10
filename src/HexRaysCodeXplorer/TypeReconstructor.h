@@ -22,25 +22,22 @@
 	==============================================================================
 */
 
+#ifndef __H_OBJECTTYPE__
+#define __H_OBJECTTYPE__
+
 #pragma once
 
-#include <Windows.h>
-#include <tchar.h>
-#include <iterator>
-#include <string>
-#include <vector>
-#include <list>
-#include <map>
-#include <iostream>
+#include "Common.h"
+#include "ObjectExplorer.h"
 
 
 using namespace std;
-
+/*
 typedef std::basic_string<TCHAR>	TSTRING;
 typedef std::basic_string<WCHAR>	WSTRING;
 typedef std::basic_string<CHAR>		ASTRING;
 typedef std::vector<UCHAR>			BUFFER;
-
+*/
 #ifdef _UNICODE
 #define tcout						std::wcout
 #else
@@ -49,3 +46,7 @@ typedef std::vector<UCHAR>			BUFFER;
 
 
 bool idaapi reconstruct_type(void *ud);
+bool idaapi reconstruct_type(cfuncptr_t cfunc, qstring var_name, qstring type_name);
+
+
+#endif

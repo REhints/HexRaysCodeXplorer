@@ -25,158 +25,170 @@
 
 #include "Common.h"
 #include "ObjectExplorer.h"
+#include "ObjectFormatMSVC.h"
+#include "Utility.h"
 
-#include <ida.hpp>
-#include <idp.hpp>
-#include <bytes.hpp>
-#include <xref.hpp>
-#include <name.hpp>
-#include <funcs.hpp>
-#include <segment.hpp>
-#include <struct.hpp>
-#include <loader.hpp>
-#include <search.hpp>
+#include "Debug.h"
 
-#include <string.h>
-#include <stdarg.h>
+#ifndef __LINUX__
 #include <tchar.h>
+#else
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
+
+qvector <VTBL_info_t> vtbl_t_list;	// list of vtables found in the binary
+qvector <qstring> vtbl_list;		// list of string for ObjectExplrer vtables view
+
+extern std::map<ea_t, vftable::vtinfo> rtti_vftables;
+
+void free_vtable_lists() {
+	vtbl_t_list.clear();
+	vtbl_list.clear();
+}
 
 
 //---------------------------------------------------------------------------
 // VTBL code parsing
 //---------------------------------------------------------------------------
 
-LPCTSTR get_text_disasm(ea_t ea)
-{
+const char * get_text_disasm(ea_t ea) {
 	static char disasm_buff[MAXSTR];
 	disasm_buff[0] = disasm_buff[MAXSTR - 1] = 0;
 
 	if(generate_disasm_line(ea, disasm_buff, (sizeof(disasm_buff) - 1)))
 		tag_remove(disasm_buff, disasm_buff, (sizeof(disasm_buff) - 1));
 
-	return(disasm_buff);
+	return disasm_buff;
 }
 
+static bool check_vtable_load_instruction(ea_t ea_code) {
+	bool is_move_xref = false;
+	const char *disasm_line = get_text_disasm(ea_code);
+	if((strncmp(disasm_line, "mov ", 4) == 0) && (qstrstr(disasm_line + 4, " offset ") != NULL)) {
+		is_move_xref = true;
+	} else if ((strncmp(disasm_line, "lea", 3) == 0)) {
+		is_move_xref = true;
+	}
 
-BOOL get_vtbl_info(ea_t ea_address, VTBL_info_t &vtbl_info)
+	return is_move_xref;
+}
+
+//---------------------------------------------------------------------------
+// Try to find vtable at the specified address
+//---------------------------------------------------------------------------
+static bool get_vtbl_info(ea_t ea_address, VTBL_info_t &vtbl_info)
 {
-	flags_t flags = getFlags(ea_address);  
-	if(!(hasRef(flags) || has_any_name(flags) && (isDwrd(flags) || isUnknown(flags))))
-		return(FALSE);
-	else
-	{
-		BOOL is_move_xref = FALSE;
+	flags_t flags = get_flags_novalue(ea_address);
+	if (hasRef(flags) && has_any_name(flags) && (isEa(flags) || isUnknown(flags))) {
+		bool is_move_xref = false;
+		
 		ea_t ea_code_ref = get_first_dref_to(ea_address);
-		if(ea_code_ref && (ea_code_ref != BADADDR))
-		{
-			do 
-			{	
-				if(isCode(getFlags(ea_code_ref)))
-				{
-					LPCTSTR disasm_line = get_text_disasm(ea_code_ref);
-					if((*((PUINT) disasm_line) == 0x20766F6D /*"mov "*/) && (strstr(disasm_line+4, " offset ") != NULL))
-					{
-						is_move_xref = TRUE;
-						break;
-					}
+		if(ea_code_ref && (ea_code_ref != BADADDR)) {
+			do {	
+				if(isCode(get_flags_novalue(ea_code_ref)) && check_vtable_load_instruction(ea_code_ref)) {
+					is_move_xref = true;
+					break;
 				}			
 				
 				ea_code_ref = get_next_dref_to(ea_address, ea_code_ref);
 
 			} while(ea_code_ref && (ea_code_ref != BADADDR));		
 		}
-		if(!is_move_xref)
-			return(FALSE);
-
-		ZeroMemory(&vtbl_info, sizeof(VTBL_info_t));
-
-		//get_name(BADADDR, ea_address, vtbl_info.vtbl_name, (MAXSTR - 1));
-		get_ea_name(&vtbl_info.vtbl_name, ea_address);
-
-		ea_t ea_start = vtbl_info.ea_begin = ea_address;
-		while(TRUE)
-		{
-			flags_t index_flags = getFlags(ea_address);
-			if(!(hasValue(index_flags) && (isDwrd(index_flags) || isUnknown(index_flags))))
-				break;
-
-			ea_t ea_index_value = get_32bit(ea_address);
-			if(!(ea_index_value && (ea_index_value != BADADDR)))
-				break;
-
-			if(ea_address != ea_start)
-				if(hasRef(index_flags))
+		
+		if(is_move_xref) {
+			ZeroMemory(&vtbl_info, sizeof(VTBL_info_t));
+			
+			get_ea_name(&vtbl_info.vtbl_name, ea_address);
+			
+			ea_t ea_start = vtbl_info.ea_begin = ea_address;
+			
+			while(true) {
+				flags_t index_flags = get_flags_novalue(ea_address);
+				if(!(isEa(index_flags) || isUnknown(index_flags)))
 					break;
 
-			flags_t value_flags = getFlags(ea_index_value);
-			if(!isCode(value_flags))
-			{
-				break;
-			}
-			else
-				if(isUnknown(index_flags))
-				{						
-					doDwrd(ea_address, sizeof(DWORD));			
+				ea_t ea_index_value = getEa(ea_address);
+				if(!(ea_index_value && (ea_index_value != BADADDR)))
+					break;
+
+				if(ea_address != ea_start)
+					if(hasRef(index_flags))
+						break;
+
+				flags_t value_flags = get_flags_novalue(ea_index_value);
+				if(!isCode(value_flags)) {
+					break;
+				} else {
+					if(isUnknown(index_flags)) {
+#ifndef __EA64__
+						doDwrd(ea_address, sizeof(ea_t));
+#else
+						doQwrd(ea_address, sizeof(ea_t));
+#endif
+					}
 				}
 
-				ea_address += sizeof(UINT);
-		};
+				ea_address += sizeof(ea_t);
+			};
 
-		if((vtbl_info.methods = ((ea_address - ea_start) / sizeof(UINT))) > 0)
-		{
-			vtbl_info.ea_end = ea_address;	
-			return(TRUE);
-		}
-		else
-		{
-			return(FALSE);
+			if((vtbl_info.methods = ((ea_address - ea_start) / sizeof(ea_t))) > 0) {
+				vtbl_info.ea_end = ea_address;	
+				return true;
+			}
 		}
 	}
+
+	return false;
 }
 
-
-
-qvector <VTBL_info_t> vtbl_t_list;
-qvector <qstring> vtbl_list; // list of vtables for ObjectExplrer view
-static BOOL process_vtbl(ea_t &ea_sect)
+//---------------------------------------------------------------------------
+// Try to find and parse vtable at the specified address
+//---------------------------------------------------------------------------
+static void process_vtbl(ea_t &ea_sect)
 {
 	VTBL_info_t vftable_info_t;
+	// try to parse vtable at this address
 	if(get_vtbl_info(ea_sect, vftable_info_t))
 	{
 		ea_sect = vftable_info_t.ea_end;
-		ea_t ea_assumed;
-		verify_32_t((vftable_info_t.ea_begin - 4), ea_assumed);
 
-		if(vftable_info_t.methods > 1)
-		{
-			if(has_user_name(getFlags(vftable_info_t.ea_begin)))
-			{							
+		if(vftable_info_t.methods > 1) {
+			// check if we have already processed this table
+			if (rtti_vftables.count(vftable_info_t.ea_begin) == 0) {
 				vftable_info_t.vtbl_name = get_short_name(vftable_info_t.ea_begin);
 
 				qstring vtbl_info_str;
-				vtbl_info_str.cat_sprnt(" 0x%x - 0x%x:  %s  methods count: %d", vftable_info_t.ea_begin, vftable_info_t.ea_end, vftable_info_t.vtbl_name.c_str(), vftable_info_t.methods);
+#ifndef  __EA64__
+				vtbl_info_str.cat_sprnt(" 0x%0x - 0x%0x:  %s  methods count: %d", vftable_info_t.ea_begin, vftable_info_t.ea_end, vftable_info_t.vtbl_name.c_str(), vftable_info_t.methods);
+#else
+				vtbl_info_str.cat_sprnt(" 0x%016llx - 0x%016llx:  %s  methods count: %d", vftable_info_t.ea_begin, vftable_info_t.ea_end, vftable_info_t.vtbl_name.c_str(), vftable_info_t.methods);
+#endif // !#ifndef __EA64__
+
+				
+			
 				vtbl_list.push_back(vtbl_info_str);
-
 				vtbl_t_list.push_back(vftable_info_t);
-
-				return(TRUE);
 			}
+			
+			ea_sect = vftable_info_t.ea_end;
+			return;
 		}
-
-		return(FALSE);
 	}
 
-	ea_sect += sizeof(UINT);	
-	return(FALSE);
+	// nothing found: increment ea_sect by size of the pointer to continue search at the next location
+	ea_sect += sizeof(ea_t);
+	return;
 }
 
+//---------------------------------------------------------------------------
+// Get vtable structure from the list by address
+//---------------------------------------------------------------------------
 bool get_vbtbl_by_ea(ea_t vtbl_addr, VTBL_info_t &vtbl) {
 	bool result = false;
 
 	search_objects(false);
 
 	qvector <VTBL_info_t>::iterator vtbl_iter;
-
 	for (vtbl_iter = vtbl_t_list.begin(); vtbl_iter != vtbl_t_list.end(); vtbl_iter++) {
 		if ((*vtbl_iter).ea_begin == vtbl_addr) {
 			vtbl =  *vtbl_iter;
@@ -188,13 +200,15 @@ bool get_vbtbl_by_ea(ea_t vtbl_addr, VTBL_info_t &vtbl) {
 	return result;
 }
 
-
+//---------------------------------------------------------------------------
+// Create a structurte in IDA local types which represents vtable
+//---------------------------------------------------------------------------
 tid_t create_vtbl_struct(ea_t vtbl_addr, ea_t vtbl_addr_end, char* vtbl_name, uval_t idx, unsigned int* vtbl_len)
 {
 	qstring struc_name = vtbl_name;
 	tid_t id = add_struc(BADADDR, struc_name.c_str());
-	if (id == BADADDR)
-	{
+	
+	if (id == BADADDR) {
 		struc_name.clear();
 		struc_name = askstr(HIST_IDENT, NULL, "Default name %s not correct. Enter other structure name: ", struc_name.c_str());
 		id = add_struc(BADADDR, struc_name.c_str());
@@ -207,37 +221,37 @@ tid_t create_vtbl_struct(ea_t vtbl_addr, ea_t vtbl_addr_end, char* vtbl_name, uv
 
 	ea_t ea = vtbl_addr;
 	int offset = 0;
-	while (ea < vtbl_addr_end)
-	{
+
+	while (ea < vtbl_addr_end) {
 		offset = ea - vtbl_addr;
 		qstring method_name;
-		ea_t method_ea = get_long(ea);
+		ea_t method_ea = getEa(ea);
 
 		if (method_ea == 0) break;
 		if (!isEnabled(method_ea)) break;
 
 		flags_t method_flags = getFlags(method_ea);
 		char* struc_member_name = NULL;
-		if (isFunc(method_flags))
-		{
+		if (isFunc(method_flags)) {
 			method_name = get_short_name(method_ea);
 			if (method_name.length() != 0)
 				struc_member_name = (char*)method_name.c_str();
 		}
-
-		add_struc_member(new_struc, NULL, offset, dwrdflag(), NULL, 4);
-		if (struc_member_name)
-		{
-			if (!set_member_name(new_struc, offset, struc_member_name))
-			{
-				//get_name(NULL, method_ea, method_name, sizeof(method_name));
+#ifndef __EA64__
+		add_struc_member(new_struc, NULL, offset, dwrdflag(), NULL, sizeof(ea_t));
+#else
+		add_struc_member(new_struc, NULL, offset, qwrdflag(), NULL, sizeof(ea_t));
+#endif
+		if (struc_member_name) {
+			if (!set_member_name(new_struc, offset, struc_member_name)) {
 				get_ea_name(&method_name, method_ea);
 				set_member_name(new_struc, offset, struc_member_name);
 			}
 		}
 
-		ea = ea + 4;
+		ea = ea + sizeof(ea_t);
 		flags_t ea_flags = getFlags(ea);
+
 		if (has_any_name(ea_flags)) break;
 	}
 
@@ -245,51 +259,103 @@ tid_t create_vtbl_struct(ea_t vtbl_addr, ea_t vtbl_addr_end, char* vtbl_name, uv
 }
 
 
-//---------------------------------------------------------------------------
-// RTTI code parsing 
-// (simple code init in v1.1 will be redevelop in the following versions)
-//---------------------------------------------------------------------------
-
-// Find RTTI objects by signature
-ea_t find_RTTI(ea_t start_ea, ea_t end_ea)
+void find_vtables_rtti()
 {
-	// "2E 3F 41 56" == .?AV
-	return find_binary(start_ea, end_ea, "2E 3F 41 56", getDefaultRadix(), SEARCH_DOWN);
+	logmsg(DEBUG, "\nprocess_rtti()\n");
+
+	// get rtti_vftables map using rtti data
+	getRttiData();
+
+	// store this inormation in the lists
+	for (std::map<ea_t, vftable::vtinfo>::iterator it = rtti_vftables.begin(); it != rtti_vftables.end() ; it ++ ) {
+		VTBL_info_t vftable_info_t;
+		vftable_info_t.ea_begin = it->second.start;
+		vftable_info_t.ea_end = it->second.end;
+		vftable_info_t.methods = it->second.methodCount;
+		vftable_info_t.vtbl_name = it->second.type_info;
+
+		qstring vtbl_info_str;
+		vtbl_info_str.cat_sprnt(" 0x%x - 0x%x:  %s  methods count: %d", vftable_info_t.ea_begin, vftable_info_t.ea_end, vftable_info_t.vtbl_name.c_str(), vftable_info_t.methods);
+			
+		vtbl_list.push_back(vtbl_info_str);
+		vtbl_t_list.push_back(vftable_info_t);
+	}
 }
 
 
-// Demangle C++ class name
-char* get_demangle_name(ea_t class_addr)
+//---------------------------------------------------------------------------
+// Find vtables in the binary
+//---------------------------------------------------------------------------
+void find_vtables()
 {
-	char buf_name[MAXSTR];
-	int name_size = get_max_ascii_length(class_addr, ASCSTR_TERMCHR, true);
-	get_ascii_contents(class_addr, name_size, ASCSTR_TERMCHR, buf_name, sizeof(buf_name));
+	// set of the processed segments
+	std::set<segment_t *> segSet;
 
-	return qstrdup(buf_name);
-}
+	// start with .rdata section
+	logmsg(DEBUG, "search_objects() - going for .rdata");
+	if (segment_t *seg = get_segm_by_name(".rdata")) {
+		logmsg(DEBUG, "search_objects() - .rdata exist");
 
+		segSet.insert(seg);
+		
+		ea_t ea_text = seg->startEA;
+		while (ea_text <= seg->endEA)
+			process_vtbl(ea_text);
 
-qvector <qstring> rtti_list;
-qvector <ea_t> rtti_addr;
-void process_rtti()
-{
-	ea_t start = getnseg(0)->startEA;
-	while (TRUE)
+	} else {
+		logmsg(DEBUG, "search_objects() - .rdata does not exist");
+	}
+
+	// look also at .data section
+	logmsg(DEBUG, "search_objects() - going for .data");
+	int segCount = get_segm_qty();
 	{
-		ea_t rt = find_RTTI(start, inf.maxEA);
-		start = rt + 4;
+		for (int i = 0; i < segCount; i++) {
+			if (segment_t *seg = getnseg(i))
+			{
+				if (seg->type == SEG_DATA)
+				{
+					if (segSet.find(seg) == segSet.end())
+					{
+						char name[8];
+						if (get_true_segm_name(seg, name, SIZESTR(name)) == SIZESTR(".data"))
+						{
+							if (strcmp(name, ".data") == 0)
+							{
+								logmsg(DEBUG, "search_objects() - .data exist");
+								segSet.insert(seg);
+								ea_t ea_text = seg->startEA;
+								while (ea_text <= seg->endEA)
+									process_vtbl(ea_text);
+							}
+						}
+					}
+				}
+			}
+		}
+		
 
-		if (rt == BADADDR)
-			break;
-
-		char* name = get_demangle_name(rt);
-		ea_t rtd = rt - 8;
-
-		rtti_addr.push_back(rtd);
-
-		qstring tmp;
-		tmp.cat_sprnt(" 0x%x:  %s", rtd, name);
-		rtti_list.push_back(tmp);
+        // If still none found, try any remaining data type segments
+        if (vtbl_t_list.empty())
+        {
+			logmsg(DEBUG, "search_objects() - going for other data sections");
+            for (int i = 0; i < segCount; i++)
+            {
+                if (segment_t *seg = getnseg(i))
+                {
+                    if (seg->type == SEG_DATA)
+                    {
+                        if (segSet.find(seg) == segSet.end())
+                        {
+							segSet.insert(seg);
+                            ea_t ea_text = seg->startEA;
+							while (ea_text <= seg->endEA)
+								process_vtbl(ea_text);
+                        }
+                    }
+                }
+            }
+        }
 	}
 }
 
@@ -302,26 +368,18 @@ bool bScaned = false;
 
 void search_objects(bool bForce)
 {
-	if(!bScaned || bForce) {
-		segment_t *text_seg = get_segm_by_name(".text");
+	if (!bScaned || bForce) {
+		logmsg(DEBUG, "search_objects()");
 
-		if (text_seg != NULL)
-		{
-			ea_t ea_text = text_seg->startEA;
-			while (ea_text <= text_seg->endEA)
-				process_vtbl(ea_text);
-		}
+		// free previously found objects
+		free_vtable_lists();
 
-		segment_t *rdata_seg = get_segm_by_name(".rdata");
-		if (rdata_seg != NULL)
-		{
-			ea_t ea_rdata = rdata_seg->startEA;
-			while (ea_rdata <= rdata_seg->endEA)
-				process_vtbl(ea_rdata);
-		}
-
-		process_rtti();
-
+		// first search vtables using rtti information
+		find_vtables_rtti();
+		
+		// find all the other vtables
+		find_vtables();
+	
 		bScaned = true;
 	}
 }
@@ -331,7 +389,7 @@ void search_objects(bool bForce)
 // IDA Custom View Window Initialization 
 //---------------------------------------------------------------------------
 
-static int current_line_pos = NULL;
+static int current_line_pos = 0;
 
 static bool idaapi make_vtbl_struct_cb(void *ud)
 {	
@@ -343,49 +401,6 @@ static bool idaapi make_vtbl_struct_cb(void *ud)
 	return true;
 }
 
-
-// Popup window with RTTI objects list
-static bool idaapi ct_rtti_window_click(TCustomControl *v, int shift, void *ud)
-{
-	int x, y;
-	place_t *place = get_custom_viewer_place(v, true, &x, &y);
-	simpleline_place_t *spl = (simpleline_place_t *)place;
-	int line_num = spl->n;
-
-	ea_t cur_vt_ea = rtti_addr[line_num];
-	jumpto(cur_vt_ea);
-
-	return true;
-}
-
-
-static bool idaapi show_rtti_window_cb(void *ud)
-{
-	if (!rtti_list.empty() && !rtti_addr.empty())
-	{
-		HWND hwnd = NULL;
-		TForm *form = create_tform("RTTI Objects List", &hwnd);
-
-		object_explorer_info_t *si = new object_explorer_info_t(form);
-
-		qvector <qstring>::iterator rtti_iter;
-		for (rtti_iter = rtti_list.begin(); rtti_iter != rtti_list.end(); rtti_iter++)
-			si->sv.push_back(simpleline_t(*rtti_iter));
-
-		simpleline_place_t s1;
-		simpleline_place_t s2(si->sv.size() - 1);
-		si->cv = create_custom_viewer("", NULL, &s1, &s2, &s1, 0, &si->sv);
-		si->codeview = create_code_viewer(form, si->cv, CDVF_STATUSBAR);
-		set_custom_viewer_handlers(si->cv, NULL, NULL, NULL, ct_rtti_window_click, NULL, NULL, si);
-		open_tform(form, FORM_ONTOP | FORM_RESTORE);
-
-		return true;
-	}
-
-	warning("ObjectExplorer not found any RTTI objects ...");
-
-	return false;
-}
 
 
 // Popup window with VTBL XREFS
@@ -402,7 +417,7 @@ static void get_xrefs_to_vtbl()
 		xref_addr.push_back(addr);
 
 		qstring tmp;
-		tmp.cat_sprnt(" 0x%x:  %s", addr, name);
+		tmp.cat_sprnt(" 0x%x:  %s", addr, name.c_str());
 		xref_list.push_back(tmp);
 	}
 }
@@ -447,6 +462,7 @@ static bool idaapi show_vtbl_xrefs_window_cb(void *ud)
 	}
 
 	warning("ObjectExplorer not found any xrefs here ...");
+	logmsg(DEBUG, "ObjectExplorer not found any xrefs here ...");
 
 	return false;
 }
@@ -459,7 +475,6 @@ static void idaapi ct_object_explorer_popup(TCustomControl *v, void *ud)
 {
 	set_custom_viewer_popup_menu(v, NULL);
 	add_custom_viewer_popup_item(v, "Make VTBL_Srtruct", "S", make_vtbl_struct_cb, ud);
-	add_custom_viewer_popup_item(v, "Show RTTI objects list", "R", show_rtti_window_cb, ud);
 	add_custom_viewer_popup_item(v, "Show all XREFS to VTBL", "X", show_vtbl_xrefs_window_cb, ud);
 
 }
@@ -474,10 +489,6 @@ static bool idaapi ct_object_explorer_keyboard(TCustomControl * /*v*/, int key, 
 		{
 		case IK_ESCAPE:
 			close_tform(si->form, FORM_SAVE | FORM_CLOSE_LATER);
-			return true;
-
-		case 82: // R
-			show_rtti_window_cb(ud);
 			return true;
 
 		case 83: // S
@@ -586,6 +597,7 @@ void object_explorer_form_init()
 		if (hwnd == NULL)
 		{
 			warning("Object Explorer window already open. Switching to it.");
+			logmsg(DEBUG, "Object Explorer window already open. Switching to it.");
 			form = find_tform("Object Explorer");
 			if (form != NULL)
 				switchto_tform(form, true);
@@ -606,6 +618,8 @@ void object_explorer_form_init()
 		hook_to_notification_point(HT_UI, ui_object_explorer_callback, si);
 		open_tform(form, FORM_TAB | FORM_MENU | FORM_RESTORE);
 	}
-	else
+	else {
 		warning("ObjectExplorer not found any virtual tables here ...");
+		logmsg(DEBUG, "ObjectExplorer not found any virtual tables here ...");
+	}
 }

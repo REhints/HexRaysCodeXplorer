@@ -22,56 +22,41 @@
 	==============================================================================
 */
 
-#ifndef __H_COMMON__
-#define __H_COMMON__
-
 #pragma once
 
-#ifndef __LINUX__
-#pragma warning (disable: 4996 4800 )
-#else
+#ifdef __LINUX__
+
 #pragma GCC diagnostic ignored "-fpermissive"
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
+#include <stdint.h>
+#define UINT uint32_t
+#define PUINT uint32_t *
+#define CHAR int8_t
+#define UCHAR uint8_t
+#define TCHAR uint8_t
+#define WCHAR wchar_t
+#define BOOL bool
+#define TRUE true
+#define FALSE false
+#define LPCSTR char *const
+#define LPCTSTR char *const
+#define LPSTR char *
+#define WORD uint16_t
+#define DWORD uint32_t
+#define PDWORD DWORD*
+#define PVOID void*
+#define PINT int*
+#define UINT64 uint64_t
+
+#define ZeroMemory(dst, length) 	memset(dst, 0, length)
+
+/* Those are header annotations in Visual Studio and can be safely ignored */
+#define IN
+#define OUT
+#define __bcount(element) 
+
+/* Ugly but ... */
+#define sprintf_s snprintf
+#define _snprintf snprintf
 #endif
-
-#ifndef __LINUX__
-#include <windows.h>
-#include <tchar.h>
-#else
-#include "Linux.h"
-#endif
-
-#include <hexrays.hpp>
-#include <ida.hpp>
-#include <idp.hpp>
-#include <graph.hpp>
-#include <loader.hpp>
-#include <kernwin.hpp>
-#include <netnode.hpp>
-#include <gdl.hpp>
-#include <struct.hpp>
-#include <bytes.hpp>
-#include <xref.hpp>
-#include <name.hpp>
-#include <funcs.hpp>
-#include <segment.hpp>
-#include <search.hpp>
-#include <auto.hpp>
-#include <entry.hpp>
-#include <demangle.hpp>
-
-#include <cstring>
-#include <cstdarg>
-#include <cstdint>
-
-#include <iterator>
-#include <string>
-#include <vector>
-#include <list>
-#include <set>
-#include <map>
-#include <iostream>
-#include <sstream>
-
-#endif
-

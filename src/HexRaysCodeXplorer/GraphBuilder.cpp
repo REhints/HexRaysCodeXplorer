@@ -27,9 +27,7 @@
 #include "GraphBuilder.h"
 #include "ObjectExplorer.h"
 
-#include <windows.h>
-#include <list>
-#include <map>
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 
 
 bool callgraph_t::visited(citem_t *i, int *nid)
@@ -87,6 +85,7 @@ char * callgraph_t::get_node_label(int n, char *buf, int bufsize) const
 			ptr += qsnprintf(ptr, endp - ptr, " (m=%d)", e->m);
 			break;
 		case cot_obj: // v
+
 		case cot_var: // l
 			// Display object size for local variables and global data
 			ptr += qsnprintf(ptr, endp - ptr, ".%d", e->refwidth);
@@ -105,13 +104,12 @@ char * callgraph_t::get_node_label(int n, char *buf, int bufsize) const
 			break;
 		case cit_asm:
 			// Display instruction block address and size for asm-statements
-			ptr += qsnprintf(ptr, endp - ptr, " %a.%"FMT_Z, *i->casm->begin(), i->casm->size());
+			ptr += qsnprintf(ptr, endp - ptr, " %a.%" FMT_Z, *i->casm->begin(), i->casm->size());
 			break;
 		default:
 			break;
 		}
     
-		// The second line of the node contains the item address
 		ptr += qsnprintf(ptr, endp-ptr, "\nea: %a", item->ea);
 
 		if ( item->is_expr() && !e->type.empty() )
@@ -201,8 +199,8 @@ callgraph_t::nodeinfo_t *callgraph_t::get_info(int nid)
   return ret;
 }
 
-//--------------------------------------------------------------------------
 
+//--------------------------------------------------------------------------
 int callgraph_t::add(citem_t *i)
 {
 	// check if we are trying to add existing node
@@ -218,11 +216,13 @@ int callgraph_t::add(citem_t *i)
 	return ret_val;
 }
 
+
 //--------------------------------------------------------------------------
 callgraph_t::callgraph_t() : node_count(0)
 {
   cur_text[0] = '\0';
 }
+
 
 //--------------------------------------------------------------------------
 void callgraph_t::clear_edges()
@@ -240,7 +240,9 @@ graph_info_t::graph_info_t()
   gv = NULL;
 }
 
+
 //--------------------------------------------------------------------------
+// Create graph for current decompiled function
 graph_info_t * graph_info_t::create(ea_t func_ea, citem_t *highlighted)
 {
   graph_info_t *r;
@@ -268,6 +270,7 @@ graph_info_t * graph_info_t::create(ea_t func_ea, citem_t *highlighted)
   return r;
 }
 
+
 //--------------------------------------------------------------------------
 bool graph_info_t::get_title(ea_t func_ea, size_t num_inst, qstring *out)
 {
@@ -276,10 +279,11 @@ bool graph_info_t::get_title(ea_t func_ea, size_t num_inst, qstring *out)
   if ( get_func_name(func_ea, func_name, sizeof(func_name)) == NULL )
     return false;
 
-  out->sprnt("ctree graph of: %s %d", func_name, num_inst);
+  out->sprnt("Ctree Graph View: %s %d", func_name, num_inst);
   
   return true;
 }
+
 
 void graph_info_t::destroy(graph_info_t *gi)
 {

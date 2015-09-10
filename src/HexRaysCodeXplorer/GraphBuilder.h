@@ -22,6 +22,9 @@
 	==============================================================================
 */
 
+#ifndef __H_GRAPHBUILDER__
+#define __H_GRAPHBUILDER__
+
 #pragma once
 
 #include "Common.h"
@@ -124,3 +127,5 @@ public:
   static void destroy(graph_info_t *gi);
   static bool get_title(ea_t func_ea, size_t num_inst, qstring *out);
 };
+
+#endif

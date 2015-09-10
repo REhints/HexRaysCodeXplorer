@@ -22,56 +22,22 @@
 	==============================================================================
 */
 
-#ifndef __H_COMMON__
-#define __H_COMMON__
+void logmsg(unsigned int level, const char *fmt, ...);
 
-#pragma once
-
-#ifndef __LINUX__
-#pragma warning (disable: 4996 4800 )
-#else
-#pragma GCC diagnostic ignored "-fpermissive"
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#ifndef __H_DEBUG__
+#define __H_DEBUG__
+#ifdef ERROR
+#undef ERROR
 #endif
 
-#ifndef __LINUX__
-#include <windows.h>
-#include <tchar.h>
-#else
-#include "Linux.h"
-#endif
+enum DEBUG_LEVELS {
+	OUTPUT, // output printed to output file
+	ERROR, // error printed to error file
+	INFO, // print to IDA
+	INTERACTIVE, // show on IDA interface
+	DEBUG // print to IDA
+};
 
-#include <hexrays.hpp>
-#include <ida.hpp>
-#include <idp.hpp>
-#include <graph.hpp>
-#include <loader.hpp>
-#include <kernwin.hpp>
-#include <netnode.hpp>
-#include <gdl.hpp>
-#include <struct.hpp>
-#include <bytes.hpp>
-#include <xref.hpp>
-#include <name.hpp>
-#include <funcs.hpp>
-#include <segment.hpp>
-#include <search.hpp>
-#include <auto.hpp>
-#include <entry.hpp>
-#include <demangle.hpp>
-
-#include <cstring>
-#include <cstdarg>
-#include <cstdint>
-
-#include <iterator>
-#include <string>
-#include <vector>
-#include <list>
-#include <set>
-#include <map>
-#include <iostream>
-#include <sstream>
+#define CURRENT_DEBUG_LEVEL ERROR
 
 #endif
-
