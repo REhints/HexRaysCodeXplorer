@@ -17,14 +17,11 @@ HEXRAYS_SDK=$(IDA_DIR)/plugins/hexrays_sdk
 SRC=$(SRCDIR)CodeXplorer.cpp \
 	$(SRCDIR)GraphBuilder.cpp \
 	$(SRCDIR)ObjectExplorer.cpp \
-	$(SRCDIR)ObjectType.cpp \
-	$(SRCDIR)FuncCtreeDumper.cpp \
+	$(SRCDIR)TypeReconstructor.cpp \
+	$(SRCDIR)CtreeExtractor.cpp \
 	$(SRCDIR)TypeExtractor.cpp \
 	$(SRCDIR)Utility.cpp \
-	$(SRCDIR)RTTI.cpp \
-	$(SRCDIR)Core.cpp \
-	$(SRCDIR)Vftable.cpp \
-	$(SRCDIR)SHA1.cpp \
+	$(SRCDIR)ObjectFormatMSVC.cpp \
 	$(SRCDIR)Debug.cpp
 OBJS=$(subst .cpp,.o,$(SRC))
 EXECUTABLE=HexRaysCodeXplorer
