@@ -25,13 +25,13 @@ Gabriel Barbosa ([@gabrielnb](https://github.com/gabrielnb))
 
 __HexRaysCodeXplorer__ - Hex-Rays Decompiler plugin for easier code navigation. Right-click context menu in the Pseudocode window shows CodeXplorer plugin commands: 
 
-![1](img/1.png)
+![1](img/1.jpg)
 
 __Supported versions of Hex-Rays products:__ everytime we focus on last versions of IDA and Decompiler because trying to use new interesting features in new SDK releases. It's also mean we tested just on last versions of Hex-Rays products and not guaranteed stable work on previous ones. 
 
-__Why not IdaPython:__ all code developed on C/C++ because it's more stable way to support complex plugin for Hex-Rays Decompiler 
+__Why not IdaPython:__ all code developed on C/C++ because it's more stable way to support complex plugin for Hex-Rays Decompiler.
 
-__Supported Platforms:__ x86/x64 for Win, Linux and Mac
+__Supported Platforms:__ x86/x64 for Win, Linux and Mac.
 
 :gem:__Here are the main features of the CodeXplorer plugin:__:gem:
 
@@ -78,7 +78,7 @@ __Object Explorer supports following features:__
 
 * Support auto parsing RTTI objects:
 
-![12](img/12.png)
+![13](img/13.png)
 
 __The Batch mode contains following features:__
 
