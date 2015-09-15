@@ -286,7 +286,7 @@ inline bool func_name_has_prefix(qstring &prefix, ea_t startEA) {
 	if (func_name.length() <= 0)
 		return false;
 	
-	if (func_name.find(prefix.c_str(), 0) == -1)
+	if (func_name.find(prefix.c_str(), 0) != 0)
 		return false;
 	
 	return true;
@@ -381,9 +381,19 @@ bool idaapi dump_funcs_ctree(void *ud, qstring &crypto_prefix)
 
 bool idaapi extract_all_ctrees(void *ud)
 {
-	// in this case don't mark dumped functions as crypto
-	qstring crypto_prefix = "none_crypto_prefix";
-	dump_funcs_ctree(NULL, crypto_prefix);
+	// default prefix to display in the dialog
+	qstring default_prefix = "crypto_";
+	
+	va_list va;
+	va_end(va);
+	
+	char * crypto_prefix = vaskstr(0, default_prefix.c_str(), "Enter prefix of crypto function names", va);
+	if((crypto_prefix != NULL) && (strlen(crypto_prefix) > 0)) {
+		qstring qcrypt_prefix = crypto_prefix;
+		dump_funcs_ctree(NULL, qcrypt_prefix);
+	} else {
+		warning("Incorrect prefix!!");
+	}
 
 	return true;
 }
