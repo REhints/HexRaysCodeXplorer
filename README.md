@@ -86,6 +86,8 @@ __The Batch mode contains following features:__
 
 ```
 
+============================================================================
+
 __Conference talks about CodeXplorer plugin:__
 * **2015**
  * "Distributing the REconstruction of High-Level IR for Large Scale Malware Analysis", BHUS [[slides]](https://github.com/REhints/Publications/blob/master/Conferences/BH'2015/BH_2015.pdf) 
