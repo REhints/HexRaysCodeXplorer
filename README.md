@@ -23,17 +23,17 @@ Rodrigo Branco ([@rrbranco](https://github.com/rrbranco))
 
 Gabriel Barbosa ([@gabrielnb](https://github.com/gabrielnb))
 
-__HexRaysCodeXplorer__ - Hex-Rays Decompiler plugin for easier code navigation. Right-click context menu in the Pseudocode window shows CodeXplorer plugin commands: 
-
-![1](img/1.jpg)
-
 __Supported versions of Hex-Rays products:__ everytime we focus on last versions of IDA and Decompiler because trying to use new interesting features in new SDK releases. It's also mean we tested just on last versions of Hex-Rays products and not guaranteed stable work on previous ones. 
 
 __Why not IdaPython:__ all code developed on C/C++ because it's more stable way to support complex plugin for Hex-Rays Decompiler.
 
 __Supported Platforms:__ x86/x64 for Win, Linux and Mac.
 
-:gem:__Here are the main features of the CodeXplorer plugin:__:gem:
+__HexRaysCodeXplorer__ - Hex-Rays Decompiler plugin for easier code navigation. Right-click context menu in the Pseudocode window shows CodeXplorer plugin commands: 
+
+![1](img/1.jpg)
+
+:gem: __Here are the main features of the CodeXplorer plugin:__ :gem:
 
 * ***Automatic type REconstruction*** for C++ objects. To be able to reconstruct a type using HexRaysCodeXplorer one needs to select the variable holding pointer to the instance of position independed code or to an object and by right-button mouse click select from the context menu «REconstruct Type» option:
 
@@ -52,6 +52,16 @@ Also CodeXplorer plugin supports auto REconstruction type into IDA local types s
 * ***C-tree graph visualization*** – a special tree-like structure representing a decompiled routine in citem_t terms (hexrays.hpp). Useful feature for understanding how the decompiler works. The highlighted graph node corresponds to the current cursor position in the HexRays Pseudocode window:
 
 ![3](img/3.png)
+
+* ***Ctree Item View*** – show ctree representation for highlighted element:
+
+![16](img/16.png)
+
+* ***Extract Ctrees to File*** – dump calculate SHA1 hash and dump all ctrees to file. 
+
+![14](img/14.png)
+
+* ***Extract Types to File*** – dump all types information (include reconstructed types) into file.
 
 * ***Navigation through virtual function calls*** in HexRays Pseudocode window. After representing C++ objects by C-structures this feature make possible navigation by mouse clicking to the virtual function calls as structure fields:
 
@@ -82,8 +92,11 @@ __Object Explorer supports following features:__
 
 __The Batch mode contains following features:__
 
-```
+* Batch mode - useful feature to use CodeXplorer for processing multiple files without any interaction from user. We add this feature after Black Hat research in 2015 for processing 2 millions samples.
 
+```
+Example (dump types and ctrees for functions with name prefix "crypto_"):
+idaq.exe -OHexRaysCodeXplorer:dump_types:dump_ctrees:CRYPTOcrypto_path_to_idb
 ```
 
 ============================================================================
