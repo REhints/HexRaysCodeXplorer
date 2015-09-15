@@ -55,11 +55,11 @@ Also CodeXplorer plugin supports auto REconstruction type into IDA local types s
 
 * ***Ctree Item View*** – show ctree representation for highlighted element:
 
-![16](img/16.png)
+![16](img/16.PNG)
 
 * ***Extract Ctrees to File*** – dump calculate SHA1 hash and dump all ctrees to file. 
 
-![14](img/14.png)
+![14](img/14.PNG)
 
 * ***Extract Types to File*** – dump all types information (include reconstructed types) into file.
 
