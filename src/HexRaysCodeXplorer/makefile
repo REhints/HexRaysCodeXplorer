@@ -1,10 +1,10 @@
 CC=g++ 
 LD=ld
 
-#CFLAGS=-D__LINUX__ -DUSE_DANGEROUS_FUNCTIONS -D__PLUGIN__ -D__X64__
-#CFLAGS=-m32 -fPIC -D__LINUX__ -DUSE_DANGEROUS_FUNCTIONS -D__PLUGIN__ -D__EA64__
+#CFLAGS=-D__LINUX__ -DUSE_DANGEROUS_FUNCTIONS -D__PLUGIN__ -D__X64__ -std=c++11 
+#CFLAGS=-m32 -fPIC -D__LINUX__ -DUSE_DANGEROUS_FUNCTIONS -D__PLUGIN__ -D__EA64__ -std=c++11
+CFLAGS=-m32 -fPIC -D__LINUX__ -DUSE_DANGEROUS_FUNCTIONS -D__PLUGIN__ -std=c++11 
 
-CFLAGS=-m32 -fPIC -D__LINUX__ -DUSE_DANGEROUS_FUNCTIONS -D__PLUGIN__ 
 LDFLAGS=-shared -m32
 
 # TODO: add conditional compilation over -lida or -lida64 based on the X64
@@ -31,18 +31,18 @@ INCLUDES=-I$(IDA_SDK)/include -I$(HEXRAYS_SDK)/include
 #DEFINE=__X64__ -D__LINUX__
 #DEFINE=__EA64__ -D__LINUX__
 
-all: HexRaysCodeExplorer.plx
+all: HexRaysCodeXplorer.plx
 
-HexRaysCodeExplorer.plx: $(OBJS)
+HexRaysCodeXplorer.plx: $(OBJS)
 	#ln -f -s $(IDA_SDK)/lib/x64_linux_gcc_64/pro.a libpro.a
 	ln -f -s $(IDA_SDK)/lib/x86_linux_gcc_32/pro.a libpro.a
-	$(CC) $(LDFLAGS) $(LIBDIR) -o HexRaysCodeExplorer.plx $(OBJS) $(LIBS)
+	$(CC) $(LDFLAGS) $(LIBDIR) -o HexRaysCodeXplorer.plx $(OBJS) $(LIBS)
 
 %.o: %.cpp
 	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
 clean:
-	rm -f $(OBJS) HexRaysCodeExplorer.plx
+	rm -f $(OBJS) HexRaysCodeXplorer.plx
 
 install:
-	cp -f HexRaysCodeExplorer.plx $(IDA_DIR)/plugins
+	cp -f HexRaysCodeXplorer.plx $(IDA_DIR)/plugins

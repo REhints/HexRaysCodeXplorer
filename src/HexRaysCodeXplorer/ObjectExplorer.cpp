@@ -51,7 +51,7 @@ void free_vtable_lists() {
 // VTBL code parsing
 //---------------------------------------------------------------------------
 
-const char * get_text_disasm(ea_t ea) {
+const char* get_text_disasm(ea_t ea) {
 	static char disasm_buff[MAXSTR];
 	disasm_buff[0] = disasm_buff[MAXSTR - 1] = 0;
 
@@ -63,7 +63,7 @@ const char * get_text_disasm(ea_t ea) {
 
 static bool check_vtable_load_instruction(ea_t ea_code) {
 	bool is_move_xref = false;
-	const char *disasm_line = get_text_disasm(ea_code);
+	const char* disasm_line = get_text_disasm(ea_code);
 	if((strncmp(disasm_line, "mov ", 4) == 0) && (qstrstr(disasm_line + 4, " offset ") != NULL)) {
 		is_move_xref = true;
 	} else if ((strncmp(disasm_line, "lea", 3) == 0)) {
@@ -423,7 +423,7 @@ static void get_xrefs_to_vtbl()
 }
 
 
-static bool idaapi ct_vtbl_xrefs_window_click(TCustomControl *v, int shift, void *ud)
+static bool idaapi ct_vtbl_xrefs_window_dblclick(TCustomControl *v, int shift, void *ud)
 {
 	int x, y;
 	place_t *place = get_custom_viewer_place(v, true, &x, &y);
@@ -455,7 +455,8 @@ static bool idaapi show_vtbl_xrefs_window_cb(void *ud)
 		simpleline_place_t s2(si->sv.size() - 1);
 		si->cv = create_custom_viewer("", NULL, &s1, &s2, &s1, 0, &si->sv);
 		si->codeview = create_code_viewer(form, si->cv, CDVF_STATUSBAR);
-		set_custom_viewer_handlers(si->cv, NULL, NULL, NULL, ct_vtbl_xrefs_window_click, NULL, NULL, si);
+		set_custom_viewer_handler(si->cv, CVH_DBLCLICK, ct_vtbl_xrefs_window_dblclick);
+
 		open_tform(form, FORM_ONTOP | FORM_RESTORE);
 
 		return true;
@@ -504,7 +505,7 @@ static bool idaapi ct_object_explorer_keyboard(TCustomControl * /*v*/, int key, 
 }
 
 
-static bool idaapi ct_object_explorer_click(TCustomControl *v, int shift, void *ud)
+static bool idaapi ct_object_explorer_dblclick(TCustomControl *v, int shift, void *ud)
 {
 	int x, y;
 	place_t *place = get_custom_viewer_place(v, true, &x, &y);
@@ -518,34 +519,38 @@ static bool idaapi ct_object_explorer_click(TCustomControl *v, int shift, void *
 }
 
 
-static char* get_vtbl_hint(int line_num)
+static qstring get_vtbl_hint(int line_num)
 {
 	current_line_pos = line_num;
-	char tag_lines [4096];
-	ZeroMemory(tag_lines, sizeof(tag_lines));
-	
+	qstring tag_lines;
+
 	if (isEnabled(vtbl_t_list[line_num].ea_begin))
 	{
 		int flags = calc_default_idaplace_flags();
 		linearray_t ln(&flags);
-		idaplace_t pl;
-		pl.ea = vtbl_t_list[line_num].ea_begin;
-		pl.lnnum = 0;
-		ln.set_place(&pl);
+		
+		idaplace_t here;
+		here.ea = vtbl_t_list[line_num].ea_begin;
+		here.lnnum = 0;
+		ln.set_place(&here);
 
 		int used = 0;
 		int n = ln.get_linecnt();           
 		for ( int i=0; i < n; i++ )        
 		{
-			char buf[MAXSTR];
-			char *line = ln.down();           
-			tag_remove(line, buf, sizeof(buf));
-			used += sprintf_s(tag_lines + used, sizeof(tag_lines) - used, "%s\n", buf);
+			char hint_str[MAXSTR];
+			char* line = ln.down();
+			tag_remove(line, hint_str, sizeof(hint_str));
+			tag_lines.cat_sprnt((COLSTR(SCOLOR_INV"%s\n", SCOLOR_DREF)), hint_str);
+			used++;
+			int n = qmin(ln.get_linecnt(), 20);
+			used += n;
+			for (int j = 0; j < n; ++j)
+				tag_lines.cat_sprnt("%s\n", ln.down());
 		}
 
 	}
-
-	return qstrdup(tag_lines);
+	return qstrdup(tag_lines.c_str());
 }
 
 
@@ -568,7 +573,7 @@ int idaapi ui_object_explorer_callback(void *ud, int code, va_list va)
 
 				simpleline_place_t *spl = (simpleline_place_t *)place;
 				hint = get_vtbl_hint (spl->n);
-				*important_lines = 10;
+				*important_lines = 20;
 				return 1;
 			}
 			break;
@@ -614,7 +619,14 @@ void object_explorer_form_init()
 		simpleline_place_t s2(si->sv.size() - 1);
 		si->cv = create_custom_viewer("", NULL, &s1, &s2, &s1, 0, &si->sv);
 		si->codeview = create_code_viewer(form, si->cv, CDVF_STATUSBAR);
-		set_custom_viewer_handlers(si->cv, ct_object_explorer_keyboard, ct_object_explorer_popup, NULL, ct_object_explorer_click, NULL, NULL, si);
+
+		//custom_viewer_handlers_t cvh = custom_viewer_handlers_t(ct_object_explorer_keyboard, ct_object_explorer_popup, NULL, ct_object_explorer_click);
+		custom_viewer_handlers_t cvh = custom_viewer_handlers_t();
+		cvh.keyboard = ct_object_explorer_keyboard;
+		cvh.popup = ct_object_explorer_popup;
+		cvh.dblclick = ct_object_explorer_dblclick;
+		set_custom_viewer_handlers(si->cv, &cvh, si);
+
 		hook_to_notification_point(HT_UI, ui_object_explorer_callback, si);
 		open_tform(form, FORM_TAB | FORM_MENU | FORM_RESTORE);
 	}

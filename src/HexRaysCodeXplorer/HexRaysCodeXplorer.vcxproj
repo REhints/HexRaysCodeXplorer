@@ -321,6 +321,7 @@
   <ItemGroup>
     <ClCompile Include="Debug.cpp" />
     <ClCompile Include="CtreeExtractor.cpp" />
+    <ClCompile Include="JsonParser.cpp" />
     <ClCompile Include="ObjectExplorer.cpp" />
     <ClCompile Include="CodeXplorer.cpp" />
     <ClCompile Include="GraphBuilder.cpp" />
@@ -333,6 +334,7 @@
     <ClInclude Include="Common.h" />
     <ClInclude Include="Debug.h" />
     <ClInclude Include="CtreeExtractor.h" />
+    <ClInclude Include="JsonParser.h" />
     <ClInclude Include="Linux.h" />
     <ClInclude Include="ObjectExplorer.h" />
     <ClInclude Include="GraphBuilder.h" />

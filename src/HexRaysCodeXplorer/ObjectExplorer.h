@@ -26,7 +26,7 @@
 #define __H_OBJECTEXPLORER__
 
 
-// Object Explorer From Init
+// Object Explorer Form Init
 struct object_explorer_info_t
 {
 	TForm *form;
