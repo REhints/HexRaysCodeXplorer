@@ -65,19 +65,12 @@ static int hotcode_ec;
 static const char hotkey_vc[] = "V";
 static int hotcode_vc;
 
-<<<<<<< HEAD
 static const char hotkey_so[] = "Q"; // After positioning cursor at source code user can press Q to copy to clipboard string of form modulename + 0xoffset. 
 									 // It can be useful while working with WinDbg.
 static int hotcode_dq;
 
 static const char hotkey_rv[] = "E"; // Automatic renaming of duplicating variables by pressing E. 
 									 // All duplicating successors obtain _2, _3 ... postfixes.
-=======
-static const char hotkey_dq[] = "Q";
-static int hotcode_dq;
-
-static const char hotkey_de[] = "E";
->>>>>>> origin/master
 static int hotcode_de;
 
 static const char * crypto_prefix_param = "CRYPTO";
@@ -355,114 +348,16 @@ static bool idaapi decompile_func(vdui_t &vu)
 			while ((proc_name > citem_name) && (*(proc_name - 1) != '>'))
 				proc_name--;
 
-<<<<<<< HEAD
 			if (proc_name != citem_name) 
 			{
 				func_t * func = get_func_by_name(proc_name);
 				if (func != NULL)
 					vdui_t * decompiled_window = open_pseudocode(func->startEA, -1);
-=======
-			if (proc_name != citem_name) {
-				func_t * func = get_func_by_name(proc_name);
-				if (func != NULL)
-				{
-					vdui_t * decompiled_window = open_pseudocode(func->startEA, -1);
-				}
->>>>>>> origin/master
 			}
 		}
 	}
 
 	return true;
-<<<<<<< HEAD
-=======
-}
-
-/*
-* TODO: Make changes persistent
-*/
-
-
-lvars_t* lvars;
-lvar_t lv;
-map<lvar_t*, qstring> to_rename;
-
-static bool idaapi rename_simple_expr(void *ud) {
-	vdui_t &vu = *(vdui_t *)ud;
-	cfuncptr_t pfunc = vu.cfunc;
-
-	lvars = pfunc->get_lvars();
-
-	struct ida_local renamer_t : public ctree_visitor_t
-	{
-#define ROOT "*&|"
-
-		map<qstring, int> valid_rvars;
-		map<qstring, int> postfixes;
-		map<qstring, vector<qstring>> roots;
-
-		renamer_t(void) : ctree_visitor_t(CV_FAST) {}
-
-		qstring rvar_depends_on(cexpr_t* e) {
-			qstring rvar_name = (*lvars)[e->y->v.idx].name;
-			map<qstring, vector<qstring>>::iterator it;
-			for (it = roots.begin(); it != roots.end(); it++) {
-				if (it->first == rvar_name)
-					return ROOT;
-				vector<qstring>::iterator yt;
-				for (yt = it->second.begin(); yt != it->second.end(); yt++) {
-					if (*yt == rvar_name)
-						return it->first;
-				}
-			}
-			return ROOT;
-		}
-
-		int idaapi visit_expr(cexpr_t *e)
-		{
-			char pstx_buf[8];
-			qstring new_name;
-			qstring lvar_name, rvar_name, tvar_name;
-			if (e->op == cot_asg && e->x->op == cot_var && e->y->op == cot_var) {
-				lvar_name = (*lvars)[e->x->v.idx].name;
-				rvar_name = (*lvars)[e->y->v.idx].name;
-				tvar_name = rvar_depends_on(e);
-				if (tvar_name == ROOT) {
-					//rvar is root variable
-					if (rvar_name != lvar_name) {
-						roots[rvar_name].push_back(lvar_name);
-					}
-				}
-				else {
-					//rvar is dependant
-					if (tvar_name != lvar_name) {
-						rvar_name = tvar_name;
-						roots[tvar_name].push_back(lvar_name);
-					}
-				}
-
-				for (int i = 0; i < roots[lvar_name].size(); i++) {
-					if (roots[lvar_name][i] == rvar_name) {
-						return 0;
-					}
-				}
-
-				postfixes.insert(pair<qstring, int>(rvar_name, 2));
-				itoa(postfixes[rvar_name]++, pstx_buf, 10);
-				new_name = rvar_name + "_" + pstx_buf;
-				to_rename[&(*lvars)[e->x->v.idx]] = new_name;
-				roots[rvar_name].push_back(new_name);
-			}
-			return 0;
-		}
-	};
-	renamer_t zc;
-	zc.apply_to(&pfunc->body, NULL);
-	for (map<lvar_t*, qstring>::iterator it = to_rename.begin(); it != to_rename.end(); it++)
-		vu.rename_lvar(it->first, it->second.c_str(), 0);
-	vu.refresh_ctext();
-	return true;
->>>>>>> origin/master
 }
 
 /*
@@ -605,44 +500,6 @@ static bool idaapi show_offset_in_windbg_format(void *ud) {
 	return true;
 }
 
-static bool idaapi copy_offset(void *ud) {
-	char _offset[32] = { 0 };
-	char module_name[256] = { 0 };
-	string result;
-	int offset;
-	vdui_t &vu = *(vdui_t *)ud;
-	vu.get_current_item(USE_KEYBOARD);
-	offset = vu.item.i->ea - get_imagebase();
-
-	if (offset < 0) {
-		msg("Locate pointer after = sign or at operand of function\n");
-		return false;
-	}
-	get_root_filename(module_name, 255);
-	for (int i = 0; i < 255; i++)
-		if (module_name[i] == '.') { module_name[i] = 0; break; }
-	itoa(offset, _offset, 16);
-
-	string a(module_name);
-	string b(_offset);
-	result = a + "+0x" + b;
-	msg(result.c_str());
-	OpenClipboard(0);
-	EmptyClipboard();
-	HGLOBAL hg = GlobalAlloc(GMEM_MOVEABLE, result.size());
-	if (!hg) {
-		CloseClipboard();
-		msg("Can't alloc\n");
-		return -2;
-	}
-	memcpy(GlobalLock(hg), result.c_str(), result.size());
-	GlobalUnlock(hg);
-	SetClipboardData(CF_TEXT, hg);
-	CloseClipboard();
-	GlobalFree(hg);
-	return true;
-}
-
 // show disassembly line for ctree->item
 static bool idaapi decompiled_line_to_disasm(void *ud)
 {
@@ -706,25 +563,15 @@ static int idaapi callback(void *, hexrays_event_t event, va_list va)
 	{
 		vdui_t &vu = *va_arg(va, vdui_t *);
 		// add new command to the popup menu
-<<<<<<< HEAD
 		add_custom_viewer_popup_item(vu.ct, "Display Ctree Graph", hotkey_dg, display_ctree_graph, &vu);
 		add_custom_viewer_popup_item(vu.ct, "Object Explorer", hotkey_ce, display_vtbl_objects, &vu);
-=======
-		add_custom_viewer_popup_item(vu.ct, "Display Ctree Graph", hotkey_dg, display_graph, &vu);
-		add_custom_viewer_popup_item(vu.ct, "Object Explorer", hotkey_ce, display_objects, &vu);
->>>>>>> origin/master
 		add_custom_viewer_popup_item(vu.ct, "REconstruct Type", hotkey_rt, reconstruct_type, &vu);
 		add_custom_viewer_popup_item(vu.ct, "Extract Types to File", hotkey_et, extract_all_types, &vu);
 		add_custom_viewer_popup_item(vu.ct, "Extract Ctrees to File", hotkey_ec, extract_all_ctrees, &vu);
 		add_custom_viewer_popup_item(vu.ct, "Ctree Item View", hotkey_vc, show_current_citem_in_custom_view, &vu);
 		add_custom_viewer_popup_item(vu.ct, "Jump to Disasm", hotkey_gd, decompiled_line_to_disasm, &vu);
-<<<<<<< HEAD
 		add_custom_viewer_popup_item(vu.ct, "Show/Copy item offset", hotkey_so, show_offset_in_windbg_format, &vu);
 		add_custom_viewer_popup_item(vu.ct, "Rename vars", hotkey_rv, rename_simple_expr, &vu);
-=======
-		add_custom_viewer_popup_item(vu.ct, "Copy offset", hotkey_dq, copy_offset, &vu);
-		add_custom_viewer_popup_item(vu.ct, "Rename vars", hotkey_de, rename_simple_expr, &vu);
->>>>>>> origin/master
 	}
 	break;
 
@@ -734,11 +581,7 @@ static int idaapi callback(void *, hexrays_event_t event, va_list va)
 		int keycode = va_arg(va, int);
 		// check for the hotkey
 		if (keycode == hotcode_dg)
-<<<<<<< HEAD
 			return display_ctree_graph(&vu);
-=======
-			return display_graph(&vu);
->>>>>>> origin/master
 		if (keycode == hotcode_ce)
 			return display_vtbl_objects(&vu);
 		if (keycode == hotcode_rt)
@@ -752,11 +595,7 @@ static int idaapi callback(void *, hexrays_event_t event, va_list va)
 		if (keycode == hotcode_gd)
 			return decompiled_line_to_disasm(&vu);
 		if (keycode == hotcode_dq)
-<<<<<<< HEAD
 			return show_offset_in_windbg_format(&vu);
-=======
-			return copy_offset(&vu);
->>>>>>> origin/master
 		if (keycode == hotcode_de)
 			return rename_simple_expr(&vu);
 	}
