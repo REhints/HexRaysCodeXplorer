@@ -1,4 +1,4 @@
-/*	Copyright (c) 2013-2015
+/*	Copyright (c) 2013-2016
 	REhints <info@rehints.com>
 	All rights reserved.
 	
@@ -28,6 +28,19 @@
 #pragma once
 
 #include "Common.h"
+
+
+// Simple CustomView Form Init
+struct string_view_form_info_t
+{
+	TForm *form;
+	TCustomControl *cv;
+	TCustomControl *codeview;
+	strvec_t sv;
+	string_view_form_info_t(TForm *f) : form(f), cv(NULL) {}
+};
+
+bool idaapi show_string_in_custom_view(void *ud, qstring title, qstring str);
 
 
 // Size of string with out terminator
@@ -61,6 +74,11 @@ template <class T> bool getVerify32_t(ea_t eaPtr, T &rValue)
 
 	return false;
 }
+
+
+// Check MSVC compiler
+bool isMSVC();
+
 
 // Get address/pointer value
 inline ea_t getEa(ea_t ea)

@@ -188,7 +188,7 @@ bool idaapi type_builder_t::check_helper(citem_t *parent, int &off, int &num)
 		{
 			char buff[MAXSTR];
 			expr_2->x->print1(buff, MAXSTR, NULL);
-			tag_remove(buff, buff, 0);
+			tag_remove(buff, buff, MAXSTR);
 
 			if(!strcmp(buff, "LOBYTE"))
 			{
@@ -591,54 +591,50 @@ bool idaapi reconstruct_type(void *ud)
 
 			// initialize type rebuilder
 			type_builder_t type_bldr;
-						
-			
 			char highl_expr_name[MAXSTR];
-
-			highl_expr->print1(highl_expr_name, MAXSTR, NULL);
-			tag_remove(highl_expr_name, highl_expr_name, 0);
-
+			highl_expr->print1(highl_expr_name, sizeof(highl_expr_name), NULL);
+			tag_remove(highl_expr_name, highl_expr_name, sizeof(highl_expr_name));
 			type_bldr.expression_to_match.push_back(highl_expr_name);
 		
 			// traverse the ctree structure
 			type_bldr.apply_to(&vu.cfunc->body, NULL);
-
-			if (type_bldr.structure.size() != 0) {
+			if (type_bldr.structure.size() != 0) 
+			{
 				qstring struct_name = "struct_name";
 
 				va_list va;
 				va_end(va);
 
-				char * type_name = vaskstr(0, struct_name.c_str(), "Enter type name", va);
-				if(type_name != NULL) {
+				char *type_name = vaskstr(0, struct_name.c_str(), "Enter type name", va);
+				if(type_name != NULL) 
+				{
 					tid_t struct_type_id = type_bldr.get_structure(type_name);
-
-					if(struct_type_id != 0 || struct_type_id != -1) {
-
-
+					if(struct_type_id != 0 || struct_type_id != -1) 
+					{
 						tinfo_t new_type = create_typedef(type_name);
-						if(new_type.is_correct()) {
+						if(new_type.is_correct()) 
+						{
 							qstring type_str;
-							qstring pref = "New type created:\r\n";
-							if (new_type.print(&type_str, NULL, PRTYPE_DEF | PRTYPE_MULTI)) 
-								logmsg(DEBUG, (pref + type_str).c_str());
-							lvar_t * lvar =  vu.item.get_lvar();
-
-							vu.set_lvar_type(lvar, make_pointer(new_type));
-							vu.refresh_ctext();
+							if (new_type.print(&type_str, NULL, PRTYPE_DEF | PRTYPE_MULTI))
+							{
+								logmsg(DEBUG, ("New type created:\r\n%s", type_str).c_str());
+								lvar_t *lvar = vu.item.get_lvar();
+								vu.set_lvar_type(lvar, make_pointer(new_type));
+								vu.refresh_ctext();
+							}
 						}
 					}		
 				}
-			} else {
+			} 
+			else 
+			{
 				warning("Failed to reconstruct type, no field references have been found...");
 				logmsg(DEBUG, "Failed to reconstruct type, no field references have been found...");
 			}
 		}
 	}
 	else
-	{
-		logmsg(DEBUG, "Invalid item is choosen");
-	}
+		logmsg(DEBUG, "Invalid item is chosen");
 
 	return true;
 }
@@ -659,11 +655,9 @@ bool idaapi reconstruct_type(cfuncptr_t cfunc, qstring var_name, qstring type_na
 		if(struct_type_id != 0 || struct_type_id != -1) {
 			tinfo_t new_type = create_typedef(type_name.c_str());
 			if(new_type.is_correct()) {
-				qstring pref = "New type created: ";
 				qstring type_str = type_name.c_str();
-				type_str += "\n";
-//				if (new_type.print(&type_str, NULL, PRTYPE_DEF | PRTYPE_MULTI))
-					logmsg(DEBUG, (pref + type_str).c_str());
+				//if (new_type.print(&type_str, NULL, PRTYPE_DEF | PRTYPE_MULTI))
+					logmsg(DEBUG, ("New type created: %s\n", type_str.c_str()));
 
 				bResult = true;
 			}
@@ -675,7 +669,3 @@ bool idaapi reconstruct_type(cfuncptr_t cfunc, qstring var_name, qstring type_na
 
 	return bResult;
 }
-
-
-
-

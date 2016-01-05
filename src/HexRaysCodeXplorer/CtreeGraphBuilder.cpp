@@ -24,7 +24,7 @@
 
 
 #include "Common.h"
-#include "GraphBuilder.h"
+#include "CtreeGraphBuilder.h"
 #include "ObjectExplorer.h"
 
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
