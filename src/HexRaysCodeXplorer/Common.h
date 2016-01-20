@@ -73,7 +73,5 @@
 #include <iostream>
 #include <sstream>
 
-#include "3rd_party/json11/json11.hpp"
-
 #endif
 

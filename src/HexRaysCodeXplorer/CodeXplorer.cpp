@@ -1,4 +1,4 @@
-/*	Copyright (c) 2013-2015
+/*	Copyright (c) 2013-2016
 REhints <info@rehints.com>
 All rights reserved.
 

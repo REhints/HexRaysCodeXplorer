@@ -95,7 +95,7 @@ char * callgraph_t::get_node_label(int n, char *buf, int bufsize) const
 			// Display helper names and number values
 			APPCHAR(ptr, endp, ' ');
 			e->print1(ptr, endp - ptr, NULL);
-			tag_remove(ptr, ptr, 0);
+			tag_remove(ptr, ptr, sizeof(ptr));
 			ptr = tail(ptr);
 			break;
 		case cit_goto:

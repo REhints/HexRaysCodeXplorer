@@ -137,7 +137,7 @@ char * ctree_dumper_t::parse_ctree_item(citem_t *item, char *buf, int bufsize) c
 			// Display helper names and number values
 			APPCHAR(ptr, endp, ' ');
 			e->print1(ptr, endp - ptr, NULL);
-			tag_remove(ptr, ptr, 0);
+			tag_remove(ptr, ptr, sizeof(ptr));
 			ptr = tail(ptr);
 			break;
 		case cit_goto:

@@ -36,6 +36,4 @@ bool idaapi find_var(cfuncptr_t cfunc, qstring vtbl_name, qstring &var_name);
 
 tid_t idaapi merge_types(qvector<qstring> types_to_merge, qstring type_name);
 
-void idaapi dump_type_info(int file_id, VTBL_info_t vtbl_info, qstring type_name);
-
 #endif
