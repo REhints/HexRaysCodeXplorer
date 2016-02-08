@@ -51,7 +51,7 @@ void free_vtable_lists() {
 // VTBL code parsing
 //---------------------------------------------------------------------------
 
-const char* get_text_disasm(ea_t ea) {
+const char * get_text_disasm(ea_t ea) {
 	static char disasm_buff[MAXSTR];
 	disasm_buff[0] = disasm_buff[MAXSTR - 1] = 0;
 
@@ -455,8 +455,7 @@ static bool idaapi show_vtbl_xrefs_window_cb(void *ud)
 		simpleline_place_t s2(si->sv.size() - 1);
 		si->cv = create_custom_viewer("", NULL, &s1, &s2, &s1, 0, &si->sv);
 		si->codeview = create_code_viewer(form, si->cv, CDVF_STATUSBAR);
-		set_custom_viewer_handler(si->cv, CVH_DBLCLICK, ct_vtbl_xrefs_window_dblclick);
-
+		set_custom_viewer_handlers(si->cv, NULL, NULL, NULL, ct_vtbl_xrefs_window_dblclick, NULL, NULL, si);
 		open_tform(form, FORM_ONTOP | FORM_RESTORE);
 
 		return true;
@@ -619,14 +618,7 @@ void object_explorer_form_init()
 		simpleline_place_t s2(si->sv.size() - 1);
 		si->cv = create_custom_viewer("", NULL, &s1, &s2, &s1, 0, &si->sv);
 		si->codeview = create_code_viewer(form, si->cv, CDVF_STATUSBAR);
-
-		//custom_viewer_handlers_t cvh = custom_viewer_handlers_t(ct_object_explorer_keyboard, ct_object_explorer_popup, NULL, ct_object_explorer_click);
-		custom_viewer_handlers_t cvh = custom_viewer_handlers_t();
-		cvh.keyboard = ct_object_explorer_keyboard;
-		cvh.popup = ct_object_explorer_popup;
-		cvh.dblclick = ct_object_explorer_dblclick;
-		set_custom_viewer_handlers(si->cv, &cvh, si);
-
+		set_custom_viewer_handlers(si->cv, ct_object_explorer_keyboard, ct_object_explorer_popup, NULL, ct_object_explorer_dblclick, NULL, NULL, si);
 		hook_to_notification_point(HT_UI, ui_object_explorer_callback, si);
 		open_tform(form, FORM_TAB | FORM_MENU | FORM_RESTORE);
 	}
