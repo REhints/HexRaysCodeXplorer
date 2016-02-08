@@ -29,7 +29,7 @@
 #define OUTPUT_FILE "codexplorer_output.txt"
 #define ERROR_FILE "codexplorer_error.txt"
 
-#ifdef __LINUX__
+#if defined (__LINUX__) || defined (__MAC__)
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #endif
 
