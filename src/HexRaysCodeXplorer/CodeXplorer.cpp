@@ -436,7 +436,7 @@ static bool idaapi rename_simple_expr(void *ud)
 				}
 
 				postfixes.insert(pair<qstring, int>(rvar_name, 2));
-				itoa(postfixes[rvar_name]++, pstx_buf, 10);
+				sprintf(pstx_buf, "%d",postfixes[rvar_name]++);
 				new_name = rvar_name + "_" + pstx_buf;
 				to_rename[&(*lvars)[e->x->v.idx]] = new_name;
 				roots[rvar_name].push_back(new_name);
@@ -470,7 +470,7 @@ static bool idaapi show_offset_in_windbg_format(void *ud) {
 	get_root_filename(module_name, 255);
 	for (int i = 0; i < 255; i++)
 		if (module_name[i] == '.') { module_name[i] = 0; break; }
-	itoa(offset, _offset, 16);
+	sprintf(_offset, "%x", offset);
 	result.cat_sprnt("%s+0x%s", module_name, _offset);
 
 	qstring title {0};
