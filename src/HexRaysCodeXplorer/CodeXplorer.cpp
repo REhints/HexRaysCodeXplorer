@@ -477,7 +477,7 @@ static bool idaapi show_offset_in_windbg_format(void *ud) {
 	title.cat_sprnt("0x%X", vu.item.i->ea);
 	show_string_in_custom_view(&vu, title, result);
 
-#ifdef __LINUX__
+#if defined (__LINUX__) || defined (__MAC__)
 	msg(result.c_str());
 #else
 	OpenClipboard(0); 
