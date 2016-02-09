@@ -28,7 +28,7 @@
 
 #include "Debug.h"
 
-#ifdef __LINUX__
+#if defined (__LINUX__) || defined (__MAC__)
 #include "Linux.h"
 #endif
 

@@ -28,7 +28,7 @@ along with this program.  If not, see
 #include "Utility.h"
 
 
-#ifndef __LINUX__
+#if !defined (__LINUX__) && !defined (__MAC__)
 #include <tchar.h>
 #else
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"

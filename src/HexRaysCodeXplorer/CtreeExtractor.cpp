@@ -29,7 +29,7 @@
 #include "Utility.h"
 #include "Debug.h"
 
-#ifdef __LINUX__
+#if defined (__LINUX__) || defined (__MAC__)
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #endif
 
