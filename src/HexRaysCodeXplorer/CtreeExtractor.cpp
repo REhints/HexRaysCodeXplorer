@@ -430,7 +430,7 @@ bool idaapi show_citem_custom_view(void *ud, qstring ctree_item, qstring item_na
 	simpleline_place_t s2(ctree_item.size());
 	si->cv = create_custom_viewer("Ctree Item View: ", NULL, &s1, &s2, &s1, 0, &si->sv);
 	si->codeview = create_code_viewer(form, si->cv, CDVF_NOLINES);
-	set_custom_viewer_handlers(si->cv, NULL, si);
+	set_custom_viewer_handlers(si->cv, NULL, NULL, NULL, NULL, NULL, NULL, si);
 	open_tform(form, FORM_ONTOP | FORM_RESTORE);
 
 	return false;
