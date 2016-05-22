@@ -9,6 +9,8 @@
                             |___/                                 |_|</pre>
 ============================================================================
 
+[![Join the chat at https://gitter.im/REhints/HexRaysCodeXplorer](https://badges.gitter.im/REhints/HexRaysCodeXplorer.svg)](https://gitter.im/REhints/HexRaysCodeXplorer?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 The Hex-Rays Decompiler plugin for better code navigation in RE process. CodeXplorer automates code REconstruction of C++ applications or modern malware like Stuxnet, Flame, Equation, Animal Farm ... :octocat:
 
 The CodeXplorer plugin is one of the [first publicly available](https://www.hex-rays.com/products/decompiler/manual/third_party.shtml) Hex-Rays Decompiler plugins. We keep updated this project [since summer of 2013](https://www.hex-rays.com/contests/2013/) and continue contributing new features frequently. Also most interesting feutures of CodeXplorer have been presented on numerous security conferences like: REcon, ZeroNights, H2HC, NSEC and BHUS :space_invader:
