@@ -526,7 +526,7 @@ tid_t type_builder_t::get_structure(const qstring name)
 				if((i->second.vftbl != BADADDR) && get_vbtbl_by_ea(i->second.vftbl, vtbl)) 
 				{
 					qstring vftbl_name = name;
-					vftbl_name.cat_sprnt("_VTABLE_%d_%p", i->second.offset, i->second.vftbl);
+					vftbl_name.cat_sprnt("_VTABLE_%X_%p", i->second.offset, i->second.vftbl);
 
 					tid_t vtbl_str_id = create_vtbl_struct(vtbl.ea_begin, vtbl.ea_end, (char *)vftbl_name.c_str(), 0);
 					if (vtbl_str_id != BADADDR) {
@@ -544,7 +544,7 @@ tid_t type_builder_t::get_structure(const qstring name)
 				} 
 				else 
 				{
-					sprintf_s(field_name, sizeof(field_name), "field_%d", i->second.offset);
+					sprintf_s(field_name, sizeof(field_name), "field_%X", i->second.offset);
 					int iRet = add_struc_member(struc, field_name, i->second.offset, member_flgs, NULL, i->second.size);
 				}
 				j ++;
