@@ -455,7 +455,7 @@ static bool idaapi show_vtbl_xrefs_window_cb(void *ud)
 		simpleline_place_t s2(si->sv.size() - 1);
 		si->cv = create_custom_viewer("", NULL, &s1, &s2, &s1, 0, &si->sv);
 		si->codeview = create_code_viewer(form, si->cv, CDVF_STATUSBAR);
-		set_custom_viewer_handler(si->cv, CVH_DBLCLICK, ct_vtbl_xrefs_window_dblclick);
+		set_custom_viewer_handler(si->cv, CVH_DBLCLICK, (void *)ct_vtbl_xrefs_window_dblclick);
 
 		open_tform(form, FORM_ONTOP | FORM_RESTORE);
 
