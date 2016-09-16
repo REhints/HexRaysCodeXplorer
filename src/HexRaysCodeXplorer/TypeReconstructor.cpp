@@ -613,7 +613,6 @@ bool idaapi reconstruct_type(void *ud)
 							{
 								msg("New type created:\r\n%s", type_str.c_str());
 								logmsg(DEBUG, ("New type created:\r\n%s", type_str.c_str()));
-								lvar_t *lvar = vu.item.get_lvar();
 								tinfo_t ptype = make_pointer(new_type);
 								vu.set_lvar_type(lvar, ptype);
 								vu.refresh_ctext();
@@ -633,8 +632,8 @@ bool idaapi reconstruct_type(void *ud)
 	}
 	else
 	{
-		warning("Invalid item is chosen ...");
-		logmsg(DEBUG, "Invalid item is chosen");
+		warning("Selected item is invalid...");
+		logmsg(DEBUG, "Selected item is invalid...");
 		return false;
 	}
 }
