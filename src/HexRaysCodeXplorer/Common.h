@@ -41,6 +41,7 @@
 #include "Linux.h"
 #endif
 
+#define USE_DANGEROUS_FUNCTIONS
 #include <hexrays.hpp>
 #include <ida.hpp>
 #include <idp.hpp>
