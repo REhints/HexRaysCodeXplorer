@@ -631,12 +631,10 @@ bool idaapi reconstruct_type(void *ud)
 			}
 		}
 	}
-	else
-	{
-		warning("Selected item is invalid...");
-		logmsg(DEBUG, "Selected item is invalid...");
-		return false;
-	}
+
+	warning("Selected item is invalid...");
+	logmsg(DEBUG, "Selected item is invalid...");
+	return false;
 }
 
 bool idaapi reconstruct_type(cfuncptr_t cfunc, qstring var_name, qstring type_name)
