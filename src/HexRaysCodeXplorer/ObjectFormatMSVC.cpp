@@ -778,13 +778,13 @@ BOOL getPlainTypeName(LPCSTR mangled, LPSTR outStr)
 	return(TRUE);
 }
 
-void idaapi setUnknown(ea_t ea, int size)
+void idaapi setUnknown(ea_t ea, asize_t size)
 {
 	// TODO: Does the overrun problem still exist?
 	//do_unknown_range(ea, (size_t)size, DOUNK_SIMPLE);
 	while (size > 0)
 	{
-		int isize = get_item_size(ea);
+		asize_t isize = get_item_size(ea);
 		if (isize > size)
 			break;
 		else

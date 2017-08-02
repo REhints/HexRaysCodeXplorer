@@ -220,7 +220,7 @@ tid_t create_vtbl_struct(ea_t vtbl_addr, ea_t vtbl_addr_end, char* vtbl_name, uv
 		return BADNODE;
 
 	ea_t ea = vtbl_addr;
-	int offset = 0;
+	ea_t offset = 0;
 
 	while (ea < vtbl_addr_end) {
 		offset = ea - vtbl_addr;

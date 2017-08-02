@@ -40,7 +40,7 @@ namespace vftable
 	struct vtinfo
 	{
 		ea_t start, end;
-		int  methodCount;
+		asize_t methodCount;
 		qstring type_info;
 	};
 
@@ -161,7 +161,7 @@ namespace RTTI
 extern void fixEa(ea_t ea);
 extern void fixDword(ea_t eaAddress);
 extern void fixFunction(ea_t eaFunc);
-extern void idaapi setUnknown(ea_t ea, int size);
+extern void idaapi setUnknown(ea_t ea, asize_t size);
 extern bool getVerifyEa(ea_t ea, ea_t &rValue);
 extern BOOL hasAnteriorComment(ea_t ea);
 extern void killAnteriorComments(ea_t ea);

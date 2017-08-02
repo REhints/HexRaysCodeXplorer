@@ -45,7 +45,7 @@ struct VTBL_info_t
 	qstring vtbl_name;
 	ea_t ea_begin;
 	ea_t ea_end;
-	UINT methods;
+	asize_t methods;
 	
 };
 
