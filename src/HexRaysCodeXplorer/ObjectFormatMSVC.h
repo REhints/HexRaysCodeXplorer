@@ -102,7 +102,7 @@ namespace RTTI
 									// 18 When attributes & BCD_HASPCHD
 									//_RTTIClassHierarchyDescriptor *classDescriptor; *X64 int32 offset
 
-		static bool isValid(ea_t bcd, ea_t colBase64 = NULL);
+		static bool isValid(ea_t bcd, ea_t colBase64 = 0);
 
 	};
 
@@ -123,7 +123,7 @@ namespace RTTI
 		UINT baseClassArray;    // 0C *X64 int32 offset to _RTTIBaseClassArray*
 #endif
 
-		static bool isValid(ea_t chd, ea_t colBase64 = NULL);
+		static bool isValid(ea_t chd, ea_t colBase64 = 0);
 
 	};
 
