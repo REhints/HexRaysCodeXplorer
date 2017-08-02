@@ -30,7 +30,6 @@
 #if !defined (__LINUX__) && !defined (__MAC__)
 #pragma warning (disable: 4996 4800 )
 #else
-#pragma GCC diagnostic ignored "-fpermissive"
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #endif
 
