@@ -391,7 +391,12 @@ bool idaapi type_builder_t::check_ptr(cexpr_t *e, struct_filed &str_fld)
 		if (str_fld.vftbl != BADADDR) {
 			char tmp[1024];
 			memset(tmp, 0x00, sizeof(tmp));
-			sprintf_s(tmp, sizeof(tmp), "vftbl reference detected at offset 0x%X, ea=0x%08X\r\n", str_fld.offset, str_fld.vftbl);
+#ifdef __EA64__
+            const char *fmt = "vftbl reference detected at offset 0x%X, ea=0x%08llX\r\n";
+#else
+            const char *fmt = "vftbl reference detected at offset 0x%X, ea=0x%08X\r\n";
+#endif
+			sprintf_s(tmp, sizeof(tmp), fmt, str_fld.offset, str_fld.vftbl);
 
 			logmsg(DEBUG, tmp);
 		}
@@ -520,8 +525,7 @@ tid_t type_builder_t::get_structure(const qstring name)
 				else if (i->second.size == 8)
 					member_flgs = qwrdflag();
 
-				char field_name[258];
-				memset(field_name, 0x00, sizeof(field_name));
+				qstring field_name;
 
 				if((i->second.vftbl != BADADDR) && get_vbtbl_by_ea(i->second.vftbl, vtbl)) 
 				{
@@ -530,10 +534,11 @@ tid_t type_builder_t::get_structure(const qstring name)
 
 					tid_t vtbl_str_id = create_vtbl_struct(vtbl.ea_begin, vtbl.ea_end, (char *)vftbl_name.c_str(), 0);
 					if (vtbl_str_id != BADADDR) {
-						sprintf_s(field_name, sizeof(field_name), "vftbl_%d_%p", j, i->second.vftbl);
-						int iRet = add_struc_member(struc, field_name, i->second.offset, member_flgs, NULL, i->second.size);
+						field_name.cat_sprnt("vftbl_%d_%p", j, i->second.vftbl);
+						const char *fncstr = field_name.c_str();
+						int iRet = add_struc_member(struc, fncstr, i->second.offset, member_flgs, NULL, i->second.size);
 
-						member_t * membr = get_member_by_name(struc, field_name);
+						member_t * membr = get_member_by_name(struc, fncstr);
 						if (membr != NULL) {
 							tinfo_t new_type = create_typedef((char *)vftbl_name.c_str());
 							if(new_type.is_correct()) {
@@ -544,8 +549,9 @@ tid_t type_builder_t::get_structure(const qstring name)
 				} 
 				else 
 				{
-					sprintf_s(field_name, sizeof(field_name), "field_%X", i->second.offset);
-					int iRet = add_struc_member(struc, field_name, i->second.offset, member_flgs, NULL, i->second.size);
+					field_name.cat_sprnt("field_%X", i->second.offset);
+					const char *fncstr = field_name.c_str();
+					int iRet = add_struc_member(struc, fncstr, i->second.offset, member_flgs, NULL, i->second.size);
 				}
 				j ++;
 			}
@@ -630,12 +636,10 @@ bool idaapi reconstruct_type(void *ud)
 			}
 		}
 	}
-	else
-	{
-		warning("Selected item is invalid...");
-		logmsg(DEBUG, "Selected item is invalid...");
-		return false;
-	}
+
+	warning("Selected item is invalid...");
+	logmsg(DEBUG, "Selected item is invalid...");
+	return false;
 }
 
 bool idaapi reconstruct_type(cfuncptr_t cfunc, qstring var_name, qstring type_name)

@@ -50,9 +50,9 @@ bool idaapi show_string_in_custom_view(void *ud, qstring title, qstring str)
 	string_view_form_info_t *si = new string_view_form_info_t(form);
 	si->sv.push_back(simpleline_t(str));
 
-	simpleline_place_t s1(NULL);
+	simpleline_place_t s1;
 	simpleline_place_t s2(si->sv.size());
-	si->cv = create_custom_viewer(title.c_str(), NULL, &s1, &s2, &s1, NULL, &si->sv);
+	si->cv = create_custom_viewer(title.c_str(), NULL, &s1, &s2, &s1, 0, &si->sv);
 	si->codeview = create_code_viewer(form, si->cv, CDVF_NOLINES);
 	set_custom_viewer_handlers(si->cv, NULL, si);
 	open_tform(form, FORM_ONTOP | FORM_RESTORE);

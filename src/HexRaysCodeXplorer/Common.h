@@ -30,7 +30,6 @@
 #if !defined (__LINUX__) && !defined (__MAC__)
 #pragma warning (disable: 4996 4800 )
 #else
-#pragma GCC diagnostic ignored "-fpermissive"
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #endif
 
@@ -41,6 +40,7 @@
 #include "Linux.h"
 #endif
 
+#define USE_DANGEROUS_FUNCTIONS
 #include <hexrays.hpp>
 #include <ida.hpp>
 #include <idp.hpp>

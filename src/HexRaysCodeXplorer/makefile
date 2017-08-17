@@ -1,20 +1,20 @@
-CC=g++-5
+CC=g++
 LD=ld
 
 LDFLAGS=-shared -m32
 
 ifdef __LINUX__
-CFLAGS=-m32 -D__LINUX__ -DUSE_DANGEROUS_FUNCTIONS -D__PLUGIN__ -std=c++11
+CFLAGS=-m32 -D__LINUX__ -D__PLUGIN__ -std=c++11
 EXT=plx
 LDFLAGS+=-static-libgcc -static-libstdc++
 endif
 ifdef __LINUX64__
-CFLAGS=-m32 -fPIC -D__LINUX__ -DUSE_DANGEROUS_FUNCTIONS -D__PLUGIN__ -D__EA64__ -std=c++11
+CFLAGS=-m32 -fPIC -D__LINUX__ -D__PLUGIN__ -D__EA64__ -std=c++11
 EXT=plx64
 LDFLAGS+=-static-libgcc -static-libstdc++
 endif
 ifdef __MAC__
-CFLAGS=-m32 -fPIC -D__MAC__ -DUSE_DANGEROUS_FUNCTIONS -D__PLUGIN__ -std=c++11
+CFLAGS=-m32 -fPIC -D__MAC__ -D__PLUGIN__ -std=c++11
 EXT=pmc
 endif
 

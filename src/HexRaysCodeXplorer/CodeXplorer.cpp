@@ -429,7 +429,7 @@ static bool idaapi rename_simple_expr(void *ud)
 					}
 				}
 
-				for (int i = 0; i < roots[lvar_name].size(); i++) 
+				for (size_t i = 0; i < roots[lvar_name].size(); i++)
 				{
 					if (roots[lvar_name][i] == rvar_name) 
 						return 0;
@@ -456,7 +456,7 @@ static bool idaapi show_offset_in_windbg_format(void *ud) {
 	char _offset[32] = { 0 };
 	char module_name[256] = { 0 };
 	qstring result;
-	int offset;
+	adiff_t offset;
 	vdui_t &vu = *(vdui_t *)ud;
 	vu.get_current_item(USE_KEYBOARD);
 	offset = vu.item.i->ea - get_imagebase();
@@ -470,7 +470,12 @@ static bool idaapi show_offset_in_windbg_format(void *ud) {
 	get_root_filename(module_name, 255);
 	for (int i = 0; i < 255; i++)
 		if (module_name[i] == '.') { module_name[i] = 0; break; }
-	sprintf(_offset, "%x", offset);
+#ifdef __EA64__
+    const char *fmt = "%llx";
+#else
+    const char *fmt = "%x";
+#endif
+	sprintf(_offset, fmt, offset);
 	result.cat_sprnt("%s+0x%s", module_name, _offset);
 
 	qstring title {0};
