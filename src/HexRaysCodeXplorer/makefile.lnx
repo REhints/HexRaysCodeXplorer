@@ -1,0 +1,58 @@
+# use this makefile to build HexRaysCodeXplorer for Linux
+
+CC=g++
+LD=ld
+
+LDFLAGS=-shared -m32 -static-libgcc -static-libstdc++
+
+LIBDIR=-L$(IDA_DIR)
+SRCDIR=./
+HEXRAYS_SDK=$(IDA_DIR)/plugins/hexrays_sdk
+SRC=$(SRCDIR)CodeXplorer.cpp \
+	$(SRCDIR)CtreeGraphBuilder.cpp \
+	$(SRCDIR)ObjectExplorer.cpp \
+	$(SRCDIR)TypeReconstructor.cpp \
+	$(SRCDIR)CtreeExtractor.cpp \
+	$(SRCDIR)TypeExtractor.cpp \
+	$(SRCDIR)Utility.cpp \
+	$(SRCDIR)ObjectFormatMSVC.cpp \
+	$(SRCDIR)Debug.cpp
+OBJS=$(subst .cpp,.o,$(SRC))
+EXECUTABLE=HexRaysCodeXplorer
+INCLUDES=-I$(IDA_SDK)/include -I$(HEXRAYS_SDK)/include
+
+ifeq ($(EA64),1)
+	CFLAGS=-m32 -fPIC -D__LINUX__ -D__PLUGIN__ -D__EA64__ -std=c++11
+	EXT=plx64
+	LIBS= -lida64 -lc -lpthread -ldl
+else
+	CFLAGS=-m32 -D__LINUX__ -D__PLUGIN__ -std=c++11
+	EXT=plx
+	LIBS= -lida -lc -lpthread -ldl
+endif
+
+all: check-env clean HexRaysCodeXplorer.$(EXT)
+
+HexRaysCodeXplorer.$(EXT): $(OBJS)	
+	$(CC) $(LDFLAGS) $(LIBDIR) -o HexRaysCodeXplorer.$(EXT) $(OBJS) $(LIBS)
+
+%.o: %.cpp
+	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
+
+clean:
+	rm -f $(OBJS) HexRaysCodeXplorer.$(EXT)
+
+install:
+	cp -f HexRaysCodeXplorer.$(EXT) $(IDA_DIR)/plugins
+
+check-env:
+ifndef IDA_SDK
+    $(error IDA_SDK is undefined)
+endif
+ifndef IDA_DIR
+    $(error IDA_DIR is undefined)
+endif
+ifndef EA64
+    $(error specify EA64=0 for 32 bit build or EA64=1 for 64 bit build)
+endif
+.PHONY: check-env
