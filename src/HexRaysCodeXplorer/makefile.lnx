@@ -5,7 +5,7 @@ LD=ld
 
 LDFLAGS=-shared -m32 -static-libgcc -static-libstdc++
 
-LIBDIR=-L$(shell pwd) -L$(IDA_DIR)
+LIBDIR=-L$(IDA_DIR)
 SRCDIR=./
 HEXRAYS_SDK=$(IDA_DIR)/plugins/hexrays_sdk
 SRC=$(SRCDIR)CodeXplorer.cpp \
