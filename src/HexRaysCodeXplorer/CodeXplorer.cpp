@@ -32,9 +32,13 @@ along with this program.  If not, see
 #include "Utility.h"
 
 #include "Debug.h"
+#include "IObjectFormatParser.h"
+#include "MSVCObjectFormatParser.h"
+#include "GCCObjectFormatParser.h"
 
 extern plugin_t PLUGIN;
 
+IObjectFormatParser *objectFormatParser = 0;
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 
 
@@ -546,16 +550,24 @@ static bool idaapi show_current_citem_in_custom_view(void *ud)
 // display Object Explorer
 static bool idaapi display_vtbl_objects(void *ud)
 {
-	if (isMSVC())
+	if (!objectFormatParser)
 	{
-		vdui_t &vu = *(vdui_t *)ud;
-		search_objects();
-		object_explorer_form_init();
-		return true;
+		//if (isMSVC())
+		if (compilerIs(MSVC_COMPILER_ABBR))
+			objectFormatParser = new MSVCObjectFormatParser();
+		if (compilerIs(GCC_COMPILER_ABBR))
+			objectFormatParser = new GCCObjectFormatParser();
+		if (!objectFormatParser)
+		{
+			info("CodeXplorer doesn't support parsing of not MSVC VTBL's");
+			return false;
+		}
 	}
 
-	info("CodeXplorer doesn't support parsing of not MSVC VTBL's");
-	return false;
+	vdui_t &vu = *(vdui_t *)ud;
+	search_objects();
+	object_explorer_form_init();
+	return true;
 }
 
 

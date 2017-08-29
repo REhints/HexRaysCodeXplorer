@@ -25,7 +25,7 @@
 
 #include "Common.h"
 #include "ObjectExplorer.h"
-#include "ObjectFormatMSVC.h"
+#include "GCCObjectFormatParser.h"
 #include "Utility.h"
 
 #include "Debug.h"
@@ -39,7 +39,7 @@
 qvector <VTBL_info_t> vtbl_t_list;	// list of vtables found in the binary
 qvector <qstring> vtbl_list;		// list of string for ObjectExplrer vtables view
 
-extern std::map<ea_t, vftable::vtinfo> rtti_vftables;
+std::map<ea_t, VTBL_info_t> rtti_vftables;
 
 void free_vtable_lists() {
 	vtbl_t_list.clear();
@@ -206,8 +206,9 @@ bool get_vbtbl_by_ea(ea_t vtbl_addr, VTBL_info_t &vtbl) {
 tid_t create_vtbl_struct(ea_t vtbl_addr, ea_t vtbl_addr_end, char* vtbl_name, uval_t idx, unsigned int* vtbl_len)
 {
 	qstring struc_name = vtbl_name;
+	struc_name += "::vtable";
 	tid_t id = add_struc(BADADDR, struc_name.c_str());
-	
+
 	if (id == BADADDR) {
 		struc_name.clear();
 		struc_name = askstr(HIST_IDENT, NULL, "Default name %s not correct. Enter other structure name: ", struc_name.c_str());
@@ -227,7 +228,16 @@ tid_t create_vtbl_struct(ea_t vtbl_addr, ea_t vtbl_addr_end, char* vtbl_name, uv
 		qstring method_name;
 		ea_t method_ea = getEa(ea);
 
-		if (method_ea == 0) break;
+		if (ph.id == PLFM_ARM)
+		{
+			method_ea &= (ea_t)-2;
+		}
+
+		if (method_ea == 0)
+		{
+			ea = ea + sizeof(ea_t);
+			continue;
+		}
 		if (!isEnabled(method_ea)) break;
 
 		flags_t method_flags = getFlags(method_ea);
@@ -264,15 +274,15 @@ void find_vtables_rtti()
 	logmsg(DEBUG, "\nprocess_rtti()\n");
 
 	// get rtti_vftables map using rtti data
-	getRttiData();
+	objectFormatParser->getRttiInfo();
 
 	// store this inormation in the lists
-	for (std::map<ea_t, vftable::vtinfo>::iterator it = rtti_vftables.begin(); it != rtti_vftables.end() ; it ++ ) {
+	for (std::map<ea_t, VTBL_info_t>::iterator it = rtti_vftables.begin(); it != rtti_vftables.end(); it++) {
 		VTBL_info_t vftable_info_t;
-		vftable_info_t.ea_begin = it->second.start;
-		vftable_info_t.ea_end = it->second.end;
-		vftable_info_t.methods = it->second.methodCount;
-		vftable_info_t.vtbl_name = it->second.type_info;
+		vftable_info_t.ea_begin = it->second.ea_begin;
+		vftable_info_t.ea_end = it->second.ea_end;
+		vftable_info_t.methods = it->second.methods;
+		vftable_info_t.vtbl_name = it->second.vtbl_name;
 
 		qstring vtbl_info_str;
 		vtbl_info_str.cat_sprnt(" 0x%x - 0x%x:  %s  methods count: %d", vftable_info_t.ea_begin, vftable_info_t.ea_end, vftable_info_t.vtbl_name.c_str(), vftable_info_t.methods);

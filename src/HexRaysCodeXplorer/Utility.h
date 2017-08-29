@@ -76,8 +76,11 @@ template <class T> bool getVerify32_t(ea_t eaPtr, T &rValue)
 }
 
 
-// Check MSVC compiler
-bool isMSVC();
+#define MSVC_COMPILER_ABBR "vc"
+#define GCC_COMPILER_ABBR "gcc"
+
+// Check compiler
+bool compilerIs(const char *name);
 
 
 // Get address/pointer value
@@ -133,3 +136,7 @@ void SHA1MessageDigestToString(uint8_t Message_Digest[SHA1HashSize], char outbuf
 void split_qstring(qstring &options, qstring &splitter, qvector<qstring> &result);
 
 #endif
+
+void idaapi setUnknown(ea_t ea, asize_t size);
+void MakeName(ea_t ea, qstring name, char * prefix = "", char * postfix = "");
+bool MakeArray(ea_t ea, size_t nitems);

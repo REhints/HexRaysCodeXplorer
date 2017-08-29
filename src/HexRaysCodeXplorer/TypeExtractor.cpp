@@ -27,7 +27,6 @@
 #include "TypeReconstructor.h"
 #include "TypeExtractor.h"
 #include "CtreeExtractor.h"
-#include "ObjectFormatMSVC.h"
 
 #include "Debug.h"
 
@@ -38,7 +37,7 @@
 #define STRUCT_DUMP_MIN_MEMBER_COUNT  4
 
 extern qvector <VTBL_info_t> vtbl_t_list;
-extern std::map<ea_t, vftable::vtinfo> rtti_vftables;
+extern std::map<ea_t, VTBL_info_t> rtti_vftables;
 
 struct obj_fint_t : public ctree_parentee_t
 {
@@ -301,8 +300,8 @@ void idaapi dump_type_info(int file_id, VTBL_info_t vtbl_info, qstring type_name
 						line += file_entry_val + ";";
 						
 						if (rtti_vftables.count(vtbl_info.ea_begin) != 0) {
-							vftable::vtinfo vi = rtti_vftables[vtbl_info.ea_begin];
-							line += vi.type_info;
+							VTBL_info_t vi = rtti_vftables[vtbl_info.ea_begin];
+							line += vi.vtbl_name;
 						}
 						line.rtrim();
 						line += "\r\n";

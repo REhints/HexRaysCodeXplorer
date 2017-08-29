@@ -23,8 +23,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #pragma once 
+#include "IObjectFormatParser.h"
 #include "Common.h"
-
 
 //////////////////////////////////////////////////////////////////////////
 //
@@ -170,7 +170,14 @@ extern BOOL getPlainTypeName(IN LPCSTR mangled, LPSTR outStr);
 
 extern BOOL optionOverwriteComments, optionPlaceStructs;
 
-void idaapi getRttiData();
+class MSVCObjectFormatParser :
+	public IObjectFormatParser
+{
+public:
+	MSVCObjectFormatParser();
+	virtual ~MSVCObjectFormatParser();
 
-
+	virtual void getRttiInfo();
+	virtual void clearInfo();
+};
 

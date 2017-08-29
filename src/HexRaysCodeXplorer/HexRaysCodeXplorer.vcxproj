@@ -126,6 +126,7 @@
     <LinkIncremental>true</LinkIncremental>
     <NMakeBuildCommandLine>build makefile</NMakeBuildCommandLine>
     <TargetExt>.plw</TargetExt>
+    <OutDir>$(IDADIR)\plugins\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
@@ -321,10 +322,14 @@
   <ItemGroup>
     <ClCompile Include="Debug.cpp" />
     <ClCompile Include="CtreeExtractor.cpp" />
+    <ClCompile Include="GCCObjectFormatParser.cpp" />
+    <ClCompile Include="GCCTypeInfo.cpp" />
+    <ClCompile Include="GCCVtableInfo.cpp" />
+    <ClCompile Include="IObjectFormatParser.cpp" />
+    <ClCompile Include="MSVCObjectFormatParser.cpp" />
     <ClCompile Include="ObjectExplorer.cpp" />
     <ClCompile Include="CodeXplorer.cpp" />
     <ClCompile Include="CtreeGraphBuilder.cpp" />
-    <ClCompile Include="ObjectFormatMSVC.cpp" />
     <ClCompile Include="TypeReconstructor.cpp" />
     <ClCompile Include="TypeExtractor.cpp" />
     <ClCompile Include="Utility.cpp" />
@@ -333,10 +338,14 @@
     <ClInclude Include="Common.h" />
     <ClInclude Include="Debug.h" />
     <ClInclude Include="CtreeExtractor.h" />
+    <ClInclude Include="GCCObjectFormatParser.h" />
+    <ClInclude Include="GCCTypeInfo.h" />
+    <ClInclude Include="GCCVtableInfo.h" />
+    <ClInclude Include="IObjectFormatParser.h" />
     <ClInclude Include="Linux.h" />
+    <ClInclude Include="MSVCObjectFormatParser.h" />
     <ClInclude Include="ObjectExplorer.h" />
     <ClInclude Include="CtreeGraphBuilder.h" />
-    <ClInclude Include="ObjectFormatMSVC.h" />
     <ClInclude Include="TypeReconstructor.h" />
     <ClInclude Include="TypeExtractor.h" />
     <ClInclude Include="Utility.h" />
