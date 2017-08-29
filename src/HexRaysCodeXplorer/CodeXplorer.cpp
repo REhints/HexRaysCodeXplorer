@@ -227,11 +227,12 @@ static int idaapi gr_callback(void *ud, int code, va_list va)
 		DECLARE_GI_VARS;
 		graph_viewer_t *v = va_arg(va, graph_viewer_t *);
 		selection_item_t *s = va_arg(va, selection_item_t *);
-
-		callgraph_t::nodeinfo_t *ni = fg->get_info(s->node);
-		result = ni != NULL;
-		if (result && s->is_node && ni->ea != BADADDR)
-			jumpto(ni->ea);
+                if (s != NULL) {
+                        callgraph_t::nodeinfo_t *ni = fg->get_info(s->node);
+                        result = ni != NULL;
+                        if (result && s->is_node && ni->ea != BADADDR)
+                                jumpto(ni->ea);
+                }
 	}
 	break;
 
