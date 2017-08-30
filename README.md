@@ -105,6 +105,21 @@ Example (dump types and ctrees for functions with name prefix "crypto_"):
 idaq.exe -OHexRaysCodeXplorer:dump_types:dump_ctrees:CRYPTOcrypto_path_to_idb
 ```
 
+__Compiling__:
+
+***Windows:*** 
+* Open the solution in Visual Studio and build it
+
+***Linux***:
+* cd src/HexRaysCodeExplorer/
+* IDA_DIR=<PATH_TO_IDA> IDA_SDK=<PATH_TO_IDA_SDK> EA64=0 make -f makefile.lnx
+* IDA_DIR=<PATH_TO_IDA> IDA_SDK=<PATH_TO_IDA_SDK> EA64=0 make -f makefile.lnx
+  
+***Mac***:
+* cd src/HexRaysCodeExplorer/
+* IDA_DIR=<PATH_TO_IDA> IDA_SDK=<PATH_TO_IDA_SDK> make -f makefile.mac
+* The Mac makefile might need some hand editing, pull requests welcome!
+
 ============================================================================
 
 __Conference talks about CodeXplorer plugin:__

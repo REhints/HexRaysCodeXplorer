@@ -1,3 +1,6 @@
+# DO NOT USE THIS makefile FOR LINUX
+# USER makefile.lnx INSTEAD
+
 CC=g++
 LD=ld
 

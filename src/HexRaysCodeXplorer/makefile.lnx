@@ -8,6 +8,8 @@ LDFLAGS=-shared -m32 -static-libgcc -static-libstdc++
 LIBDIR=-L$(IDA_DIR)
 SRCDIR=./
 HEXRAYS_SDK=$(IDA_DIR)/plugins/hexrays_sdk
+INCLUDES=-I$(IDA_SDK)/include -I$(HEXRAYS_SDK)/include
+
 SRC=$(SRCDIR)CodeXplorer.cpp \
 	$(SRCDIR)CtreeGraphBuilder.cpp \
 	$(SRCDIR)ObjectExplorer.cpp \
@@ -17,18 +19,19 @@ SRC=$(SRCDIR)CodeXplorer.cpp \
 	$(SRCDIR)Utility.cpp \
 	$(SRCDIR)ObjectFormatMSVC.cpp \
 	$(SRCDIR)Debug.cpp
+
 OBJS=$(subst .cpp,.o,$(SRC))
-EXECUTABLE=HexRaysCodeXplorer
-INCLUDES=-I$(IDA_SDK)/include -I$(HEXRAYS_SDK)/include
+
+CFLAGS=-m32 -fPIC -D__LINUX__ -D__PLUGIN__ -std=c++11
+LIBS=-lc -lpthread -ldl
 
 ifeq ($(EA64),1)
-	CFLAGS=-m32 -fPIC -D__LINUX__ -D__PLUGIN__ -D__EA64__ -std=c++11
+	CFLAGS+=-D__EA64__
+	LIBS+=-lida64
 	EXT=plx64
-	LIBS= -lida64 -lc -lpthread -ldl
 else
-	CFLAGS=-m32 -D__LINUX__ -D__PLUGIN__ -std=c++11
 	EXT=plx
-	LIBS= -lida -lc -lpthread -ldl
+	LIBS+=-lida
 endif
 
 all: check-env clean HexRaysCodeXplorer.$(EXT)
