@@ -1,0 +1,45 @@
+CXX ?= clang++
+MACSDK=$(shell xcrun --show-sdk-path --sdk macosx)
+CXXFLAGS=-m32 -fPIC -shared  -D__PLUGIN__ -Wall -Wextra -std=c++11 -isysroot $(MACSDK) -static-libstdc++ -DUSE_DANGEROUS_FUNCTIONS=1 -DUSE_STANDARD_FILE_FUNCTIONS=1
+LDFLAGS=-shared -m32
+LIBS=-lc -lpthread -ldl -lpro
+INCLUDES=-I$(IDA_SDK)/include -I$(IDA_DIR)/plugins/hexrays_sdk/include
+
+SRCDIR=./
+SRC=$(SRCDIR)CodeXplorer.cpp \
+	$(SRCDIR)CtreeGraphBuilder.cpp \
+	$(SRCDIR)ObjectExplorer.cpp \
+	$(SRCDIR)TypeReconstructor.cpp \
+	$(SRCDIR)CtreeExtractor.cpp \
+	$(SRCDIR)TypeExtractor.cpp \
+	$(SRCDIR)Utility.cpp \
+	$(SRCDIR)ObjectFormatMSVC.cpp \
+	$(SRCDIR)Debug.cpp
+#SRC = $(wildcard src/*.cpp)
+#OBJS=$(subst .cpp,.o,$(SRC))
+
+all: check-env HexRaysCodeXplorer.pmc HexRaysCodeXplorer.pmc64
+
+HexRaysCodeXplorer.pmc: $(SRC)
+	$(CXX) $(LDFLAGS) $(SRC) $(CXXFLAGS) -L. -L$(IDA_DIR) $(INCLUDES) -D__MAC__=1 $(LIBS) -lida -o HexRaysCodeXplorer.pmc
+
+HexRaysCodeXplorer.pmc64: $(SRC)
+	$(CXX) $(LDFLAGS) $(SRC) $(CXXFLAGS) -L. -L$(IDA_DIR) $(INCLUDES) -D__MAC__=1 -D__EA64__=1 $(LIBS) -lida64 -o HexRaysCodeXplorer.pmc64
+
+clean:
+	rm -f HexRaysCodeXplorer.pmc HexRaysCodeXplorer.pmc64
+
+install:
+	cp -f HexRaysCodeXplorer.pmc $(IDA_DIR)/plugins/
+	cp -f HexRaysCodeXplorer.pmc64 $(IDA_DIR)/plugins/
+
+check-env:
+ifndef IDA_SDK
+    $(error IDA_SDK is undefined)
+endif
+ifndef IDA_DIR
+    $(error IDA_DIR is undefined)
+endif
+	ln -f -s $(IDA_SDK)/lib/x86_mac_gcc_32/pro.a libpro.a
+
+.PHONY: check-env
