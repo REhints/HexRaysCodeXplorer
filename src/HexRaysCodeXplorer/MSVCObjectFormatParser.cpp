@@ -23,7 +23,7 @@ along with this program.  If not, see
 ==============================================================================
 */
 
-#include "ObjectFormatMSVC.h"
+#include "MSVCObjectFormatParser.h"
 #include "ObjectExplorer.h"
 #include "Utility.h"
 
@@ -542,7 +542,7 @@ BOOL RTTI::processVftable(ea_t vft, ea_t col, vftable::vtinfo &vi)
 
 			sucess = TRUE;
 		}
-		
+
 		// ======= Multiple inheritance, and, or, virtual inheritance hierarchies
 		else
 		{
@@ -778,24 +778,6 @@ BOOL getPlainTypeName(LPCSTR mangled, LPSTR outStr)
 	return(TRUE);
 }
 
-void idaapi setUnknown(ea_t ea, asize_t size)
-{
-	// TODO: Does the overrun problem still exist?
-	//do_unknown_range(ea, (size_t)size, DOUNK_SIMPLE);
-	while (size > 0)
-	{
-		asize_t isize = get_item_size(ea);
-		if (isize > size)
-			break;
-		else
-		{
-			do_unknown(ea, DOUNK_SIMPLE);
-			ea += (ea_t)isize, size -= isize;
-		}
-	};
-}
-
-
 // Scan segment for COLs
 void idaapi scanSeg4Cols(segment_t *seg)
 {
@@ -868,7 +850,7 @@ void idaapi findCols()
 			}
 		}
 	}
-	
+
 
 	// If still none found, try any remaining data type segments
 	if (colList.empty())
@@ -940,7 +922,7 @@ void idaapi findVftables()
 {
 	// COLs in a hash map for speed, plus match counts
 	eaRefMap colMap;
-	for (eaList::const_iterator it = colList.begin(), end = colList.end(); it != end; ++ it)
+	for (eaList::const_iterator it = colList.begin(), end = colList.end(); it != end; ++it)
 		colMap[*it] = 0;
 
 	// Usually in ".rdata", try first.
@@ -1008,12 +990,24 @@ void idaapi findVftables()
 	return;
 }
 
-// Gather RTTI data
-void idaapi getRttiData()
+MSVCObjectFormatParser::MSVCObjectFormatParser()
+{
+}
+
+
+MSVCObjectFormatParser::~MSVCObjectFormatParser()
+{
+}
+void MSVCObjectFormatParser::getRttiInfo()
 {
 	freeWorkingData();
 
 	findCols();
 
 	findVftables();
+}
+
+void MSVCObjectFormatParser::clearInfo()
+{
+	freeWorkingData();
 }
