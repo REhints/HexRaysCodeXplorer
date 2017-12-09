@@ -39,7 +39,7 @@
 qvector <VTBL_info_t> vtbl_t_list;	// list of vtables found in the binary
 qvector <qstring> vtbl_list;		// list of string for ObjectExplrer vtables view
 
-std::map<ea_t, VTBL_info_t> rtti_vftables;
+static std::map<ea_t, VTBL_info_t> rtti_vftables;
 
 void free_vtable_lists() {
 	vtbl_t_list.clear();
