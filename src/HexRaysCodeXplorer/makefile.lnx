@@ -17,7 +17,11 @@ SRC=$(SRCDIR)CodeXplorer.cpp \
 	$(SRCDIR)CtreeExtractor.cpp \
 	$(SRCDIR)TypeExtractor.cpp \
 	$(SRCDIR)Utility.cpp \
-	$(SRCDIR)ObjectFormatMSVC.cpp \
+	$(SRCDIR)MSVCObjectFormatParser.cpp \
+	$(SRCDIR)IObjectFormatParser.cpp \
+	$(SRCDIR)GCCObjectFormatParser.cpp \
+	$(SRCDIR)GCCVtableInfo.cpp \
+	$(SRCDIR)GCCTypeInfo.cpp \
 	$(SRCDIR)Debug.cpp
 
 OBJS=$(subst .cpp,.o,$(SRC))
