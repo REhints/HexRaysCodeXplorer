@@ -44,15 +44,15 @@ struct ctree_dumper_t : public ctree_parentee_t
 	int idaapi leave_insn(cinsn_t *i) { return process_leave(i); }
 	int idaapi leave_expr(cexpr_t *e) { return process_leave(e); }
 	bool idaapi filter_citem(citem_t *item);
-	char * parse_ctree_item(citem_t *item, char *buf, int bufsize) const;
+	void parse_ctree_item(citem_t *item, qstring& rv) const;
 };
 
 
-bool idaapi show_citem_custom_view(void *ud, qstring ctree_item, qstring item_name);
-bool idaapi dump_funcs_ctree(void *ud, qstring &crypto_prefix);
+bool idaapi show_citem_custom_view(void *ud, const qstring& ctree_item, const qstring& item_name);
+bool idaapi dump_funcs_ctree(void *ud, const qstring &crypto_prefix);
 bool idaapi extract_all_ctrees(void *ud);
 int create_open_file(const char* file_name);
-int get_hash_of_string(qstring &string_to_hash, qstring &hash);
+int get_hash_of_string(const qstring &string_to_hash, qstring &hash);
 
 
 #endif

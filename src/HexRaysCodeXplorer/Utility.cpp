@@ -43,24 +43,23 @@ bool compilerIs(const char *name)
 	return false;
 }
 
-bool idaapi show_string_in_custom_view(void *ud, qstring title, qstring str)
+bool idaapi show_string_in_custom_view(void *ud, const qstring& title, const qstring& str)
 {
-	HWND hwnd(NULL);
-	TForm *form = create_tform(title.c_str(), &hwnd);
-	string_view_form_info_t *si = new string_view_form_info_t(form);
+	TWidget *widget = create_empty_widget(title.c_str());
+	string_view_form_info_t *si = new string_view_form_info_t(widget);
 	si->sv.push_back(simpleline_t(str));
 
 	simpleline_place_t s1;
-	simpleline_place_t s2(si->sv.size());
-	si->cv = create_custom_viewer(title.c_str(), NULL, &s1, &s2, &s1, 0, &si->sv);
-	si->codeview = create_code_viewer(form, si->cv, CDVF_NOLINES);
-	set_custom_viewer_handlers(si->cv, NULL, si);
-	open_tform(form, FORM_ONTOP | FORM_RESTORE);
+	simpleline_place_t s2(static_cast<int>(si->sv.size()));
+	si->cv = create_custom_viewer((title + "_").c_str(), &s1, &s2, &s1, nullptr, &si->sv, nullptr, nullptr, widget);
+	si->codeview = create_code_viewer(si->cv, CDVF_NOLINES, widget);
+	set_custom_viewer_handlers(si->cv, nullptr, si);
+	display_widget(widget, WOPN_ONTOP | WOPN_RESTORE);
 
 	return false;
 }
 
-void split_qstring(qstring &options, qstring &splitter, qvector<qstring> &result) {
+void split_qstring(const qstring &options, const qstring &splitter, qvector<qstring> &result) {
 	size_t start_pos = 0;
 
 	do {
@@ -130,7 +129,7 @@ int SHA1Result(SHA1Context *context, uint8_t Message_Digest[SHA1HashSize])
 	return shaSuccess;
 }
 
-int SHA1Input(SHA1Context *context, const uint8_t *message_array, unsigned length)
+int SHA1Input(SHA1Context *context, const uint8_t *message_array, unsigned int length)
 {
 	if (!length)
 	{
@@ -296,16 +295,15 @@ void idaapi setUnknown(ea_t ea, asize_t size)
 		asize_t isize = get_item_size(ea);
 		if (isize > size)
 			break;
-		else
-		{
-			do_unknown(ea, DOUNK_SIMPLE);
-			ea += (ea_t)isize, size -= isize;
-		}
+
+		del_items(ea);
+		ea += (ea_t)isize;
+		size -= isize;
 	};
 }
 
 
-void MakeName(ea_t ea, qstring name, char * prefix, char * postfix)
+void MakeName(ea_t ea, const qstring& name, char * prefix, char * postfix)
 {
 	qstring g_name(prefix);
 	g_name += name;
@@ -321,19 +319,19 @@ void MakeName(ea_t ea, qstring name, char * prefix, char * postfix)
 
 bool MakeArray(ea_t ea, size_t nitems)
 {
-	opinfo_t ti;
-	asize_t itemsize;
-	tid_t tid;
-	flags_t flags = getFlags(ea);
-	if (isCode(flags) || isTail(flags) || isAlign(flags))
+	asize_t itemsize = 0;
+	tid_t tid = BADADDR;
+	flags_t flags = get_flags(ea);
+	if (is_code(flags) || is_tail(flags) || is_align(flags))
 		return false;
 
-	if (isUnknown(flags))
+	if (is_unknown(flags))
 		flags = 0;
 
-	if (isStruct(flags))
+	if (is_struct(flags))
 	{
-		if (get_opinfo(ea, 0, flags, &ti) == 0)
+		opinfo_t ti;
+		if (!get_opinfo(&ti, ea, 0, flags))
 			return false;
 		itemsize = get_data_elsize(ea, flags, &ti);
 		tid = ti.tid;
@@ -341,8 +339,7 @@ bool MakeArray(ea_t ea, size_t nitems)
 	else
 	{
 		itemsize = get_item_size(ea);
-		tid = BADADDR;
 	}
 
-	return do_data_ex(ea, flags, itemsize * nitems, tid);
+	return create_data(ea, flags, static_cast<asize_t>(itemsize * nitems), tid);
 }

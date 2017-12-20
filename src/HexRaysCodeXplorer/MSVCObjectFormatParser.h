@@ -144,8 +144,8 @@ namespace RTTI
 #endif
 
 
-		static BOOL isValid(ea_t col);
-		static BOOL isValid2(ea_t col);
+		static bool isValid(ea_t col);
+		static bool isValid2(ea_t col);
 
 	};
 #pragma pack(pop)
@@ -154,7 +154,7 @@ namespace RTTI
 
 	void freeWorkingData();
 
-	BOOL processVftable(ea_t vft, ea_t col, vftable::vtinfo &vi);
+	bool processVftable(ea_t vft, ea_t col, vftable::vtinfo &vi);
 }
 
 
@@ -166,7 +166,7 @@ extern bool getVerifyEa(ea_t ea, ea_t &rValue);
 extern BOOL hasAnteriorComment(ea_t ea);
 extern void killAnteriorComments(ea_t ea);
 
-extern BOOL getPlainTypeName(IN LPCSTR mangled, LPSTR outStr);
+extern bool getPlainTypeName(LPCSTR mangled, qstring& outStr);
 
 extern BOOL optionOverwriteComments, optionPlaceStructs;
 
@@ -174,7 +174,6 @@ class MSVCObjectFormatParser :
 	public IObjectFormatParser
 {
 public:
-	MSVCObjectFormatParser();
 	virtual ~MSVCObjectFormatParser();
 
 	virtual void getRttiInfo();

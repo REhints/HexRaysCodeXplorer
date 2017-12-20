@@ -86,7 +86,7 @@ int idaapi type_reference::get_type_increment_val() {
 	if (type.is_ptr()) {
 		ptr_type_data_t ptr_deets;
 		if(type.get_ptr_details(&ptr_deets)) {
-			return ptr_deets.obj_type.get_size();
+			return static_cast<int>(ptr_deets.obj_type.get_size());
 		}
 	} else if (type.is_array()) {
 		return 1;
@@ -141,7 +141,7 @@ struct type_builder_t : public ctree_parentee_t
 	
 	int idaapi visit_expr(cexpr_t *e);
 
-	tid_t get_structure(const qstring name);
+	tid_t get_structure(const qstring& name);
 
 	bool get_structure(std::map<int, struct_filed> &struc);
 
@@ -182,36 +182,40 @@ bool idaapi type_builder_t::check_helper(citem_t *parent, int &off, int &num)
 		cexpr_t *expr_2 = (cexpr_t *)parent;
 		if(!strcmp(get_ctype_name(expr_2->x->op), "helper"))
 		{
-			char buff[MAXSTR];
-			expr_2->x->print1(buff, MAXSTR, NULL);
-			tag_remove(buff, buff, MAXSTR);
+			qstring expr;
+			{
+				char buff[MAXSTR] = {};
+				expr_2->x->print1(buff, MAXSTR -1, NULL);
+				expr = buff;
+				tag_remove(&expr);
+			}
 
-			if(!strcmp(buff, "LOBYTE"))
+			if(expr == "LOBYTE")
 			{
 				num = 1;
 				off = 0;
 			}
-			else if(!strcmp(buff, "HIBYTE") || !strcmp(buff, "BYTE3"))
+			else if(expr == "HIBYTE" || expr == "BYTE3")
 			{
 				num = 1;
 				off = 3;
 			}
-			else if(!strcmp(buff, "BYTE1"))
+			else if(expr == "BYTE1")
 			{
 				num = 1;
 				off = 1;
 			}
-			else if(!strcmp(buff, "BYTE2"))
+			else if(expr == "BYTE2")
 			{
 				num = 1;
 				off = 2;
 			}
-			else if(!strcmp(buff, "LOWORD"))
+			else if(expr == "LOWORD")
 			{
 				num = 2;
 				off = 0;
 			}
-			else if(!strcmp(buff, "HIWORD"))
+			else if(expr == "HIWORD")
 			{
 				num = 2;
 				off = 2;
@@ -305,7 +309,7 @@ bool idaapi type_builder_t::check_ptr(cexpr_t *e, struct_filed &str_fld)
 
 	bool done = false;
 
-	int par_size = parents.size();
+	auto par_size = parents.size();
 	// check if it has at least three parents
 	if ( par_size > 2 )
 	{
@@ -324,9 +328,11 @@ bool idaapi type_builder_t::check_ptr(cexpr_t *e, struct_filed &str_fld)
 				cexpr_t *expr_2 = (cexpr_t *)parent_i;
 				
 				// get index_value
-				char buff[MAXSTR];
-				expr_2->y->print1(buff, MAXSTR, NULL);
-				tag_remove(buff, buff, MAXSTR);
+				char buff[MAXSTR] = {};
+				expr_2->y->print1(buff, MAXSTR - 1, NULL);
+				qstring s{ buff };
+				tag_remove(&s);
+				strncpy(buff, s.c_str(), MAXSTR - 1);
 				
 				int base = 10;
 				if (strncmp(buff, "0x", 2) == 0)
@@ -356,9 +362,11 @@ bool idaapi type_builder_t::check_ptr(cexpr_t *e, struct_filed &str_fld)
 				break;
 			} else if(parent_i->is_expr() && (parent_i->op == cot_asg)) {
 				if (((cexpr_t *)parent_i)->y == e) { //parents[parents.size() - i]) {
-					char expr_name[MAXSTR];
-					((cexpr_t *)parent_i)->x->print1(expr_name, MAXSTR, NULL);
-					tag_remove(expr_name, expr_name, MAXSTR);
+					char expr_name[MAXSTR] = {};
+					((cexpr_t *)parent_i)->x->print1(expr_name, MAXSTR - 1, NULL);
+					qstring s{ expr_name };
+					tag_remove(&s);
+					strncpy(expr_name, s.c_str(), MAXSTR - 1);
 
 					char comment[258];
 					memset(comment, 0x00, sizeof(comment));
@@ -392,9 +400,9 @@ bool idaapi type_builder_t::check_ptr(cexpr_t *e, struct_filed &str_fld)
 			char tmp[1024];
 			memset(tmp, 0x00, sizeof(tmp));
 #ifdef __EA64__
-            const char *fmt = "vftbl reference detected at offset 0x%X, ea=0x%08llX\r\n";
+			const char *fmt = "vftbl reference detected at offset 0x%X, ea=0x%08llX\r\n";
 #else
-            const char *fmt = "vftbl reference detected at offset 0x%X, ea=0x%08X\r\n";
+			const char *fmt = "vftbl reference detected at offset 0x%X, ea=0x%08X\r\n";
 #endif
 			sprintf_s(tmp, sizeof(tmp), fmt, str_fld.offset, str_fld.vftbl);
 
@@ -419,18 +427,19 @@ bool idaapi type_builder_t::check_idx(struct_filed &str_fld)
 			if(parent_2->op == cot_idx)
 			{
 				cexpr_t *expr_2 = (cexpr_t *)parent_2;
-				
+
 				// get index_value
-				char buff[MAXSTR];
-				expr_2->y->print1(buff, MAXSTR, NULL);
-				tag_remove(buff, buff, MAXSTR);
-				int num = atoi(buff);
-						
+				char buff[MAXSTR] = {};
+				expr_2->y->print1(buff, MAXSTR -1, NULL);
+				qstring s{ buff };
+				tag_remove(&s);
+				int num = atoi(s.c_str());
+
 				citem_t *parent_3 = parents[parents.size() - 3];
 				if(parent_3->is_expr() && (parent_3->op == cot_asg))
 				{
 					cexpr_t *expr_1 = (cexpr_t *)parent_1;	
-				
+
 					str_fld.offset = expr_1->m + num;
 					str_fld.size = get_idx_type_size(expr_2);
 
@@ -460,7 +469,9 @@ int idaapi type_builder_t::visit_expr(cexpr_t *e)
 		// get the variable name
 		char expr_name[MAXSTR];
 		e->print1(expr_name, MAXSTR, NULL);
-        tag_remove(expr_name, expr_name, MAXSTR);
+		qstring s{ expr_name };
+		tag_remove(&s);
+		strncpy(expr_name, s.c_str(), MAXSTR - 1);
 
 		// check for the target variable
 		if(match_expression(expr_name))
@@ -485,10 +496,9 @@ int type_builder_t::get_structure_size()
 	int highest_offset = 0;
 	int reference_size = 0;
 
-	
-	for(std::map<int, struct_filed>::iterator i = structure.begin(); i != structure.end() ; i ++)
+	for (std::map<int, struct_filed>::iterator i = structure.begin(); i != structure.end() ; ++i)
 	{
-		if(highest_offset < i->second.offset)
+		if (highest_offset < i->second.offset)
 		{
 			highest_offset = i ->second.offset;
 			reference_size = i->second.size;
@@ -498,10 +508,10 @@ int type_builder_t::get_structure_size()
 	return highest_offset + reference_size;
 }
 
-tid_t type_builder_t::get_structure(const qstring name)
+tid_t type_builder_t::get_structure(const qstring& name)
 {
 	tid_t struct_type_id = add_struc(BADADDR, name.c_str());
-	if (struct_type_id != 0 || struct_type_id != -1)
+	if (struct_type_id != BADADDR)
 	{
 		struc_t * struc = get_struc(struct_type_id);
 		if(struc != NULL)
@@ -511,23 +521,23 @@ tid_t type_builder_t::get_structure(const qstring name)
 
 			int j = 0;
 			
-			for(std::map<int, struct_filed>::iterator i = structure.begin(); i != structure.end() ; i ++)
+			for(std::map<int, struct_filed>::iterator i = structure.begin(); i != structure.end() ; ++i)
 			{
 				VTBL_info_t vtbl;
 
 				flags_t member_flgs = 0;
 				if(i->second.size == 1)
-					member_flgs = byteflag();
+					member_flgs = byte_flag();
 				else if (i->second.size == 2)
-					member_flgs = wordflag();
+					member_flgs = word_flag();
 				else if (i->second.size == 4)
-					member_flgs = dwrdflag();
+					member_flgs = dword_flag();
 				else if (i->second.size == 8)
-					member_flgs = qwrdflag();
+					member_flgs = qword_flag();
 
 				qstring field_name;
 
-				if((i->second.vftbl != BADADDR) && get_vbtbl_by_ea(i->second.vftbl, vtbl)) 
+				if((i->second.vftbl != BADADDR) && get_vbtbl_by_ea(i->second.vftbl, vtbl))
 				{
 					qstring vftbl_name = name;
 					vftbl_name.cat_sprnt("_VTABLE_%X_%p", i->second.offset, i->second.vftbl);
@@ -542,7 +552,7 @@ tid_t type_builder_t::get_structure(const qstring name)
 						if (membr != NULL) {
 							tinfo_t new_type = create_typedef((char *)vftbl_name.c_str());
 							if(new_type.is_correct()) {
-								smt_code_t dd = set_member_tinfo2(struc, membr, 0, make_pointer(new_type), SET_MEMTI_COMPATIBLE);
+								smt_code_t dd = set_member_tinfo(struc, membr, 0, make_pointer(new_type), SET_MEMTI_COMPATIBLE);
 							}
 						}
 					}	
@@ -575,10 +585,10 @@ bool type_builder_t::get_structure(std::map<int, struct_filed> &struc)
 	return bResult;
 }
 
-bool idaapi reconstruct_type(void *ud)
+bool idaapi reconstruct_type_cb(void *ud)
 {
 	vdui_t &vu = *(vdui_t *)ud;
-  
+
 	// Determine the ctree item to highlight
 	vu.get_current_item(USE_KEYBOARD);
 	citem_t *highlight = vu.item.is_citem() ? vu.item.e : NULL;
@@ -593,11 +603,13 @@ bool idaapi reconstruct_type(void *ud)
 
 			// initialize type rebuilder
 			type_builder_t type_bldr;
-			char highl_expr_name[MAXSTR];
-			highl_expr->print1(highl_expr_name, sizeof(highl_expr_name), NULL);
-			tag_remove(highl_expr_name, highl_expr_name, sizeof(highl_expr_name));
-			type_bldr.expression_to_match.push_back(highl_expr_name);
-
+			{
+				char highl_expr_name[MAXSTR] = {};
+				highl_expr->print1(highl_expr_name, _countof(highl_expr_name) - 1, NULL);
+				qstring s{ highl_expr_name };
+				tag_remove(&s);
+				type_bldr.expression_to_match.push_back(s.c_str());
+			}
 			// traverse the ctree structure
 			type_bldr.apply_to(&vu.cfunc->body, NULL);
 			// get local var information
@@ -605,11 +617,13 @@ bool idaapi reconstruct_type(void *ud)
 			if (!type_bldr.structure.empty() && lvar != NULL)
 			{
 				qstring type_name{ "struct_name" };
-				askqstr(&type_name, "Enter type name:");
+				if (!ask_str(&type_name, NULL, "Enter type name:"))
+					return false;
+
 				if (!type_name.empty())
 				{
-					tid_t struct_type_id = type_bldr.get_structure(type_name.c_str());
-					if (struct_type_id != 0 || struct_type_id != -1)
+					tid_t struct_type_id = type_bldr.get_structure(type_name);
+					if (struct_type_id != BADADDR)
 					{
 						tinfo_t new_type = create_typedef(type_name.c_str());
 						if (new_type.is_correct())
@@ -617,8 +631,8 @@ bool idaapi reconstruct_type(void *ud)
 							qstring type_str;
 							if (new_type.print(&type_str, NULL, PRTYPE_DEF | PRTYPE_MULTI))
 							{
-								msg("New type created:\r\n%s", type_str.c_str());
-								logmsg(DEBUG, ("New type created:\r\n%s", type_str.c_str()));
+								msg("New type created:\r\n%s\n", type_str.c_str());
+								logmsg(DEBUG, ("New type created:\r\n%s\n", type_str.c_str()));
 								tinfo_t ptype = make_pointer(new_type);
 								vu.set_lvar_type(lvar, ptype);
 								vu.refresh_ctext();
@@ -630,19 +644,19 @@ bool idaapi reconstruct_type(void *ud)
 			}
 			else
 			{
-				warning("Failed to reconstruct type, no field references have been found ...");
-				logmsg(DEBUG, "Failed to reconstruct type, no field references have been found ...");
+				warning("Failed to reconstruct type, no field references have been found ...\n");
+				logmsg(DEBUG, "Failed to reconstruct type, no field references have been found ...\n");
 				return false;
 			}
 		}
 	}
 
-	warning("Selected item is invalid...");
-	logmsg(DEBUG, "Selected item is invalid...");
+	warning("Selected item is invalid...\n");
+	logmsg(DEBUG, "Selected item is invalid...\n");
 	return false;
 }
 
-bool idaapi reconstruct_type(cfuncptr_t cfunc, qstring var_name, qstring type_name)
+bool idaapi reconstruct_type(cfuncptr_t cfunc, const qstring& var_name, const qstring& type_name)
 {
 	bool bResult = false;
 	// initialize type rebuilder
@@ -653,12 +667,12 @@ bool idaapi reconstruct_type(cfuncptr_t cfunc, qstring var_name, qstring type_na
 	type_bldr.apply_to(&cfunc->body, NULL);
 	
 	if (type_bldr.structure.size() != 0) {
-		tid_t struct_type_id = type_bldr.get_structure(type_name.c_str());
+		tid_t struct_type_id = type_bldr.get_structure(type_name);
 		
-		if(struct_type_id != 0 || struct_type_id != -1) {
+		if(struct_type_id != BADADDR) {
 			tinfo_t new_type = create_typedef(type_name.c_str());
 			if(new_type.is_correct()) {
-				qstring type_str = type_name.c_str();
+				qstring type_str = type_name;
 				//if (new_type.print(&type_str, NULL, PRTYPE_DEF | PRTYPE_MULTI))
 					logmsg(DEBUG, ("New type created: %s\n", type_str.c_str()));
 

@@ -5,9 +5,9 @@ class GCCTypeInfo;
 
 class GCCParentType {
 public:
-	ea_t ea;
-	GCCTypeInfo *info;
-	unsigned int flags;
+	ea_t ea = BADADDR;
+	GCCTypeInfo *info = nullptr;
+	unsigned int flags = 0;
 };
 
 class GCCTypeInfo
@@ -15,7 +15,7 @@ class GCCTypeInfo
 public:
 	GCCTypeInfo();
 	~GCCTypeInfo();
-	
+
 	ea_t ea;
 	qstring typeName;
 	ea_t vtbl; // vtable of std::typeinfo.

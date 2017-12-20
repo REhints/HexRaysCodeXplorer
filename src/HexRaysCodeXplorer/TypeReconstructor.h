@@ -45,8 +45,8 @@ typedef std::vector<UCHAR>			BUFFER;
 #endif
 
 
-bool idaapi reconstruct_type(void *ud);
-bool idaapi reconstruct_type(cfuncptr_t cfunc, qstring var_name, qstring type_name);
+bool idaapi reconstruct_type_cb(void *ud);
+bool idaapi reconstruct_type(cfuncptr_t cfunc, const qstring& var_name, const qstring& type_name);
 
 
 #endif

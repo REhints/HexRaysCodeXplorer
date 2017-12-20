@@ -42,16 +42,15 @@ class callgraph_t
 	int_ea_map_t node2ea;
 
 	// current node search ptr
-	int  cur_node;
 	char cur_text[MAXSTR];
 
 	bool visited(citem_t *i, int *nid);
-  
+
 public:
 
 	citem_t *highlighted;
-	
-	int  add(citem_t *i);
+
+	int add(citem_t *i);
 	// edge structure
 	struct edge_t
 	{
@@ -60,40 +59,40 @@ public:
 		edge_t(int i1, int i2): id1(i1), id2(i2) { }
 		edge_t(): id1(0), id2(0) { }
 	};
-	
+
 	typedef qlist<edge_t> edges_t;
 
 	// edge manipulation
 	typedef edges_t::iterator edge_iterator;
 	void create_edge(int id1, int id2);
-  
+
 	edge_iterator begin_edges() { return edges.begin(); }
 	edge_iterator end_edges() { return edges.end(); }
-  
+
 	void clear_edges();
-	
+
 	callgraph_t();
-	
+
 	const int count() const { return node_count; }
 
-  // node / func info
-  struct nodeinfo_t
-  {
-    qstring name;
-    bgcolor_t color;
-    ea_t ea;
-  };
-  
-  typedef std::map<int, nodeinfo_t> int_funcinfo_map_t;
-  int_funcinfo_map_t cached_funcs;
-  nodeinfo_t *get_info(int nid);
+	// node / func info
+	struct nodeinfo_t
+	{
+		qstring name;
+		bgcolor_t color;
+		ea_t ea;
+	};
+
+	typedef std::map<int, nodeinfo_t> int_funcinfo_map_t;
+	int_funcinfo_map_t cached_funcs;
+	nodeinfo_t *get_info(int nid);
 
 
 //  int walk_func(func_t *func);
 private:
-  edges_t edges;
+	edges_t edges;
 
-  char * get_node_label(int n, char *buf, int bufsize) const;
+	void get_node_label(int n, qstring& rv) const;
 };
 
 
@@ -102,30 +101,30 @@ class graph_info_t
 {
 // Actual context variables
 public:
-  callgraph_t fg;		// associated graph maker
-  graph_viewer_t *gv;	// associated graph_view
-  TForm *form;			// associated TForm
-  vdui_t *vu;
-  
+	callgraph_t fg;       // associated graph maker
+	graph_viewer_t *gv;	// associated graph_view
+	TWidget *widget;      // associated TForm
+	vdui_t *vu;
 
-  ea_t func_ea; // function ea in question
-  qstring title; // the title
 
-  size_t func_instance_no;
+	ea_t func_ea;  // function ea in question
+	qstring title; // the title
+
+	size_t func_instance_no;
 // Instance management
 private:
-  typedef qlist<graph_info_t *> graphinfo_list_t;
-  typedef graphinfo_list_t::iterator iterator;
-  
-  // Remove instance upon deletion of the objects
-  static graphinfo_list_t instances;
+	typedef qlist<graph_info_t *> graphinfo_list_t;
+	typedef graphinfo_list_t::iterator iterator;
+
+	// Remove instance upon deletion of the objects
+	static graphinfo_list_t instances;
 
 
-  graph_info_t();
+	graph_info_t();
 public:
-  static graph_info_t *create(ea_t func_ea, citem_t *it);
-  static void destroy(graph_info_t *gi);
-  static bool get_title(ea_t func_ea, size_t num_inst, qstring *out);
+	static graph_info_t *create(ea_t func_ea, citem_t *it);
+	static void destroy(graph_info_t *gi);
+	static bool get_title(ea_t func_ea, size_t num_inst, qstring *out);
 };
 
 #endif

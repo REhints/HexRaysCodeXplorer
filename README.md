@@ -108,7 +108,9 @@ idaq.exe -OHexRaysCodeXplorer:dump_types:dump_ctrees:CRYPTOcrypto_path_to_idb
 __Compiling__:
 
 ***Windows:*** 
-* Open the solution in Visual Studio and build it
+* Open the solution in Visual Studio
+* Open properties window: open file `src/HexRaysCodeXplorer/PropertySheet.props` in notepad(++) and update values of `IDADIR` and `IDASDK` paths to point to IDA installation path and IDA7 SDK path accordingly. HexRays SDK should be in `$IDADIR\plugins\hexrays_sdk` (like by default)
+* Build `Release | x64` and `Release x64 | x64` configurations
 
 ***Linux***:
 * cd src/HexRaysCodeExplorer/

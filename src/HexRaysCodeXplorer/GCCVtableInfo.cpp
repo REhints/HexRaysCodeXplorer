@@ -6,6 +6,12 @@
 
 
 GCCVtableInfo::GCCVtableInfo()
+	: ea_start(BADADDR)
+	, vtbl_start(BADADDR)
+	, typeInfo(nullptr)
+	, vtablesCount(0)
+	, vtables(nullptr)
+	, ea_end(BADADDR)
 {
 }
 
@@ -54,18 +60,17 @@ GCCVtableInfo *GCCVtableInfo::parseVtableInfo(ea_t ea)
 		return g_KnownVtables[ea];
 
 	GCC_RTTI::__vtable_info vtable;
-	ea_t func;
 	ea_t addr;
-	if (!get_many_bytes(ea, (uval_t *)&vtable, sizeof(GCC_RTTI::__vtable_info)))
-		return 0;
+	if (!get_bytes(&vtable, sizeof(GCC_RTTI::__vtable_info), ea))
+		return nullptr;
 
 	// Check ptrdiff is 0 for origin vtable
 	if (vtable.ptrdiff != 0)
-		return 0;
+		return nullptr;
 
 	GCCTypeInfo *type = GCCTypeInfo::parseTypeInfo(vtable.type_info);
 	if (type == 0)
-		return 0;
+		return nullptr;
 	
 	unsigned int methodsCount = 0;
 
@@ -73,7 +78,7 @@ GCCVtableInfo *GCCVtableInfo::parseVtableInfo(ea_t ea)
 	methodsCount = findMethodsCount(addr);
 
 	if (methodsCount == 0)
-		return 0; // Doesnt look like vtable.
+		return nullptr; // Doesnt look like vtable.
 
 	GCCVtableInfo *result = new GCCVtableInfo();
 	result->ea_start = ea;
@@ -85,13 +90,12 @@ GCCVtableInfo *GCCVtableInfo::parseVtableInfo(ea_t ea)
 	if (type->parentsCount > 1) {
 		result->vtablesCount = type->parentsCount;
 		result->vtables = new GCCVtable[type->parentsCount]();
-		for (int i = 0; i < type->parentsCount; ++i)
+		for (unsigned i = 0; i < type->parentsCount; ++i)
 		{
-
 			if (!GCCVtableInfo::parseVtableInnerInfo(addr, &result->vtables[i]))
 			{
 				delete result;
-				return 0;
+				return nullptr;
 			}
 			addr += offsetof(GCC_RTTI::__vtable_info, origin);
 			addr += result->vtables[i].methodsCount * sizeof(void*);
@@ -121,29 +125,27 @@ bool GCCVtableInfo::parseVtableInnerInfo(ea_t ea, GCCVtable *vtbl)
 	*/
 
 	GCC_RTTI::__vtable_info vtable;
-	ea_t func;
-	ea_t addr;
-	if (!get_many_bytes(ea, (uval_t *)&vtable, sizeof(GCC_RTTI::__vtable_info)))
+	if (!get_bytes(&vtable, sizeof(GCC_RTTI::__vtable_info), ea))
 		return false;
 
 	if (vtable.ptrdiff >= 0)
 		return false;
 
 	GCCTypeInfo *type = GCCTypeInfo::parseTypeInfo(vtable.type_info);
-	if (type == 0)
+	if (!type)
 		return false;
 
 	unsigned int methodsCount = 0;
 
-	addr = ea + offsetof(GCC_RTTI::__vtable_info, origin);
+	ea_t addr = ea + offsetof(GCC_RTTI::__vtable_info, origin);
 	methodsCount = findMethodsCount(addr);
 
 	if (methodsCount == 0)
-		return false; // Doesnt look like vtable.
+		return false; // Doesn't look like vtable.
 
 	vtbl->ea = ea;
 	vtbl->methodsCount = methodsCount;
-	vtbl->ptrDiff = vtable.ptrdiff;
+	vtbl->ptrDiff = static_cast<signed long>(vtable.ptrdiff);
 	vtbl->typeInfo = type;
 	return true;
 }

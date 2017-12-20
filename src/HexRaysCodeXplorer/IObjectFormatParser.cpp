@@ -2,11 +2,6 @@
 
 
 
-IObjectFormatParser::IObjectFormatParser()
-{
-}
-
-
 IObjectFormatParser::~IObjectFormatParser()
 {
 }

@@ -29,11 +29,11 @@
 // Object Explorer Form Init
 struct object_explorer_info_t
 {
-	TForm *form;
-	TCustomControl *cv;
-	TCustomControl *codeview;
+	TWidget *widget;
+	TWidget *cv;
+	TWidget *codeview;
 	strvec_t sv;
-	object_explorer_info_t(TForm *f) : form(f), cv(NULL) {}
+	object_explorer_info_t(TWidget *f) : widget(f), cv(nullptr), codeview(nullptr) {}
 };
 
 void object_explorer_form_init();
@@ -46,7 +46,6 @@ struct VTBL_info_t
 	ea_t ea_begin;
 	ea_t ea_end;
 	asize_t methods;
-	
 };
 
 
@@ -56,7 +55,7 @@ extern qvector <qstring>::iterator vtbl_iter;
 
 
 inline BOOL is_valid_name(LPCSTR name){ return(*((PDWORD) name) == 0x375F3F3F /*"??_7"*/); }
-void parse_vft_members(LPCTSTR name, ea_t ea_start, ea_t ea_end);
+//void parse_vft_members(LPCTSTR name, ea_t ea_start, ea_t ea_end);
 
 void search_objects(bool bForce = true);
 
@@ -66,10 +65,10 @@ template <class T> BOOL verify_32_t(ea_t ea_ptr, T &rvalue)
 	if(getFlags(ea_ptr))
 	{
 		rvalue = (T) get_32bit(ea_ptr);
-		return(TRUE);
+		return TRUE;
 	}
 
-	return(FALSE);
+	return FALSE;
 }
 
 
@@ -81,8 +80,8 @@ struct RTTI_info_t
 	char  m_d_name[MAXSTR]; // mangled name (prefix: .?AV=classes, .?AU=structs)
 };
 
-static BOOL is_valid_rtti(RTTI_info_t *pIDA);
-static LPSTR get_name(IN RTTI_info_t *pIDA, OUT LPSTR pszBufer, int iSize);
+//static BOOL is_valid_rtti(RTTI_info_t *pIDA);
+//static LPSTR get_name(IN RTTI_info_t *pIDA, OUT LPSTR pszBufer, int iSize);
 
 // returns TRUE if mangled name is a unknown type name		
 static inline BOOL is_type_name(LPCSTR pszName){ return((*((PUINT)pszName) & 0xFFFFFF) == 0x413F2E /*".?A"*/); }
@@ -92,7 +91,7 @@ struct PMD
 {
 	int mdisp;	// member
 	int pdisp;  // vftable
-	int vdisp;  // place inside vftable		
+	int vdisp;  // place inside vftable
 };
 
 
@@ -126,11 +125,7 @@ struct RTTICompleteObjectLocator
 	RTTIClassHierarchyDescriptor *pClassDescriptor; // 10 Describes inheritance hierarchy
 };
 
-ea_t find_RTTI(ea_t start_ea, ea_t end_ea);
-char* get_demangle_name(ea_t class_addr);
-void process_rtti();
-
-const char * get_text_disasm(ea_t ea);
+bool get_text_disasm(ea_t ea, qstring& rv);
 
 bool get_vbtbl_by_ea(ea_t vtbl_addr, VTBL_info_t &vtbl);
 
