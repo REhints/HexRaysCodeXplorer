@@ -90,8 +90,8 @@ int idaapi type_reference::get_type_increment_val() {
 		}
 	} else if (type.is_array()) {
 		return 1;
-	} 
-	
+	}
+
 	return 1;
 }
 
@@ -128,7 +128,7 @@ void idaapi type_reference::update_hlpr(int off, int num)
 
 struct type_builder_t : public ctree_parentee_t
 {
-	std::vector<std::string> expression_to_match;
+	std::set<qstring> expression_to_match;
 
 	struct struct_filed
 	{
@@ -138,7 +138,7 @@ struct type_builder_t : public ctree_parentee_t
 	};
 
 	std::map<int, struct_filed> structure;
-	
+
 	int idaapi visit_expr(cexpr_t *e);
 
 	tid_t get_structure(const qstring& name);
@@ -147,7 +147,7 @@ struct type_builder_t : public ctree_parentee_t
 
 	int get_structure_size();
 
-	bool match_expression(char *expr_name);
+	bool match_expression(const qstring& expr_name);
 
 	bool idaapi check_memptr(struct_filed &str_fld);
 
@@ -164,7 +164,7 @@ int get_idx_type_size(cexpr_t *idx_expr)
 {
 	qstring buf;
 	idx_expr->type.print(&buf);
-	
+
 	if(strstr(buf.c_str(), "char"))
 		return 1;
 	else if(strstr(buf.c_str(), "short"))
@@ -244,10 +244,10 @@ bool idaapi type_builder_t::check_memptr(struct_filed &str_fld)
 		{
 			citem_t *parent_2 = parents[parents.size() - 2];
 			citem_t *parent_3 = NULL;
-			
+
 			int num = 0;
 			int off = 0;
-			
+
 			// check presence of the helper block
 			bool bHelper = check_helper(parent_2, off, num);
 			if(bHelper)
@@ -287,7 +287,7 @@ ea_t idaapi type_builder_t::get_vftbl(cexpr_t *e) {
 
 		if ((e->op == cot_ref) && (e->x != NULL))
 			e = e->x;
-			
+
 		if (e->op == cot_obj) {
 			vftbl = e->obj_ea;
 		}
@@ -326,18 +326,18 @@ bool idaapi type_builder_t::check_ptr(cexpr_t *e, struct_filed &str_fld)
 			if(parent_i->is_expr() && (parent_i->op == cot_add))
 			{
 				cexpr_t *expr_2 = (cexpr_t *)parent_i;
-				
+
 				// get index_value
 				char buff[MAXSTR] = {};
 				expr_2->y->print1(buff, MAXSTR - 1, NULL);
 				qstring s{ buff };
 				tag_remove(&s);
 				strncpy(buff, s.c_str(), MAXSTR - 1);
-				
+
 				int base = 10;
 				if (strncmp(buff, "0x", 2) == 0)
 					base = 16;
-				
+
 				offset = strtol(buff, NULL, base);
 
 				referInfo.update_offset(offset);
@@ -366,17 +366,15 @@ bool idaapi type_builder_t::check_ptr(cexpr_t *e, struct_filed &str_fld)
 					((cexpr_t *)parent_i)->x->print1(expr_name, MAXSTR - 1, NULL);
 					qstring s{ expr_name };
 					tag_remove(&s);
-					strncpy(expr_name, s.c_str(), MAXSTR - 1);
 
 					char comment[258];
 					memset(comment, 0x00, sizeof(comment));
-					sprintf_s(comment, sizeof(comment), "monitoring %s\r\n", expr_name);
+					sprintf_s(comment, sizeof(comment), "monitoring %s\r\n", s.c_str());
 
 					logmsg(DEBUG, comment);
 
-					expression_to_match.push_back(expr_name);
+					expression_to_match.insert(s);
 
-					
 				} else {
 					get_vftbl(((cexpr_t *)parent_i)->y);
 				}
@@ -452,36 +450,29 @@ bool idaapi type_builder_t::check_idx(struct_filed &str_fld)
 	return false;
 }
 
-bool type_builder_t::match_expression(char *expr_name) {
-	for (std::vector<std::string>::iterator it = expression_to_match.begin(); it != expression_to_match.end(); ++it) {
-		if ((*it).compare(expr_name) == 0)
-			return true;
-	}
-
-	return false;
+bool type_builder_t::match_expression(const qstring& expr_name) {
+	return expression_to_match.find(expr_name) != expression_to_match.end();
 }
 
 int idaapi type_builder_t::visit_expr(cexpr_t *e)
 {
 	// check if the expression being visited is variable
-	if(e->op == cot_var)
+	if (e->op == cot_var)
 	{
 		// get the variable name
-		char expr_name[MAXSTR];
-		e->print1(expr_name, MAXSTR, NULL);
+		char expr_name[MAXSTR] = {};
+		e->print1(expr_name, MAXSTR - 1, NULL);
 		qstring s{ expr_name };
 		tag_remove(&s);
-		strncpy(expr_name, s.c_str(), MAXSTR - 1);
 
 		// check for the target variable
-		if(match_expression(expr_name))
+		if (match_expression(s))
 		{
 			struct_filed str_fld;
 
 			if(check_ptr(e, str_fld)) {
-				std::pair<std::map<int,struct_filed>::iterator,bool> ret;
-				ret = structure.insert(std::pair<int,struct_filed>(str_fld.offset, str_fld));
-				if ((ret.second == false) && (str_fld.vftbl != BADADDR)) {
+				auto ret = structure.insert(std::make_pair(str_fld.offset, str_fld));
+				if (!ret.second && str_fld.vftbl != BADADDR) {
 					structure[str_fld.offset] = str_fld;
 				}
 			}
@@ -514,19 +505,19 @@ tid_t type_builder_t::get_structure(const qstring& name)
 	if (struct_type_id != BADADDR)
 	{
 		struc_t * struc = get_struc(struct_type_id);
-		if(struc != NULL)
+		if (struc != NULL)
 		{
 			opinfo_t opinfo;
 			opinfo.tid = struct_type_id;
 
 			int j = 0;
-			
-			for(std::map<int, struct_filed>::iterator i = structure.begin(); i != structure.end() ; ++i)
+
+			for (std::map<int, struct_filed>::iterator i = structure.begin(); i != structure.end() ; ++i)
 			{
 				VTBL_info_t vtbl;
 
 				flags_t member_flgs = 0;
-				if(i->second.size == 1)
+				if (i->second.size == 1)
 					member_flgs = byte_flag();
 				else if (i->second.size == 2)
 					member_flgs = word_flag();
@@ -537,7 +528,7 @@ tid_t type_builder_t::get_structure(const qstring& name)
 
 				qstring field_name;
 
-				if((i->second.vftbl != BADADDR) && get_vbtbl_by_ea(i->second.vftbl, vtbl))
+				if ((i->second.vftbl != BADADDR) && get_vbtbl_by_ea(i->second.vftbl, vtbl))
 				{
 					qstring vftbl_name = name;
 					vftbl_name.cat_sprnt("_VTABLE_%X_%p", i->second.offset, i->second.vftbl);
@@ -550,14 +541,14 @@ tid_t type_builder_t::get_structure(const qstring& name)
 
 						member_t * membr = get_member_by_name(struc, fncstr);
 						if (membr != NULL) {
-							tinfo_t new_type = create_typedef((char *)vftbl_name.c_str());
-							if(new_type.is_correct()) {
+							tinfo_t new_type = create_typedef(vftbl_name.c_str());
+							if (new_type.is_correct()) {
 								smt_code_t dd = set_member_tinfo(struc, membr, 0, make_pointer(new_type), SET_MEMTI_COMPATIBLE);
 							}
 						}
-					}	
-				} 
-				else 
+					}
+				}
+				else
 				{
 					field_name.cat_sprnt("field_%X", i->second.offset);
 					const char *fncstr = field_name.c_str();
@@ -574,15 +565,13 @@ bool type_builder_t::get_structure(std::map<int, struct_filed> &struc)
 {
 	bool bResult = false;
 
-	if (structure.size() != 0) {
-		for(std::map<int, struct_filed>::iterator i = structure.begin(); i != structure.end() ; i ++) {
-			struc[i->first] = i->second;
-		}
+	if (structure.empty())
+		return false;
 
-		bResult = true;
-	}
+	for(auto i = structure.begin(); i != structure.end() ; ++i)
+		struc[i->first] = i->second;
 
-	return bResult;
+	return true;
 }
 
 bool idaapi reconstruct_type_cb(void *ud)
@@ -608,7 +597,7 @@ bool idaapi reconstruct_type_cb(void *ud)
 				highl_expr->print1(highl_expr_name, _countof(highl_expr_name) - 1, NULL);
 				qstring s{ highl_expr_name };
 				tag_remove(&s);
-				type_bldr.expression_to_match.push_back(s.c_str());
+				type_bldr.expression_to_match.insert(s);
 			}
 			// traverse the ctree structure
 			type_bldr.apply_to(&vu.cfunc->body, NULL);
@@ -661,27 +650,27 @@ bool idaapi reconstruct_type(cfuncptr_t cfunc, const qstring& var_name, const qs
 	bool bResult = false;
 	// initialize type rebuilder
 	type_builder_t type_bldr;
-	type_bldr.expression_to_match.push_back(var_name.c_str());
-	
+	type_bldr.expression_to_match.insert(var_name.c_str());
+
 	// traverse the ctree structure
 	type_bldr.apply_to(&cfunc->body, NULL);
-	
+
 	if (type_bldr.structure.size() != 0) {
 		tid_t struct_type_id = type_bldr.get_structure(type_name);
-		
+
 		if(struct_type_id != BADADDR) {
 			tinfo_t new_type = create_typedef(type_name.c_str());
 			if(new_type.is_correct()) {
 				qstring type_str = type_name;
 				//if (new_type.print(&type_str, NULL, PRTYPE_DEF | PRTYPE_MULTI))
-					logmsg(DEBUG, ("New type created: %s\n", type_str.c_str()));
+				logmsg(DEBUG, ("New type created: %s\n", type_str.c_str()));
 
 				bResult = true;
 			}
 		}
 	} else {
-		warning("Failed to reconstruct type, no field references have been found...");
-		logmsg(DEBUG, "Failed to reconstruct type, no field references have been found...");
+		warning("Failed to reconstruct type, no field references have been found...\n");
+		logmsg(DEBUG, "Failed to reconstruct type, no field references have been found...\n");
 	}
 
 	return bResult;
