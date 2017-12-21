@@ -542,7 +542,7 @@ tid_t type_builder_t::get_structure(const qstring& name)
 					qstring vftbl_name = name;
 					vftbl_name.cat_sprnt("_VTABLE_%X_%p", i->second.offset, i->second.vftbl);
 
-					tid_t vtbl_str_id = create_vtbl_struct(vtbl.ea_begin, vtbl.ea_end, (char *)vftbl_name.c_str(), 0);
+					tid_t vtbl_str_id = create_vtbl_struct(vtbl.ea_begin, vtbl.ea_end, vftbl_name, 0);
 					if (vtbl_str_id != BADADDR) {
 						field_name.cat_sprnt("vftbl_%d_%p", j, i->second.vftbl);
 						const char *fncstr = field_name.c_str();

@@ -207,18 +207,22 @@ bool get_vbtbl_by_ea(ea_t vtbl_addr, VTBL_info_t &vtbl) {
 //---------------------------------------------------------------------------
 // Create a structurte in IDA local types which represents vtable
 //---------------------------------------------------------------------------
-tid_t create_vtbl_struct(ea_t vtbl_addr, ea_t vtbl_addr_end, char* vtbl_name, uval_t idx, unsigned int* vtbl_len)
+tid_t create_vtbl_struct(ea_t vtbl_addr, ea_t vtbl_addr_end, const qstring& vtbl_name, uval_t idx, unsigned int* vtbl_len)
 {
 	qstring struc_name = vtbl_name;
 	struc_name += "::vtable";
 	tid_t id = add_struc(BADADDR, struc_name.c_str());
 
 	if (id == BADADDR) {
-		struc_name.clear();
 		if (!ask_str(&struc_name, HIST_IDENT, "Default name %s not correct. Enter other structure name: ", struc_name.c_str()))
 			return BADNODE;
 		id = add_struc(BADADDR, struc_name.c_str());
-		set_struc_cmt(id, vtbl_name, true);
+		if (id == BADADDR)
+		{
+			msg("failed to add struct: %s\n", struc_name.c_str());
+			return BADNODE;
+		}
+		set_struc_cmt(id, vtbl_name.c_str(), true);
 	}
 
 	struc_t* new_struc = get_struc(id);
@@ -407,7 +411,7 @@ bool idaapi make_vtbl_struct_cb()
 	VTBL_info_t vtbl_t = vtbl_t_list[current_line_pos];
 	tid_t id = add_struc(BADADDR, vtbl_t.vtbl_name.c_str());
 
-	create_vtbl_struct(vtbl_t.ea_begin, vtbl_t.ea_end, (char*)vtbl_t.vtbl_name.c_str(), id);
+	create_vtbl_struct(vtbl_t.ea_begin, vtbl_t.ea_end, vtbl_t.vtbl_name, id);
 
 	return true;
 }
@@ -563,12 +567,12 @@ ssize_t idaapi ui_object_explorer_callback(void *ud, int code, va_list va)
 	{
 		case ui_get_custom_viewer_hint:
 		{
-			TWidget *viewer	= va_arg(va, TWidget *);
+			qstring &hint = *va_arg(va, qstring *);
+			TWidget *viewer = va_arg(va, TWidget *);
 			place_t *place = va_arg(va, place_t *);
 			int *important_lines = va_arg(va, int *);
-			qstring &hint = *va_arg(va, qstring *);
 
-			if ( si->cv == viewer )
+			if (si->cv == viewer)
 			{
 				if ( place == NULL )
 					return 0;

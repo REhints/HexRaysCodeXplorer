@@ -129,6 +129,6 @@ bool get_text_disasm(ea_t ea, qstring& rv);
 
 bool get_vbtbl_by_ea(ea_t vtbl_addr, VTBL_info_t &vtbl);
 
-tid_t create_vtbl_struct(ea_t vtbl_addr, ea_t vtbl_addr_end, char* vtbl_name, uval_t idx, unsigned int* vtbl_len = NULL);
+tid_t create_vtbl_struct(ea_t vtbl_addr, ea_t vtbl_addr_end, const qstring& vtbl_name, uval_t idx, unsigned int* vtbl_len = NULL);
 
 #endif
