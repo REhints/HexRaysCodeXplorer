@@ -32,8 +32,8 @@
 bool idaapi extract_all_types(void *ud);
 
 bool idaapi find_var(void *ud);
-bool idaapi find_var(cfuncptr_t cfunc, qstring vtbl_name, qstring &var_name);
+bool idaapi find_var(cfuncptr_t cfunc, const qstring& vtbl_name, qstring &var_name);
 
-tid_t idaapi merge_types(qvector<qstring> types_to_merge, qstring type_name);
+tid_t idaapi merge_types(const qvector<qstring>& types_to_merge, const qstring& type_name);
 
 #endif

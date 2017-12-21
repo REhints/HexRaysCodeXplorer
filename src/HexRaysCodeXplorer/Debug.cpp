@@ -35,54 +35,52 @@
 
 static void print_to_output_file(const char *output_msg) {
 	int file_id = qopen(OUTPUT_FILE, O_WRONLY | O_APPEND);
-	if (file_id == BADADDR)
+	if (file_id == -1)
 		file_id = qcreate(OUTPUT_FILE, 511);
-	
+
 	if (file_id == -1) {
 		msg("FATAL: print_to_output_file failed!\n");
 		return;
 	}
-	
+
 	qwrite(file_id, output_msg, strlen(output_msg));
-	
 	qclose(file_id);
 }
 
 static void print_to_error_file(const char *error_msg) {
 	int file_id = qopen(ERROR_FILE, O_WRONLY | O_APPEND);
-	if (file_id == BADADDR)
+	if (file_id == -1)
 		file_id = qcreate(ERROR_FILE, 511);
-	
+
 	if (file_id == -1) {
 		msg("FATAL: print_to_error_file failed!\n");
 		return;
 	}
-	
+
 	qwrite(file_id, error_msg, strlen(error_msg));
-	
 	qclose(file_id);
 }
 
 void logmsg(unsigned int level, const char *fmt, ...)
 {
-    va_list arglist;
-	
+	va_list arglist;
+
 	if (level > CURRENT_DEBUG_LEVEL)
 		return;
-	
+
 	va_start(arglist, fmt);
-	
+
 	switch (level) {
-		case OUTPUT:
-			print_to_output_file(fmt);
-			break;
-		case ERROR:
-			print_to_error_file(fmt);
-			break;
-		default:
-			msg(fmt, arglist);
-			break;
+	case OUTPUT:
+		print_to_output_file(fmt);
+		break;
+	case ERROR:
+		print_to_error_file(fmt);
+		break;
+	default:
+		vmsg(fmt, arglist);
+		break;
 	}
-	
-    va_end(arglist);
+
+	va_end(arglist);
 }

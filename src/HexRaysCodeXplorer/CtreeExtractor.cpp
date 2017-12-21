@@ -73,116 +73,119 @@ void ctree_dumper_t::process_for_hash(citem_t *item)
 // Process a ctree item
 int ctree_dumper_t::process(citem_t *item)
 {
-	int parent_count = parents.size();
+	size_t parent_count = parents.size();
 	if (parent_count > 1) {
 		ctree_dump += "(";
 	}
 
-	char buf[MAXSTR];
-	parse_ctree_item(item, buf, MAXSTR);
-	ctree_dump.cat_sprnt("%s", buf);
-	
+	qstring buf;
+	parse_ctree_item(item, buf);
+	ctree_dump += buf;
+
 	process_for_hash(item);
 	return 0;
 }
 
 int ctree_dumper_t::process_leave(citem_t *item)
 {
-	int parent_count = parents.size();
+	size_t parent_count = parents.size();
 	if (parent_count > 1) {
 		ctree_dump += ")";
 	}
 	return 0;
 }
 
-char * ctree_dumper_t::parse_ctree_item(citem_t *item, char *buf, int bufsize) const
+void ctree_dumper_t::parse_ctree_item(citem_t *item, qstring& rv) const
 {
-		char *ptr = buf;
-		char *endp = buf + bufsize;
-		
-		// Each node will have the element type at the first line
-		APPEND(ptr, endp, get_ctype_name(item->op));
-		const cexpr_t *e = (const cexpr_t *)item;
-		const cinsn_t *i = (const cinsn_t *)item;
+	rv.clear();
+	// Each node will have the element type at the first line
+	if (auto v = get_ctype_name(item->op))
+		rv = v;
 
-		// For some item types, display additional information
-		switch (item->op)
-		{
-		case cot_call:
-			char buf[MAXSTR];
-			if (e->x->op == cot_obj) {
-				if (get_func_name(e->x->obj_ea, buf, sizeof(buf)) == NULL)
-					ptr += qsnprintf(ptr, endp - ptr, " sub_%a", e->x->obj_ea);
-				else 
-					ptr += qsnprintf(ptr, endp - ptr, " %s", buf);
-			}
-			break;
-		case cot_ptr: // *x
-		case cot_memptr: // x->m
-			// Display access size for pointers
-			ptr += qsnprintf(ptr, endp - ptr, ".%d", e->ptrsize);
-			if (item->op == cot_ptr)
-				break;
-		case cot_memref: // x.m
-			// Display member offset for structure fields
-			ptr += qsnprintf(ptr, endp - ptr, " (m=%d)", e->m);
-			break;
-		case cot_obj: // v
-		case cot_var: // l
-			// Display object size for local variables and global data
-			ptr += qsnprintf(ptr, endp - ptr, ".%d", e->refwidth);
-		case cot_num: // n
-		case cot_helper: // arbitrary name
-		case cot_str: // string constant
-			// Display helper names and number values
-			APPCHAR(ptr, endp, ' ');
-			e->print1(ptr, endp - ptr, NULL);
-			tag_remove(ptr, ptr, sizeof(ptr));
-			ptr = tail(ptr);
-			break;
-		case cit_goto:
-			// Display target label number for gotos
-			ptr += qsnprintf(ptr, endp - ptr, " LABEL_%d", i->cgoto->label_num);
-			break;
-		case cit_asm:
-			// Display instruction block address and size for asm-statements
-			ptr += qsnprintf(ptr, endp - ptr, " %a.%" FMT_Z, *i->casm->begin(), i->casm->size());
-			break;
-		default:
-			break;
-		}
-    
-		// The second line of the node contains the item address
-		ptr += qsnprintf(ptr, endp - ptr, ";ea->%a", item->ea);
+	const cexpr_t *e = (const cexpr_t *)item;
+	const cinsn_t *i = (const cinsn_t *)item;
 
-		if ( item->is_expr() && !e->type.empty() )
-		{
-			// For typed expressions, the third line will have
-			// the expression type in human readable form
-			APPCHAR(ptr, endp, ';');
-			qstring out;
-			if (e->type.print(&out))
-			{
-				APPEND(ptr, endp, out.c_str());
-			}
+	// For some item types, display additional information
+	qstring func_name;
+	qstring s;
+	switch (item->op)
+	{
+	case cot_call:
+		if (e->x->op == cot_obj) {
+			if (get_func_name(&func_name, e->x->obj_ea) == NULL)
+				rv.cat_sprnt(" sub_%a", e->x->obj_ea);
 			else 
-			{	// could not print the type?
-				APPCHAR(ptr, endp, '?');
-				APPZERO(ptr, endp);
-			}
+				rv.cat_sprnt(" %s", func_name.c_str());
+		}
+		break;
+	case cot_ptr: // *x
+	case cot_memptr: // x->m
+		// Display access size for pointers
+		rv.cat_sprnt(".%d", e->ptrsize);
+		if (item->op == cot_ptr)
+			break;
+	case cot_memref: // x.m
+		// Display member offset for structure fields
+		rv.cat_sprnt(" (m=%d)", e->m);
+		break;
+	case cot_obj: // v
+	case cot_var: // l
+		// Display object size for local variables and global data
+		rv.cat_sprnt(".%d", e->refwidth);
+	case cot_num: // n
+	case cot_helper: // arbitrary name
+	case cot_str: // string constant
+		// Display helper names and number values
+		rv.append(' ');
+		{
+			char lbuf[MAXSTR] = {};
+			e->print1(lbuf, _countof(lbuf) - 1, NULL);
+			qstring qbuf(lbuf);
+			tag_remove(&qbuf);
+			rv += qbuf;
+		}
+		break;
+	case cit_goto:
+		// Display target label number for gotos
+		rv.cat_sprnt(" LABEL_%d", i->cgoto->label_num);
+		break;
+	case cit_asm:
+		// Display instruction block address and size for asm-statements
+		rv.cat_sprnt(" %a.%" FMT_Z, *i->casm->begin(), i->casm->size());
+		break;
+	default:
+		break;
+	}
 
-			if(e->type.is_ptr())
+	// The second line of the node contains the item address
+	rv.cat_sprnt(";ea->%a", item->ea);
+
+	if ( item->is_expr() && !e->type.empty() )
+	{
+		// For typed expressions, the third line will have
+		// the expression type in human readable form
+		rv.append(';');
+		qstring out;
+		if (e->type.print(&out))
+		{
+			rv += out;
+		}
+		else
+		{	// could not print the type?
+			rv.append('?');
+		}
+
+		if(e->type.is_ptr())
+		{
+			tinfo_t ptr_rem = ::remove_pointer(e->type);
+			if(ptr_rem.is_struct())
 			{
-				tinfo_t ptr_rem = ::remove_pointer(e->type);
-				if(ptr_rem.is_struct())
-				{
-					qstring typenm;
-					ptr_rem.print(&typenm, "prefix ", 0, 0, PRTYPE_MULTI | PRTYPE_TYPE | PRTYPE_SEMI);
-				}
+				qstring typenm;
+				ptr_rem.print(&typenm, "prefix ", 0, 0, PRTYPE_MULTI | PRTYPE_TYPE | PRTYPE_SEMI);
 			}
 		}
-	
-	return buf;
+	}
+
 }
 
 struct ctree_dump_line {
@@ -205,16 +208,16 @@ int create_open_file(const char* file_name) {
 	return file_id;
 }
 
-int get_hash_of_string(qstring &string_to_hash, qstring &hash) {
+int get_hash_of_string(const qstring &string_to_hash, qstring &hash) {
 	SHA1Context sha;
 	uint8_t Message_Digest[SHA1HashSize];
 	int err;
 
 	err = SHA1Reset(&sha);
 	if (err == shaSuccess) {
-		err = SHA1Input(&sha, (uint8_t *)string_to_hash.c_str(), string_to_hash.length());
+		err = SHA1Input(&sha, (uint8_t *)string_to_hash.c_str(), static_cast<unsigned>(string_to_hash.length()));
 		if (err == shaSuccess) {
-			err = err = SHA1Result(&sha, Message_Digest);
+			err = SHA1Result(&sha, Message_Digest);
 			if (err == shaSuccess) {
 				char digest_hex[SHA1HashSize * 2 + 1];
 				memset(digest_hex, 0x00, sizeof(digest_hex));
@@ -228,71 +231,71 @@ int get_hash_of_string(qstring &string_to_hash, qstring &hash) {
 	return err;
 }
 
-void dump_ctrees_in_file(std::map<ea_t, ctree_dump_line> &data_to_dump, qstring &crypto_prefix) {
+void dump_ctrees_in_file(std::map<ea_t, ctree_dump_line> &data_to_dump, const qstring &crypto_prefix) {
 	int file_id = create_open_file("ctrees.txt");
-	if (file_id != -1) {
+	if (file_id == -1)
+	{
+		logmsg(ERROR, "Failed to open file for dumping ctress\r\n");
+		return;
+	}
 
-		size_t crypt_prefix_len = crypto_prefix.length();
+	size_t crypt_prefix_len = crypto_prefix.length();
 
-		for (std::map<ea_t, ctree_dump_line>::iterator ctrees_iter = data_to_dump.begin(); ctrees_iter != data_to_dump.end() ; ctrees_iter ++) {
-			qstring sha_hash;
-			int err = get_hash_of_string((*ctrees_iter).second.ctree_for_hash, sha_hash);
-			if (err == shaSuccess) {
-				qstring dump_line = sha_hash + ";";
-				err = get_hash_of_string((*ctrees_iter).second.ctree_dump, sha_hash);
-				if (err == shaSuccess) {
-					dump_line += sha_hash + ";";
-					dump_line += (*ctrees_iter).second.ctree_dump;
-					dump_line.cat_sprnt(";%d", (*ctrees_iter).second.func_depth);
-					dump_line.cat_sprnt(";%08X", (*ctrees_iter).second.func_start);
-					dump_line.cat_sprnt(";%08X", (*ctrees_iter).second.func_end);
-					if (((*ctrees_iter).second.func_name.length() > crypt_prefix_len) && (crypt_prefix_len > 0) && ((*ctrees_iter).second.func_name.find(crypto_prefix) == 0))
-						dump_line.cat_sprnt(";E", (*ctrees_iter).second.func_end);
-					else
-						dump_line.cat_sprnt(";N", (*ctrees_iter).second.func_end);
-					
-					if (((*ctrees_iter).second.heuristic_flag))
-						dump_line.cat_sprnt(";H", (*ctrees_iter).second.func_end);
-					else
-						dump_line.cat_sprnt(";N", (*ctrees_iter).second.func_end);
-					
-					dump_line += "\n";
-				}
-				
-				qwrite(file_id, dump_line.c_str(), dump_line.length());
-					
-			} 
-			if (err != shaSuccess) {
-				logmsg(ERROR, "Error in computing SHA1 hash\r\n");
-			}
+	for (auto ctrees_iter = data_to_dump.begin(); ctrees_iter != data_to_dump.end(); ++ctrees_iter) {
+		const ctree_dump_line& cdl = ctrees_iter->second;
+
+		qstring sha_hash;
+		int err = get_hash_of_string(cdl.ctree_for_hash, sha_hash);
+		if (err != shaSuccess) {
+			logmsg(ERROR, "Error in computing SHA1 hash\r\n");
+			continue;
 		}
 
-		qclose(file_id);
-	} else {
-		logmsg(ERROR, "Failed to open file for dumping ctress\r\n");
+		qstring dump_line = sha_hash + ";";
+		err = get_hash_of_string(cdl.ctree_dump, sha_hash);
+		if (err != shaSuccess) {
+			logmsg(ERROR, "Error in computing SHA1 hash\r\n");
+			continue;
+		}
+		dump_line += sha_hash + ";";
+		dump_line += cdl.ctree_dump;
+		dump_line.cat_sprnt(";%d", cdl.func_depth);
+		dump_line.cat_sprnt(";%08X", cdl.func_start);
+		dump_line.cat_sprnt(";%08X", cdl.func_end);
+		if ((cdl.func_name.length() > crypt_prefix_len) && (crypt_prefix_len > 0) && (cdl.func_name.find(crypto_prefix) == 0))
+			dump_line.cat_sprnt(";E", cdl.func_end);
+		else
+			dump_line.cat_sprnt(";N", cdl.func_end);
+
+		if ((cdl.heuristic_flag))
+			dump_line.cat_sprnt(";H", cdl.func_end);
+		else
+			dump_line.cat_sprnt(";N", cdl.func_end);
+
+		dump_line += "\n";
+
+		qwrite(file_id, dump_line.c_str(), dump_line.length());
 	}
+
+	qclose(file_id);
 }
 
 
-inline bool func_name_has_prefix(qstring &prefix, ea_t startEA) {
-	qstring func_name;
-	
+inline bool func_name_has_prefix(const qstring &prefix, ea_t startEA) {
 	if (prefix.length() <= 0)
 		return false;
-	
-	if (get_func_name2(&func_name, startEA) == 0)
+
+	qstring func_name;
+	if (get_func_name(&func_name, startEA) <= 0)
 		return false;
-	
-	if (func_name.length() <= 0)
+
+	if (func_name.empty())
 		return false;
-	
-	if (func_name.find(prefix.c_str(), 0) != 0)
-		return false;
-	
-	return true;
+
+	return func_name.find(prefix.c_str(), 0) == 0;
 }
 
-bool idaapi dump_funcs_ctree(void *ud, qstring &crypto_prefix) 
+bool idaapi dump_funcs_ctree(void *ud, const qstring &crypto_prefix)
 {
 	logmsg(DEBUG, "dump_funcs_ctree entered\n");
 
@@ -304,25 +307,25 @@ bool idaapi dump_funcs_ctree(void *ud, qstring &crypto_prefix)
 	size_t total_func_qty = get_func_qty();
 	for (size_t i = 0 ; i < total_func_qty ; i ++) {
 		heuristic_flag = 0;
-		
+
 		func_t *function = getn_func(i);
 		if (function != NULL) {
-			bool crypto_flag = func_name_has_prefix(crypto_prefix, function->startEA);
-			
+			bool crypto_flag = func_name_has_prefix(crypto_prefix, function->start_ea);
+
 			// skip libs that are not marked as crypto
 			if ( ((function->flags & FUNC_LIB) != 0) && !crypto_flag )
 				continue;
-			
+
 			// From this point on, we have a function outside of lib or a crypto one
-			
+
 			// Ignore functions less than MIN_FUNC_SIZE_DUMP bytes
-			if ( ((function->endEA - function->startEA) < MIN_FUNC_SIZE_DUMP) && !crypto_flag )
+			if ( ((function->end_ea - function->start_ea) < MIN_FUNC_SIZE_DUMP) && !crypto_flag )
 				continue;
-			
+
 			// If function is bigger than MIN_HEURISTIC_FUNC_SIZE_DUMP, mark as being triggered by the heuristic
-			if (function->endEA - function->startEA > MIN_HEURISTIC_FUNC_SIZE_DUMP)
+			if (function->end_ea - function->start_ea > MIN_HEURISTIC_FUNC_SIZE_DUMP)
 				heuristic_flag = 1;
-				
+
 			// dump up to N_CRYPTO_FUNCS_TO_DUMP crypto functions
 			// dump up to N_HEUR_FUNCS_TO_DUMP heuristic functions
 			// at least N_FUNCS_TO_DUMP functions will be dumped
@@ -334,46 +337,46 @@ bool idaapi dump_funcs_ctree(void *ud, qstring &crypto_prefix)
 				if (cfunc != NULL) {
 					ctree_dumper_t ctree_dumper;
 					ctree_dumper.apply_to(&cfunc->body, NULL);
-					
+
 					ctree_dump_line func_dump;
 					func_dump.ctree_dump = ctree_dumper.ctree_dump;
 					func_dump.ctree_for_hash = ctree_dumper.ctree_for_hash;
 
 					func_dump.func_depth = -1;
 
-					func_dump.func_start = function->startEA;
-					func_dump.func_end = function->endEA;
+					func_dump.func_start = function->start_ea;
+					func_dump.func_end = function->end_ea;
 
 					qstring func_name;
-					if (get_func_name2(&func_name, function->startEA) != 0) {
+					if (get_func_name(&func_name, function->start_ea) != 0) {
 						if (func_name.length() > 0) {
 							func_dump.func_name = func_name;
 						}
 					}
-					
+
 					func_parent_iterator_t fpi(function);
-					for (ea_t addr = get_first_cref_to(function->startEA); addr != BADADDR; addr = get_next_cref_to(function->startEA, addr)) {
+					for (ea_t addr = get_first_cref_to(function->start_ea); addr != BADADDR; addr = get_next_cref_to(function->start_ea, addr)) {
 						func_t *referer = get_func(addr);
 						if (referer != NULL) {
-							func_dump.referres.push_back(referer->startEA);
+							func_dump.referres.push_back(referer->start_ea);
 						}
 					}
-					
+
 					func_dump.heuristic_flag = heuristic_flag; // 0 or 1 depending on code above
 					if (heuristic_flag)
 						heur_count++;
 
 					if (crypto_flag)
 						crypto_count++;
-					
+
 					count++;
-					
-					data_to_dump[function->startEA] = func_dump;
+
+					data_to_dump[function->start_ea] = func_dump;
 				}
 			}
 		}
 	}
-	
+
 	dump_ctrees_in_file(data_to_dump, crypto_prefix);
 
 	return true;
@@ -382,15 +385,17 @@ bool idaapi dump_funcs_ctree(void *ud, qstring &crypto_prefix)
 bool idaapi extract_all_ctrees(void *ud)
 {
 	// default prefix to display in the dialog
-	qstring default_prefix = "crypto_";
-	
+	static const qstring kDefaultPrefix = "crypto_";
+
 	va_list va;
 	va_end(va);
-	
-	char * crypto_prefix = vaskstr(0, default_prefix.c_str(), "Enter prefix of crypto function names", va);
-	if((crypto_prefix != NULL) && (strlen(crypto_prefix) > 0)) {
-		qstring qcrypt_prefix = crypto_prefix;
-		dump_funcs_ctree(NULL, qcrypt_prefix);
+
+	qstring crypto_prefix = kDefaultPrefix;
+	if (!ask_str(&crypto_prefix, NULL, "Enter prefix of crypto function names", va))
+		return false;
+
+	if(!crypto_prefix.empty()) {
+		dump_funcs_ctree(NULL, crypto_prefix);
 	} else {
 		warning("Incorrect prefix!!");
 	}
@@ -402,21 +407,20 @@ bool idaapi extract_all_ctrees(void *ud)
 // Ctree Item Form Init
 struct func_ctree_info_t
 {
-	TForm *form;
-	TCustomControl *cv;
-	TCustomControl *codeview;
+	TWidget *widget;
+	TWidget *cv;
+	TWidget *codeview;
 	strvec_t sv;
-	func_ctree_info_t(TForm *f) : form(f), cv(NULL) {}
+	func_ctree_info_t(TWidget *f) : widget(f), cv(nullptr), codeview(nullptr){}
 };
 
 
-bool idaapi show_citem_custom_view(void *ud, qstring ctree_item, qstring item_name)
+bool idaapi show_citem_custom_view(void *ud, const qstring& ctree_item, const qstring& item_name)
 {
-	HWND hwnd = NULL;
 	qstring form_name = "Ctree Item View: ";
 	form_name.append(item_name);
-	TForm *form = create_tform(form_name.c_str(), &hwnd);
-	func_ctree_info_t *si = new func_ctree_info_t(form);
+	TWidget *widget = create_empty_widget(form_name.c_str());
+	func_ctree_info_t *si = new func_ctree_info_t(widget);
 
 	istringstream s_citem_str(ctree_item.c_str());
 	string tmp_str;
@@ -427,11 +431,11 @@ bool idaapi show_citem_custom_view(void *ud, qstring ctree_item, qstring item_na
 	}
 
 	simpleline_place_t s1;
-	simpleline_place_t s2(ctree_item.size());
-	si->cv = create_custom_viewer("Ctree Item View: ", NULL, &s1, &s2, &s1, 0, &si->sv);
-	si->codeview = create_code_viewer(form, si->cv, CDVF_NOLINES);
+	simpleline_place_t s2(static_cast<int>(ctree_item.size()));
+	si->cv = create_custom_viewer("", &s1, &s2, &s1, nullptr, &si->sv, nullptr, nullptr, widget);
+	si->codeview = create_code_viewer(si->cv, CDVF_NOLINES, widget);
 	set_custom_viewer_handlers(si->cv, NULL, si);
-	open_tform(form, FORM_ONTOP | FORM_RESTORE);
+	display_widget(widget, WOPN_ONTOP | WOPN_RESTORE);
 
 	return false;
 }

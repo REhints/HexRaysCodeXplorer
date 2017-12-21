@@ -33,14 +33,14 @@
 // Simple CustomView Form Init
 struct string_view_form_info_t
 {
-	TForm *form;
-	TCustomControl *cv;
-	TCustomControl *codeview;
+	TWidget *widget;
+	TWidget *cv;
+	TWidget *codeview;
 	strvec_t sv;
-	string_view_form_info_t(TForm *f) : form(f), cv(NULL) {}
+	string_view_form_info_t(TWidget *f) : widget(f), cv(nullptr), codeview(nullptr) {}
 };
 
-bool idaapi show_string_in_custom_view(void *ud, qstring title, qstring str);
+bool idaapi show_string_in_custom_view(void *ud, const qstring& title, const qstring& str);
 
 
 // Size of string with out terminator
@@ -52,8 +52,8 @@ typedef std::set<ea_t> eaSet;
 typedef std::map<ea_t, UINT> eaRefMap;
 struct earef
 {
-    ea_t ea;
-    UINT refs;
+	ea_t ea;
+	UINT refs;
 };
 
 
@@ -65,7 +65,7 @@ struct earef
 template <class T> bool getVerify32_t(ea_t eaPtr, T &rValue)
 {
 	// Location valid?
-    if (isLoaded(eaPtr))
+	if (is_loaded(eaPtr))
 	{
 		// Get 32bit value
 		rValue = (T) get_32bit(eaPtr);
@@ -86,22 +86,22 @@ bool compilerIs(const char *name);
 // Get address/pointer value
 inline ea_t getEa(ea_t ea)
 {
-    #ifndef __EA64__
-    return((ea_t) get_32bit(ea));
-    #else
-    return((ea_t) get_64bit(ea));
-    #endif
+#ifndef __EA64__
+	return((ea_t) get_32bit(ea));
+#else
+	return((ea_t) get_64bit(ea));
+#endif
 }
 
 
 // Returns TRUE if ea_t sized value flags
 inline BOOL isEa(flags_t f)
 {
-    #ifndef __EA64__
-    return(isDwrd(f));
-    #else
-    return(isQwrd(f));
-    #endif
+#ifndef __EA64__
+	return(is_dword(f));
+#else
+	return(is_qword(f));
+#endif
 }
 
 #ifndef _SHA_enum_
@@ -133,10 +133,10 @@ int SHA1Input(SHA1Context *, const uint8_t *, unsigned int);
 int SHA1Result(SHA1Context *, uint8_t Message_Digest[SHA1HashSize]);
 void SHA1MessageDigestToString(uint8_t Message_Digest[SHA1HashSize], char outbuffer[SHA1HashSize * 2]);
 
-void split_qstring(qstring &options, qstring &splitter, qvector<qstring> &result);
-
-#endif
+void split_qstring(const qstring &options, const qstring &splitter, qvector<qstring> &result);
 
 void idaapi setUnknown(ea_t ea, asize_t size);
-void MakeName(ea_t ea, qstring name, char * prefix = "", char * postfix = "");
+void MakeName(ea_t ea, const qstring& name, char * prefix = "", char * postfix = "");
 bool MakeArray(ea_t ea, size_t nitems);
+
+#endif

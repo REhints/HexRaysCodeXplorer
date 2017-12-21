@@ -41,51 +41,55 @@ extern std::map<ea_t, VTBL_info_t> rtti_vftables;
 
 struct obj_fint_t : public ctree_parentee_t
 {
- 	std::string vtbl_name;
-
-	std::string var_name;
-
+	qstring vtbl_name;
+	qstring var_name;
 	bool bFound;
 
 	int idaapi visit_expr(cexpr_t *e);
 
-	obj_fint_t() : bFound(false) {}
+	obj_fint_t()
+		: bFound(false)
+	{}
 };
 
 
 int idaapi obj_fint_t::visit_expr(cexpr_t *e)
 {
 	// check if the expression being visited is variable
-	if(e->op == cot_obj) {
-		// get the variable name
-		char expr_name[MAXSTR];
-		e->print1(expr_name, MAXSTR, NULL);
-        tag_remove(expr_name, expr_name, sizeof(expr_name));
+	if (e->op != cot_obj)
+		return 0;
 
-		// check for the target variable
-		if(!strcmp(expr_name, vtbl_name.c_str())) {
-			size_t max_parents = 3;
-			if ( parents.size() < max_parents ) {
-				max_parents = parents.size();
-			}
-				
-			for (size_t i = 1 ; i <= max_parents ; i ++) {
-				citem_t *parent = parents[parents.size() - i];
-				if(parent->is_expr() && (parent->op == cot_asg)) {
-					cexpr_t * target_expr = (cexpr_t *)parent;
-					while ((target_expr->x != NULL) && (target_expr->op != cot_var) && (target_expr->op != cot_obj))
-						target_expr = target_expr->x;
+	// get the variable name
+	char expr_name[MAXSTR] = {};
+	e->print1(expr_name, MAXSTR - 1, NULL);
+	qstring s{expr_name};
+	tag_remove(&s);
 
-					if (target_expr->op == cot_var) {
-						target_expr->print1(expr_name, MAXSTR, NULL);
-						tag_remove(expr_name, expr_name, sizeof(expr_name));
-						var_name = expr_name;
+	// check for the target variable
+	if (s != vtbl_name)
+		return 0;
 
-						bFound = true;
+	size_t max_parents = 3;
+	if (parents.size() < max_parents) {
+		max_parents = parents.size();
+	}
 
-						break;
-					}
-				}
+	for (size_t i = 1; i <= max_parents; i++) {
+		citem_t *parent = parents.back();
+		if (parent->is_expr() && parent->op == cot_asg) {
+			cexpr_t * target_expr = (cexpr_t *)parent;
+
+			while (target_expr->x != NULL && target_expr->op != cot_var && target_expr->op != cot_obj)
+				target_expr = target_expr->x;
+
+			if (target_expr->op == cot_var) {
+				target_expr->print1(expr_name, MAXSTR - 1, NULL);
+				s = expr_name;
+				tag_remove(&s);
+
+				var_name = s;
+				bFound = true;
+				break;
 			}
 		}
 	}
@@ -93,144 +97,139 @@ int idaapi obj_fint_t::visit_expr(cexpr_t *e)
 	return 0;
 }
 
-void idaapi reset_pointer_type(cfuncptr_t cfunc, qstring &var_name) {
+void idaapi reset_pointer_type(cfuncptr_t cfunc, const qstring &var_name) {
 	lvars_t * locals = cfunc->get_lvars();
-	if (locals != NULL) {
-		qvector<lvar_t>::iterator locals_iter;
+	if (!locals != NULL)
+		return;
 
-		for (locals_iter = locals->begin(); locals_iter != locals->end(); locals_iter++) {
-			if (!strcmp(var_name.c_str(), (*locals_iter).name.c_str())) {
-				tinfo_t int_type = tinfo_t(BT_INT32);
-				(*locals_iter).set_final_lvar_type(int_type);
-				(*locals_iter).set_user_type();
-				cfunc->build_c_tree();
-				break;
-			}
-		}
+	qvector<lvar_t>::iterator locals_iter;
+
+	for (locals_iter = locals->begin(); locals_iter != locals->end(); locals_iter++) {
+		if (var_name != locals_iter->name)
+			continue;
+
+		tinfo_t int_type = tinfo_t(BT_INT32);
+		locals_iter->set_final_lvar_type(int_type);
+		locals_iter->set_user_type();
+		cfunc->build_c_tree();
+		break;
 	}
 }
 
 bool idaapi find_var(void *ud)
 {
 	vdui_t &vu = *(vdui_t *)ud;
-  
+
 	// Determine the ctree item to highlight
 	vu.get_current_item(USE_KEYBOARD);
 	citem_t *highlight = vu.item.is_citem() ? vu.item.e : NULL;
 
 	// highlight == NULL might happen if one chooses variable at local variables declaration statement
-	if(highlight != NULL)
-	{
-		// the chosen item must be an expression and of 'variable' type
-		if(highlight->is_expr() && (highlight->op == cot_obj))
-		{
-			cexpr_t *highl_expr = (cexpr_t *)highlight;
-
-			char expr_name[MAXSTR];
-			highlight->print1(expr_name, MAXSTR, NULL);
-			tag_remove(expr_name, expr_name, sizeof(expr_name));
-
-			// initialize type rebuilder
-			obj_fint_t obj_find;
-			obj_find.vtbl_name = expr_name;
-			
-		
-			// traverse the ctree structure
-			obj_find.apply_to(&vu.cfunc->body, NULL);
-
-			if (obj_find.bFound) {
-				logmsg(DEBUG, obj_find.var_name.c_str());
-				// Using this horrible code to remove warnings on GCC 4.9.2. Fix this later.
-				qstring temp_var2=qstring(obj_find.var_name.c_str());
-				qstring &temp_var= temp_var2;
-				reset_pointer_type(vu.cfunc, temp_var);
-
-			
-				vu.refresh_ctext();
-			} else {
-				warning("Failed to find variable...");
-				logmsg(DEBUG, "Failed to find variable...");
-			}
-		}
-	}
-	else
+	if (!highlight)
 	{
 		logmsg(DEBUG, "Invalid item is choosen");
+		return false;
+	}
+
+	// the chosen item must be an expression and of 'variable' type
+	if (highlight->is_expr() && (highlight->op == cot_obj))
+	{
+		cexpr_t *highl_expr = (cexpr_t *)highlight;
+
+		char expr_name[MAXSTR];
+		highlight->print1(expr_name, MAXSTR, NULL);
+		qstring s{ expr_name };
+		tag_remove(&s);
+
+		// initialize type rebuilder
+		obj_fint_t obj_find;
+		obj_find.vtbl_name = s;
+
+		// traverse the ctree structure
+		obj_find.apply_to(&vu.cfunc->body, NULL);
+
+		if (obj_find.bFound) {
+			logmsg(DEBUG, (obj_find.var_name + "\n").c_str());
+			reset_pointer_type(vu.cfunc, obj_find.var_name);
+
+			vu.refresh_ctext();
+		} else {
+			warning("Failed to find variable...\n");
+			logmsg(DEBUG, "Failed to find variable...\n");
+		}
 	}
 
 	return true;
 }
 
-bool idaapi find_var(cfuncptr_t cfunc, qstring vtbl_name, qstring &var_name)
+bool idaapi find_var(cfuncptr_t cfunc, const qstring& vtbl_name, qstring &var_name)
 {
+	var_name.clear();
+
 	obj_fint_t obj_find;
-	int offs = 0;
-	if (!strncmp(vtbl_name.c_str(), "const ", 6))
-		offs = 6;
-	obj_find.vtbl_name = vtbl_name.c_str() + offs;
-	bool bResult = false;
-			
-		
+	obj_find.vtbl_name = vtbl_name;
+
+	if (obj_find.vtbl_name.find("const ") == 0)
+		obj_find.vtbl_name.remove(0, 6);
+
 	// traverse the ctree structure
 	obj_find.apply_to(&cfunc->body, NULL);
 
-	if (obj_find.bFound) {
-		var_name = obj_find.var_name.c_str();
-		reset_pointer_type(cfunc, var_name);
-		bResult = true;
-	} else {
-		logmsg(DEBUG, "Failed to find variable...");
+	if (!obj_find.bFound) {
+		logmsg(DEBUG, "Failed to find variable...\n");
+		return false;
 	}
 
-	return bResult;
+	var_name = obj_find.var_name;
+	reset_pointer_type(cfunc, var_name);
+	return true;
 }
 
-tid_t idaapi merge_types(qvector<qstring> types_to_merge, qstring type_name) {
+tid_t idaapi merge_types(const qvector<qstring>& types_to_merge, const qstring& type_name) {
 	tid_t struct_type_id = BADADDR;
+
+	if (types_to_merge.empty())
+		return struct_type_id;
 
 	std::set<ea_t> offsets;
 
-	if (types_to_merge.size() != 0) {
-		struct_type_id = add_struc(BADADDR, type_name.c_str());
-		if (struct_type_id != 0 || struct_type_id != BADADDR)
-		{
-			struc_t * struc = get_struc(struct_type_id);
-			if(struc != NULL) {
-				qvector<qstring>::iterator types_iter;
-				for (types_iter = types_to_merge.begin(); types_iter != types_to_merge.end(); types_iter ++) {
-					
-					tid_t type_id = get_struc_id((*types_iter).c_str());
-					if (type_id != BADADDR) {
-						struc_t * struc_type = get_struc(type_id);
-						if(struc_type != NULL) {
-							// enumerate members
-							for ( ea_t offset = get_struc_first_offset(struc_type) ; offset != BADADDR ; offset = get_struc_next_offset(struc_type, offset)) {
-								member_t * member_info = get_member(struc_type, offset);
-								if (member_info != NULL) {
-									if (offsets.count(member_info->soff) == 0) {
-										qstring member_name = get_member_name2(member_info->id);
-										asize_t member_size = get_member_size(member_info);
+	struct_type_id = add_struc(BADADDR, type_name.c_str());
+	if (struct_type_id == BADADDR)
+		return struct_type_id;
 
-										if (member_name.find("vftbl_", 0) != -1) {
-											tinfo_t tif;
-											if (get_member_tinfo2(member_info, &tif)) {
-												add_struc_member(struc, member_name.c_str(), member_info->soff, dwrdflag(), NULL, member_size);
-												member_t * membr = get_member(struc, member_info->soff);
-												if (membr != NULL) {
-													set_member_tinfo2(struc, membr, 0, tif, SET_MEMTI_COMPATIBLE);
-												}
-											}
-										} else {
-											add_struc_member(struc, member_name.c_str(), member_info->soff, member_info->flag, NULL, member_size);
-										}
+	struc_t * struc = get_struc(struct_type_id);
+	if (!struc)
+		return struct_type_id;
 
-										offsets.insert(member_info->soff);
-									}
-								}
-							}
+	for (auto types_iter = types_to_merge.begin(), end = types_to_merge.end(); types_iter != end; ++types_iter) {
+		struc_t * struc_type = get_struc(get_struc_id(types_iter->c_str()));
+		if (!struc_type)
+			continue;
+
+		// enumerate members
+		for ( ea_t offset = get_struc_first_offset(struc_type) ; offset != BADADDR ; offset = get_struc_next_offset(struc_type, offset)) {
+			member_t * member_info = get_member(struc_type, offset);
+			if (!member_info)
+				continue;
+
+			if (offsets.count(member_info->soff) == 0) {
+				qstring member_name = get_member_name(member_info->id);
+				asize_t member_size = get_member_size(member_info);
+
+				if (member_name.find("vftbl_", 0) != -1) {
+					tinfo_t tif;
+					if (get_member_tinfo(&tif, member_info)) {
+						add_struc_member(struc, member_name.c_str(), member_info->soff, dword_flag(), NULL, member_size);
+						if (member_t * membr = get_member(struc, member_info->soff)) {
+							set_member_tinfo(struc, membr, 0, tif, SET_MEMTI_COMPATIBLE);
 						}
 					}
 				}
+				else {
+					add_struc_member(struc, member_name.c_str(), member_info->soff, member_info->flag, NULL, member_size);
+				}
+
+				offsets.insert(member_info->soff);
 			}
 		}
 	}
@@ -238,7 +237,7 @@ tid_t idaapi merge_types(qvector<qstring> types_to_merge, qstring type_name) {
 	return struct_type_id;
 }
 
-void get_struct_key(struc_t * struc_type, VTBL_info_t vtbl_info, qstring &file_entry_key, bool &filtered, std::map<ea_t, VTBL_info_t> vtbl_map) {
+void get_struct_key(struc_t * struc_type, const VTBL_info_t& vtbl_info, qstring &file_entry_key, bool &filtered, const std::map<ea_t, VTBL_info_t>& vtbl_map) {
 	qstring sub_key;
 	qstring vtables_sub_key;
 	int vftbales_num = 0;
@@ -246,7 +245,7 @@ void get_struct_key(struc_t * struc_type, VTBL_info_t vtbl_info, qstring &file_e
 	for ( ea_t offset = get_struc_first_offset(struc_type) ; offset != BADADDR ; offset = get_struc_next_offset(struc_type, offset)) {
 		member_t * member_info = get_member(struc_type, offset);
 		if (member_info != NULL) {
-			qstring member_name = get_member_name2(member_info->id);
+			qstring member_name = get_member_name(member_info->id);
 			asize_t member_size = get_member_size(member_info);
 
 			if (member_name.find("vftbl_", 0) != -1) {
@@ -254,9 +253,9 @@ void get_struct_key(struc_t * struc_type, VTBL_info_t vtbl_info, qstring &file_e
 				ea_t vtable_addr = 0;
 				int i;
 
-				if (qsscanf(member_name.c_str(), "vftbl_%d_%p", &i, &vtable_addr) > 0) {
+				if (qsscanf(member_name.c_str(), "vftbl_%d_%" FMT_EA "x", &i, &vtable_addr) > 0) {
 					if (vtbl_map.count(vtable_addr) != 0) {
-						vtables_sub_key.cat_sprnt("_%d", vtbl_map[vtable_addr].methods);
+						vtables_sub_key.cat_sprnt("_%d", vtbl_map.at(vtable_addr).methods);
 					}
 				}
 
@@ -276,72 +275,66 @@ void get_struct_key(struc_t * struc_type, VTBL_info_t vtbl_info, qstring &file_e
 		filtered = true;
 }
 
-void idaapi dump_type_info(int file_id, VTBL_info_t vtbl_info, qstring type_name, std::map<ea_t, VTBL_info_t> vtbl_map) {
-	tid_t type_id = get_struc_id(type_name.c_str());
-	if (type_id != BADADDR) {
-		struc_t * struc_type = get_struc(type_id);
-		if(struc_type != NULL) {
-			qstring file_entry_key;
-			qstring key_hash;
-			bool filtered = false;
-			
-			get_struct_key(struc_type, vtbl_info, file_entry_key, filtered, vtbl_map);
-			get_hash_of_string(file_entry_key, key_hash);
+void idaapi dump_type_info(int file_id, const VTBL_info_t& vtbl_info, const qstring& type_name, const std::map<ea_t, VTBL_info_t>& vtbl_map) {
+	struc_t * struc_type = get_struc(get_struc_id(type_name.c_str()));
+	if (!struc_type)
+		return;
 
-			if (!filtered) {
-				qstring file_entry_val;
-				tinfo_t new_type = create_typedef(type_name.c_str());
-				if(new_type.is_correct()) {
-					if (new_type.print(&file_entry_val, NULL, PRTYPE_DEF | PRTYPE_1LINE)) {
-						qstring line;
+	qstring file_entry_key;
+	qstring key_hash;
+	bool filtered = false;
 
-						line = key_hash + ";" + file_entry_key + ";";
-						line.cat_sprnt("%p;", vtbl_info.ea_begin);
-						line += file_entry_val + ";";
-						
-						if (rtti_vftables.count(vtbl_info.ea_begin) != 0) {
-							VTBL_info_t vi = rtti_vftables[vtbl_info.ea_begin];
-							line += vi.vtbl_name;
-						}
-						line.rtrim();
-						line += "\r\n";
-						qwrite(file_id, line.c_str(), line.length());
-					}
-				}
-			}
+	get_struct_key(struc_type, vtbl_info, file_entry_key, filtered, vtbl_map);
+	get_hash_of_string(file_entry_key, key_hash);
+
+	if (filtered)
+		return;
+
+	qstring file_entry_val;
+	tinfo_t new_type = create_typedef(type_name.c_str());
+
+	if (new_type.is_correct() && new_type.print(&file_entry_val, NULL, PRTYPE_DEF | PRTYPE_1LINE)) {
+		qstring line;
+
+		line = key_hash + ";" + file_entry_key + ";";
+		line.cat_sprnt("%p;", vtbl_info.ea_begin);
+		line += file_entry_val + ";";
+
+		if (rtti_vftables.count(vtbl_info.ea_begin) != 0) {
+			VTBL_info_t vi = rtti_vftables[vtbl_info.ea_begin];
+			line += vi.vtbl_name;
 		}
+		line.rtrim();
+		line += "\r\n";
+		qwrite(file_id, line.c_str(), line.length());
 	}
 }
 
 bool idaapi check_subtype(VTBL_info_t vtbl_info, qstring subtype_name) {
-	bool bResult = false;
 	qstring search_str;
 	search_str.sprnt("_%p", vtbl_info.ea_begin);
-	
-	tid_t type_id = get_struc_id(subtype_name.c_str());
-	if (type_id != BADADDR) {
-		struc_t * struc_type = get_struc(type_id);
-		if(struc_type != NULL) {
-			// enumerate members
-			for ( ea_t offset = get_struc_first_offset(struc_type) ; offset != BADADDR ; offset = get_struc_next_offset(struc_type, offset)) {
-				member_t * member_info = get_member(struc_type, offset);
-				if (member_info != NULL) {
-					qstring member_name = get_member_name2(member_info->id);
-					if (member_name.find(search_str, 0) != -1) {
-						bResult = true;
-						break;
-					}
-				}
-			}
-		}
+
+	struc_t * struc_type = get_struc(get_struc_id(subtype_name.c_str()));
+	if (!struc_type)
+		return false;
+
+	// enumerate members
+	for ( ea_t offset = get_struc_first_offset(struc_type) ; offset != BADADDR ; offset = get_struc_next_offset(struc_type, offset)) {
+		member_t * member_info = get_member(struc_type, offset);
+		if (!member_info)
+			continue;
+
+		qstring member_name = get_member_name(member_info->id);
+		if (member_name.find(search_str, 0) != member_name.npos)
+			return true;
 	}
 
-	return bResult;
+	return false;
 }
 
 bool idaapi extract_all_types(void *ud)
 {
-	logmsg(DEBUG, "extract_types()");
+	logmsg(DEBUG, "extract_types()\n");
 
 	// find vtables in the binary
 	search_objects(false);
@@ -353,68 +346,72 @@ bool idaapi extract_all_types(void *ud)
 		vtbl_map[(*vtbl_iter).ea_begin] = (*vtbl_iter);
 
 	int file_id = create_open_file("types.txt");
-	if (file_id != BADADDR) {
-		int struct_no = 0;
+	if (file_id == -1)
+	{
+		logmsg(ERROR, "Failed to open file for dumping types.txt\r\n");
+		return false;
+	}
 
-		for (vtbl_iter = vtbl_t_list.begin(); vtbl_iter != vtbl_t_list.end(); vtbl_iter++) {
-			qstring info_msg;
-			info_msg.cat_sprnt("Processing vtable %s\n", (*vtbl_iter).vtbl_name.c_str());
-			logmsg(DEBUG, info_msg.c_str());
+	int struct_no = 0;
 
-			qstring type_name;
-			type_name.sprnt("struc_2_%d", struct_no);
+	for (vtbl_iter = vtbl_t_list.begin(); vtbl_iter != vtbl_t_list.end(); vtbl_iter++) {
+		qstring info_msg;
+		info_msg.cat_sprnt("Processing vtable %s\n", (*vtbl_iter).vtbl_name.c_str());
+		logmsg(DEBUG, info_msg.c_str());
 
-			ea_t cur_vt_ea = (*vtbl_iter).ea_begin;
-			int struct_subno = 0;
+		qstring type_name;
+		type_name.sprnt("struc_2_%d", struct_no);
 
-			qvector <qstring> types_to_merge;
-			for (ea_t addr = get_first_dref_to(cur_vt_ea); addr != BADADDR; addr = get_next_dref_to(cur_vt_ea, addr)) {
-				qstring name;
-				get_func_name2(&name, addr);
+		ea_t cur_vt_ea = (*vtbl_iter).ea_begin;
+		int struct_subno = 0;
 
-				
+		qvector <qstring> types_to_merge;
+		for (ea_t addr = get_first_dref_to(cur_vt_ea); addr != BADADDR; addr = get_next_dref_to(cur_vt_ea, addr)) {
+			qstring name;
+			if (get_func_name(&name, addr) <= 0)
+				continue;
 
-				qstring info_msg1;
-				info_msg1.cat_sprnt("\t%s", name.c_str());
-				logmsg(DEBUG, info_msg1.c_str());
+			qstring info_msg1;
+			info_msg1.cat_sprnt("\t%s\n", name.c_str());
+			logmsg(DEBUG, info_msg1.c_str());
 
-				func_t *pfn = get_func(addr);
-				if ( pfn != NULL ) {
-					hexrays_failure_t hf;
-					cfuncptr_t cfunc = decompile(pfn, &hf);
-					if ( cfunc != NULL ) {
-						qstring var_name;
-						info_msg.clear();
+			func_t *pfn = get_func(addr);
+			if (!pfn)
+				continue;
 
-						if (find_var(cfunc, (*vtbl_iter).vtbl_name, var_name)) {	
-							info_msg.cat_sprnt(" : %s\n", var_name.c_str());
-							logmsg(DEBUG, info_msg.c_str());
+			hexrays_failure_t hf;
+			cfuncptr_t cfunc = decompile(pfn, &hf);
+			if (cfunc != NULL) {
+				qstring var_name;
+				info_msg.clear();
 
-							qstring sub_type_name = type_name;
-							sub_type_name.cat_sprnt("_%d", struct_subno);
-							struct_subno ++;
-							
-							if (reconstruct_type(cfunc, var_name, sub_type_name)) {
-								if (check_subtype((*vtbl_iter), sub_type_name)) {
-									types_to_merge.push_back(sub_type_name);
-								}
-							}
-						} else {
-							info_msg.cat_sprnt(" : none\n", var_name.c_str());
-							logmsg(DEBUG, info_msg.c_str());
+				if (find_var(cfunc, (*vtbl_iter).vtbl_name, var_name)) {
+					info_msg.cat_sprnt(" : %s\n", var_name.c_str());
+					logmsg(DEBUG, info_msg.c_str());
+
+					qstring sub_type_name = type_name;
+					sub_type_name.cat_sprnt("_%d", struct_subno);
+					struct_subno++;
+
+					if (reconstruct_type(cfunc, var_name, sub_type_name)) {
+						if (check_subtype((*vtbl_iter), sub_type_name)) {
+							types_to_merge.push_back(sub_type_name);
 						}
 					}
 				}
+				else {
+					info_msg.cat_sprnt(" : none\n", var_name.c_str());
+					logmsg(DEBUG, info_msg.c_str());
+				}
 			}
-
-			struct_no ++;
-
-			merge_types(types_to_merge, type_name);
-			dump_type_info(file_id, (*vtbl_iter), type_name, vtbl_map);
 		}
 
-		qclose(file_id);
+		struct_no++;
+
+		merge_types(types_to_merge, type_name);
+		dump_type_info(file_id, (*vtbl_iter), type_name, vtbl_map);
 	}
-	
+
+	qclose(file_id);
 	return true;
 }

@@ -2,7 +2,6 @@
 class IObjectFormatParser
 {
 public:
-	IObjectFormatParser();
 	virtual ~IObjectFormatParser();
 
 	virtual void getRttiInfo() = 0;
@@ -10,3 +9,5 @@ public:
 };
 
 extern IObjectFormatParser *objectFormatParser;
+
+extern bool initObjectFormatParser();
