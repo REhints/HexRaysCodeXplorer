@@ -26,6 +26,7 @@
 #include "Common.h"
 #include "CtreeGraphBuilder.h"
 #include "ObjectExplorer.h"
+#include "Utility.h"
 
 #if defined (__LINUX__) || defined (__MAC__)
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
@@ -101,7 +102,7 @@ void callgraph_t::get_node_label(int n, qstring& rv) const
 			rv.append(' ');
 			{
 				char lbuf[MAXSTR] = {};
-				e->print1(lbuf, sizeof(lbuf), NULL);
+				e->print1(lbuf, _countof(lbuf), nullptr);
 				qstring qbuf(lbuf);
 				tag_remove(&qbuf);
 				rv += qbuf;
@@ -228,7 +229,7 @@ callgraph_t::callgraph_t()
 	: node_count(0)
 	, highlighted(nullptr)
 {
-	cur_text[0] = '\0';
+	//cur_text[0] = '\0';
 }
 
 

@@ -44,7 +44,11 @@ bool idaapi show_string_in_custom_view(void *ud, const qstring& title, const qst
 
 
 // Size of string with out terminator
-#define SIZESTR(x) (sizeof(x) - 1)
+//#define SIZESTR(x) (sizeof(x) - 1)
+
+#ifndef _countof
+#	define _countof(x) (sizeof((x)) / sizeof((x)[0]))
+#endif // _countof
 
 
 typedef qlist<ea_t> eaList;
@@ -87,21 +91,21 @@ bool compilerIs(const char *name);
 inline ea_t getEa(ea_t ea)
 {
 #ifndef __EA64__
-	return((ea_t) get_32bit(ea));
-#else
-	return((ea_t) get_64bit(ea));
-#endif
+	return (ea_t)get_32bit(ea);
+#else // __EA64__
+	return (ea_t)get_64bit(ea);
+#endif // __EA64__
 }
 
 
 // Returns TRUE if ea_t sized value flags
-inline BOOL isEa(flags_t f)
+inline bool isEa(flags_t f)
 {
 #ifndef __EA64__
-	return(is_dword(f));
-#else
-	return(is_qword(f));
-#endif
+	return is_dword(f);
+#else // __EA64__
+	return is_qword(f);
+#endif // __EA64__
 }
 
 #ifndef _SHA_enum_
@@ -109,7 +113,7 @@ inline BOOL isEa(flags_t f)
 enum
 {
 	shaSuccess = 0,
-	shaNull,  // Null pointer parameter 
+	shaNull,  // Null pointer parameter
 	shaInputTooLong, // input data too long
 	shaStateError // called Input after Result
 };
@@ -136,7 +140,7 @@ void SHA1MessageDigestToString(uint8_t Message_Digest[SHA1HashSize], char outbuf
 void split_qstring(const qstring &options, const qstring &splitter, qvector<qstring> &result);
 
 void idaapi setUnknown(ea_t ea, asize_t size);
-void MakeName(ea_t ea, const qstring& name, char * prefix = "", char * postfix = "");
+void MakeName(ea_t ea, const qstring& name, const qstring& prefix = "", const qstring& postfix = "");
 bool MakeArray(ea_t ea, size_t nitems);
 
 #endif

@@ -426,11 +426,10 @@ static bool idaapi decompile_func(vdui_t &vu)
 	while ((proc_name > citem_name) && (*(proc_name - 1) != '>'))  // WTF is going here?
 		proc_name--;
 
-	if (proc_name != citem_name) 
+	if (proc_name != citem_name)
 	{
-		func_t * func = get_func_by_name(proc_name);
-		if (func != NULL)
-			vdui_t * decompiled_window = open_pseudocode(func->start_ea, -1);
+		if (func_t* func = get_func_by_name(proc_name))
+			open_pseudocode(func->start_ea, -1);
 	}
 
 	return true;
@@ -716,8 +715,7 @@ int idaapi init(void)
 		auto_wait();
 
 		if (dump_types) {
-			qstring options_msg = "Dumping types\n";
-			logmsg(DEBUG, options_msg.c_str());
+			logmsg(DEBUG, "Dumping types\n");
 			extract_all_types(NULL);
 
 			int file_id = qcreate("codexplorer_types_done", 511);

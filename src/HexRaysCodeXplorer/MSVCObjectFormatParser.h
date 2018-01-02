@@ -64,7 +64,7 @@ namespace RTTI
 
 		static bool isValid(ea_t typeInfo);
 		static bool isTypeName(ea_t name);
-		static int  getName(ea_t typeInfo, OUT LPSTR bufffer, int bufferSize);
+		static bool getName(ea_t typeInfo, qstring& outName);
 
 	};
 	const UINT MIN_TYPE_INFO_SIZE = (offsetof(type_info, _M_d_name) + sizeof(".?AVx"));
@@ -166,7 +166,7 @@ extern bool getVerifyEa(ea_t ea, ea_t &rValue);
 extern BOOL hasAnteriorComment(ea_t ea);
 extern void killAnteriorComments(ea_t ea);
 
-extern bool getPlainTypeName(LPCSTR mangled, qstring& outStr);
+extern bool getPlainTypeName(const qstring& mangled, qstring& outStr);
 
 extern BOOL optionOverwriteComments, optionPlaceStructs;
 

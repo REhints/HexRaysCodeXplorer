@@ -131,12 +131,12 @@ bool vftable::getTableInfo(ea_t ea, vtinfo &info)
 //---------------------------------------------------------------------------
 
 // Skip type_info tag for class/struct mangled name strings
-#define SKIP_TD_TAG(_str) (_str + SIZESTR(".?Ax"))
+#define SKIP_TD_TAG(_str) ((_str) + _countof(".?Ax") - 1)
 
 // Class name list container
 struct bcdInfo
 {
-	char m_name[496];
+	qstring m_name;
 	UINT m_attribute;
 	RTTI::PMD m_pmd;
 };
@@ -144,7 +144,7 @@ typedef qvector<bcdInfo> bcdList;
 
 namespace RTTI
 {
-	static void getBCDInfo(ea_t col, bcdList &nameList, OUT UINT &numBaseClasses);
+	static bool getBCDInfo(ea_t col, bcdList &nameList, OUT UINT &numBaseClasses);
 };
 
 
@@ -180,39 +180,28 @@ static LPCSTR attributeLabel(UINT attributes)
 }
 
 // Read a string from IDB at address
-static int readIdaString(ea_t ea, OUT LPSTR buffer, int bufferSize)
+static size_t readIdaString(ea_t ea, qstring& rv)
 {
 	// Return cached name if it exists
-	stringMap::iterator it = stringCache.find(ea);
+	auto it = stringCache.find(ea);
 	if (it != stringCache.end())
 	{
-		const LPCSTR str = it->second.c_str();
-		int len = static_cast<int>(strlen(str));
-		if (len > bufferSize)
-			len = bufferSize;
-		qstrncpy(buffer, str, len);
-		buffer[len - 1] = 0;
-		return(len);
+		rv = it->second;
+		return rv.length();
 	}
 
 	// Read string at ea if it exists
 	auto len = get_max_strlit_length(ea, STRTYPE_C, ALOPT_IGNHEADS);
-	if (len > 0)
-	{
-		if (len > bufferSize)
-			len = bufferSize;
-		qstring s;
-		if (get_strlit_contents(&s, ea, len, STRTYPE_C))
-		{
-			// Cache it
-			qstrncpy(buffer, s.c_str(), len);
-			buffer[len - 1] = 0;
-			stringCache[ea] = s;
-		}
-		else
-			len = 0;
-	}
-	return static_cast<int>(len);
+	if (!len)
+		return 0;
+
+	rv.reserve(len + 4);
+	if (get_strlit_contents(&rv, ea, len, STRTYPE_C) <= 0)
+		return 0;
+
+	// Cache it
+	stringCache[ea] = rv;
+	return rv.length();
 }
 
 
@@ -220,9 +209,9 @@ static int readIdaString(ea_t ea, OUT LPSTR buffer, int bufferSize)
 
 // Get type name into a buffer
 // type_info assumed to be valid
-int RTTI::type_info::getName(ea_t typeInfo, OUT LPSTR buffer, int bufferSize)
+bool RTTI::type_info::getName(ea_t typeInfo, qstring& outName)
 {
-	return readIdaString(typeInfo + offsetof(type_info, _M_d_name), buffer, bufferSize);
+	return readIdaString(typeInfo + offsetof(type_info, _M_d_name), outName) > 0;
 }
 
 // A valid type_info/TypeDescriptor at pointer?
@@ -259,10 +248,9 @@ bool RTTI::type_info::isTypeName(ea_t name)
 	if (get_byte(name) == '.')
 	{
 		// Read the rest of the possible name string
-		char buffer[MAXSTR];
-		buffer[0] = buffer[SIZESTR(buffer)] = 0;
+		qstring buffer;
 
-		if (readIdaString(name, buffer, SIZESTR(buffer)))
+		if (readIdaString(name, buffer) && buffer.length() > 3)
 		{
 			// Should be valid if it properly demangles
 			//			if (demangle_name(demangledStr, (MAXSTR), buffer, (MT_MSCOMP | MNG_NODEFINIT)) >= 0)
@@ -409,7 +397,7 @@ bool RTTI::_RTTIClassHierarchyDescriptor::isValid(ea_t chd, ea_t colBase64)
 
 
 // Get list of base class descriptor info
-static void RTTI::getBCDInfo(ea_t col, bcdList &list, OUT UINT &numBaseClasses)
+static bool RTTI::getBCDInfo(ea_t col, bcdList &list, OUT UINT &numBaseClasses)
 {
 	numBaseClasses = 0;
 
@@ -423,10 +411,10 @@ static void RTTI::getBCDInfo(ea_t col, bcdList &list, OUT UINT &numBaseClasses)
 #endif
 
 	if (!chd)
-		return;
+		return false;
 
 	if (!(numBaseClasses = get_32bit(chd + offsetof(_RTTIClassHierarchyDescriptor, numBaseClasses))))
-		return;
+		return true;
 
 	list.resize(numBaseClasses);
 
@@ -438,14 +426,16 @@ static void RTTI::getBCDInfo(ea_t col, bcdList &list, OUT UINT &numBaseClasses)
 	ea_t baseClassArray = (colBase + (UINT64)bcaOffset);
 #endif
 
-	if (!baseClassArray || baseClassArray == BADADDR)
-		return;
+	if (!::is_mapped(baseClassArray))
+		return false;
 
-	for (UINT i = 0; i < numBaseClasses; i++, baseClassArray += sizeof(UINT)) // sizeof(ea_t)
+	for (UINT i = 0; i < numBaseClasses; ++i, baseClassArray += sizeof(UINT)) // sizeof(ea_t)
 	{
 #ifndef __EA64__
 		// Get next BCD
 		ea_t bcd = getEa(baseClassArray);
+		if (!is_mapped(bcd))
+			continue;
 
 		// Get type name
 		ea_t typeInfo = getEa(bcd + offsetof(_RTTIBaseClassDescriptor, typeDescriptor));
@@ -456,8 +446,11 @@ static void RTTI::getBCDInfo(ea_t col, bcdList &list, OUT UINT &numBaseClasses)
 		UINT tdOffset = get_32bit(bcd + offsetof(_RTTIBaseClassDescriptor, typeDescriptor));
 		ea_t typeInfo = (colBase + (UINT64)tdOffset);
 #endif
+		if (!is_mapped(typeInfo))
+			continue;
+
 		bcdInfo& bi = list[i];
-		type_info::getName(typeInfo, bi.m_name, SIZESTR(bi.m_name));
+		type_info::getName(typeInfo, bi.m_name);
 
 		// Add info to list
 		UINT mdisp = get_32bit(bcd + (offsetof(_RTTIBaseClassDescriptor, pmd) + offsetof(PMD, mdisp)));
@@ -469,6 +462,7 @@ static void RTTI::getBCDInfo(ea_t col, bcdList &list, OUT UINT &numBaseClasses)
 		bi.m_pmd.vdisp = *((PINT)&vdisp);
 		bi.m_attribute = get_32bit(bcd + offsetof(_RTTIBaseClassDescriptor, attributes));
 	}
+	return true;
 }
 
 
@@ -485,9 +479,8 @@ bool RTTI::processVftable(ea_t vft, ea_t col, vftable::vtinfo &vi)
 	ea_t typeInfo = getEa(col + offsetof(_RTTICompleteObjectLocator, typeDescriptor));
 	ea_t chd = get_32bit(col + offsetof(_RTTICompleteObjectLocator, classDescriptor));
 
-	char colName[MAXSTR];
-	colName[0] = colName[SIZESTR(colName)] = 0;
-	type_info::getName(typeInfo, colName, SIZESTR(colName));
+	qstring colName;
+	type_info::getName(typeInfo, colName);
 
 	qstring demangledColName;
 	getPlainTypeName(colName, demangledColName);
@@ -496,8 +489,9 @@ bool RTTI::processVftable(ea_t vft, ea_t col, vftable::vtinfo &vi)
 
 	// Parse BCD info
 	bcdList list;
-	UINT numBaseClasses;
-	getBCDInfo(col, list, numBaseClasses);
+	UINT numBaseClasses = 0;
+	if (!getBCDInfo(col, list, numBaseClasses))
+		return false;
 
 	bool isTopLevel = false;
 	qstring cmt;
@@ -509,135 +503,125 @@ bool RTTI::processVftable(ea_t vft, ea_t col, vftable::vtinfo &vi)
 		if (numBaseClasses > 1) {
 			// Parent
 			getPlainTypeName(list[0].m_name, plainName);
-			cmt.sprnt("%s%s: ", list[0].m_name[3] == 'V' ? "" : "struct ", plainName.c_str());
+			cmt.sprnt("%s%s: ", list[0].m_name.length() < 4 || list[0].m_name[3] == 'V' ? "" : "struct ", plainName.c_str());
 			placed++;
-			isTopLevel = strcmp(list[0].m_name, colName) == 0;
+			isTopLevel = list[0].m_name == colName;
 
 			// Child object hierarchy
 			for (UINT i = 1; i < numBaseClasses; i++)
 			{
 				// Append name
 				getPlainTypeName(list[i].m_name, plainName);
-				cmt.cat_sprnt("%s%s, ", list[i].m_name[3] == 'V' ? "" : "struct ", plainName.c_str());
+				cmt.cat_sprnt("%s%s, ", list[i].m_name.length() < 4 || list[i].m_name[3] == 'V' ? "" : "struct ", plainName.c_str());
 				placed++;
 			}
 
 			// Nix the ending ',' for the last one
 			if (placed > 1)
-				cmt.remove((cmt.length() - 2), 2);
+				cmt.remove(cmt.length() - 2, 2);
 		}
 		else {
 			// Plain, no inheritance object(s)
-			cmt.sprnt("%s%s", colName[3] == 'V' ? "" : "struct ", demangledColName.c_str());
+			cmt.sprnt("%s%s", colName.length() < 4 || colName[3] == 'V' ? "" : "struct ", demangledColName.c_str());
 			isTopLevel = true;
 		}
 
-		sucess = true;
+		vi.type_info = cmt;
+		return true;
 	}
 
 	// ======= Multiple inheritance, and, or, virtual inheritance hierarchies
+	bcdInfo *bi = nullptr;
+	int index = 0;
+
+	// Must be the top level object for the type
+	if (offset == 0)
+	{
+		//_ASSERT(strcmp(colName, list[0].m_name) == 0);
+		bi = &list[0];
+		isTopLevel = true;
+	}
 	else
 	{
-		bcdInfo *bi = NULL;
-		int index = 0;
-
-		// Must be the top level object for the type
-		if (offset == 0)
+		// Get our object BCD level by matching COL offset to displacement
+		for (UINT i = 0; i < numBaseClasses; i++)
 		{
-			//_ASSERT(strcmp(colName, list[0].m_name) == 0);
-			bi = &list[0];
-			isTopLevel = true;
+			if (list[i].m_pmd.mdisp == offset)
+			{
+				bi = &list[i];
+				index = i;
+				break;
+			}
 		}
-		else
+
+		// If not found in list, use the first base object instead
+		if (!bi)
 		{
-			// Get our object BCD level by matching COL offset to displacement
+			//logmsg(DEBUG, "** "EAFORMAT" MI COL class offset: %X(%d) not in BCD.\n", vft, offset, offset);
 			for (UINT i = 0; i < numBaseClasses; i++)
 			{
-				if (list[i].m_pmd.mdisp == offset)
+				if (list[i].m_pmd.pdisp != -1)
 				{
 					bi = &list[i];
 					index = i;
 					break;
 				}
 			}
-
-			// If not found in list, use the first base object instead
-			if (!bi)
-			{
-				//logmsg(DEBUG, "** "EAFORMAT" MI COL class offset: %X(%d) not in BCD.\n", vft, offset, offset);
-				for (UINT i = 0; i < numBaseClasses; i++)
-				{
-					if (list[i].m_pmd.pdisp != -1)
-					{
-						bi = &list[i];
-						index = i;
-						break;
-					}
-				}
-			}
 		}
+	}
 
-		if (bi)
+	if (bi)
+	{
+		// Top object level layout
+		int placed = 0;
+		if (isTopLevel)
 		{
-			// Top object level layout
-			int placed = 0;
-			if (isTopLevel)
-			{
-				// Build hierarchy string starting with parent
-				getPlainTypeName(list[0].m_name, plainName);
-				cmt.sprnt("%s%s: ", list[0].m_name[3] == 'V' ? "" : "struct ", plainName.c_str());
-				placed++;
+			// Build hierarchy string starting with parent
+			getPlainTypeName(list[0].m_name, plainName);
+			cmt.sprnt("%s%s: ", list[0].m_name.length() < 4 || list[0].m_name[3] == 'V' ? "" : "struct ", plainName.c_str());
+			placed++;
 
-				// Concatenate forward child hierarchy
-				for (UINT i = 1; i < numBaseClasses; i++)
+			// Concatenate forward child hierarchy
+			for (UINT i = 1; i < numBaseClasses; i++)
+			{
+				getPlainTypeName(list[i].m_name, plainName);
+				cmt.cat_sprnt("%s%s, ", list[i].m_name.length() < 4 || list[i].m_name[3] == 'V' ? "" : "struct ", plainName.c_str());
+				placed++;
+			}
+			if (placed > 1)
+				cmt.remove(cmt.length() - 2, 2);
+		}
+		else
+		{
+			// Combine COL and CHD name
+//			char combinedName[MAXSTR] = {};
+//			_snprintf(combinedName, _countof(combinedName) - 1, "%s6B%s@", SKIP_TD_TAG(colName), SKIP_TD_TAG(bi->m_name));
+
+			// Build hierarchy string starting with parent
+			getPlainTypeName(bi->m_name, plainName);
+			cmt.sprnt("%s%s: ", bi->m_name.length() < 4 || bi->m_name[3] == 'V' ? "" : "struct ", plainName.c_str());
+			placed++;
+
+			// Concatenate forward child hierarchy
+			if (++index < (int)numBaseClasses)
+			{
+				for (; index < (int)numBaseClasses; index++)
 				{
-					getPlainTypeName(list[i].m_name, plainName);
-					cmt.cat_sprnt("%s%s, ", list[i].m_name[3] == 'V' ? "" : "struct ", plainName.c_str());
+					getPlainTypeName(list[index].m_name, plainName);
+					cmt.cat_sprnt("%s%s, ", list[index].m_name.length() < 4 || list[index].m_name[3] == 'V' ? "" : "struct ", plainName.c_str());
 					placed++;
 				}
 				if (placed > 1)
 					cmt.remove(cmt.length() - 2, 2);
 			}
-			else
-			{
-				// Combine COL and CHD name
-// 					char combinedName[MAXSTR];
-// 					combinedName[SIZESTR(combinedName)] = 0;
-// 					_snprintf(combinedName, SIZESTR(combinedName), "%s6B%s@", SKIP_TD_TAG(colName), SKIP_TD_TAG(bi->m_name));
-
-
-				// Build hierarchy string starting with parent
-				getPlainTypeName(bi->m_name, plainName);
-				cmt.sprnt("%s%s: ", bi->m_name[3] == 'V' ? "" : "struct ", plainName.c_str());
-				placed++;
-
-				// Concatenate forward child hierarchy
-				if (++index < (int)numBaseClasses)
-				{
-					for (; index < (int)numBaseClasses; index++)
-					{
-						getPlainTypeName(list[index].m_name, plainName);
-						cmt.cat_sprnt("%s%s, ", list[index].m_name[3] == 'V' ? "" : "struct ", plainName.c_str());
-						placed++;
-					}
-					if (placed > 1)
-						cmt.remove(cmt.length() - 2, 2);
-				}
-			}
-			//                if (placed > 1)
-			//                    cmt += ';';
-			sucess = true;
 		}
+		// if (placed > 1)
+		//     cmt += ';';
+		// cmt.cat_sprnt(" %s", attributeLabel(chdAttributes));		vi.type_info = cmt;
+		return true;
 	}
 
-	if (sucess)
-	{
-		//             cmt.cat_sprnt(" %s", attributeLabel(chdAttributes));
-
-		vi.type_info = cmt;
-	}
-
-	return sucess;
+	return false;
 }
 
 
@@ -649,8 +633,12 @@ bool RTTI::processVftable(ea_t vft, ea_t col, vftable::vtinfo &vi)
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #endif
 
+namespace {
+
 static eaList colList;
-std::map<ea_t, vftable::vtinfo> rtti_vftables;
+static std::map<ea_t, vftable::vtinfo> rtti_vftables;
+
+} // anonymous
 
 static void freeWorkingData() {
 	RTTI::freeWorkingData();
@@ -734,12 +722,12 @@ bool getVerifyEa(ea_t ea, ea_t &rValue)
 // http://en.wikipedia.org/wiki/Visual_C%2B%2B_name_mangling
 // http://www.agner.org/optimize/calling_conventions.pdf
 
-bool getPlainTypeName(LPCSTR mangled, qstring& outStr)
+bool getPlainTypeName(const qstring& mangled, qstring& outStr)
 {
 	outStr.clear();
 
 	// Use CRT function for type names
-	if (mangled[0] == '.')
+	if (!mangled.empty() && mangled[0] == '.')
 	{
 		/*
 		__unDName(outStr, mangled + 1, MAXSTR, malloc, free, (UNDNAME_32_BIT_DECODE | UNDNAME_TYPE_ONLY | UNDNAME_NO_ECSU));
@@ -754,7 +742,7 @@ bool getPlainTypeName(LPCSTR mangled, qstring& outStr)
 	else
 		// IDA demangler for everything else
 	{
-		int result = demangle_name(&outStr, mangled, (MT_MSCOMP | MNG_NODEFINIT));
+		int result = demangle_name(&outStr, mangled.c_str(), (MT_MSCOMP | MNG_NODEFINIT));
 		if (result < 0)
 			return false;
 
@@ -814,7 +802,7 @@ void idaapi findCols()
 
 	// And ones named ".data"
 	int segCount = get_segm_qty();
-	for (int i = 0; i < segCount; i++)
+	for (int i = 0; i < segCount; ++i)
 	{
 		segment_t *seg = getnseg(i);
 		if (!seg)
@@ -859,12 +847,16 @@ void idaapi findCols()
 // Locate vftables
 void idaapi scanSeg4Vftables(segment_t *seg, eaRefMap &colMap)
 {
-	UINT found = 0;
+	//UINT found = 0;
 	if (seg->size() <= sizeof(ea_t))
 		return;
 
 	ea_t startEA = ((seg->start_ea + sizeof(ea_t)) & ~((ea_t)(sizeof(ea_t) - 1)));
 	ea_t endEA = (seg->end_ea - sizeof(ea_t));
+
+	if (startEA >= endEA)
+		return;
+
 	eaRefMap::iterator colEnd = colMap.end();
 
 	for (ea_t ptr = startEA; ptr < endEA; ptr += sizeof(UINT))
@@ -876,7 +868,7 @@ void idaapi scanSeg4Vftables(segment_t *seg, eaRefMap &colMap)
 			continue;
 
 		// yes, look for vftable one ea_t below
-		ea_t vfptr = (ptr + sizeof(ea_t));
+		ea_t vfptr = ptr + sizeof(ea_t);
 		ea_t method = getEa(vfptr);
 		// Points to code?
 		if (segment_t *s = getseg(method))
@@ -889,7 +881,8 @@ void idaapi scanSeg4Vftables(segment_t *seg, eaRefMap &colMap)
 					rtti_vftables[vfptr] = vi;
 				}
 
-				it->second++, found++;
+				it->second++;
+				//found++;
 			}
 		}
 	}

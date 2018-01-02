@@ -27,6 +27,7 @@
 #include "TypeReconstructor.h"
 
 #include "Debug.h"
+#include "Utility.h"
 
 #if !defined (__LINUX__) && !defined (__MAC__)
 #include <tchar.h>
@@ -116,8 +117,8 @@ int idaapi type_reference::get_size()
 {
 	if(hlpr_size != 0)
 		return hlpr_size;
-	else
-		return final_size;
+
+	return final_size;
 }
 
 void idaapi type_reference::update_hlpr(int off, int num)
@@ -185,7 +186,7 @@ bool idaapi type_builder_t::check_helper(citem_t *parent, int &off, int &num)
 			qstring expr;
 			{
 				char buff[MAXSTR] = {};
-				expr_2->x->print1(buff, MAXSTR -1, NULL);
+				expr_2->x->print1(buff, _countof(buff) - 1, NULL);
 				expr = buff;
 				tag_remove(&expr);
 			}
@@ -329,10 +330,10 @@ bool idaapi type_builder_t::check_ptr(cexpr_t *e, struct_filed &str_fld)
 
 				// get index_value
 				char buff[MAXSTR] = {};
-				expr_2->y->print1(buff, MAXSTR - 1, NULL);
+				expr_2->y->print1(buff, _countof(buff) - 1, NULL);
 				qstring s{ buff };
 				tag_remove(&s);
-				strncpy(buff, s.c_str(), MAXSTR - 1);
+				strncpy(buff, s.c_str(), _countof(buff) - 1);
 
 				int base = 10;
 				if (strncmp(buff, "0x", 2) == 0)
@@ -363,7 +364,7 @@ bool idaapi type_builder_t::check_ptr(cexpr_t *e, struct_filed &str_fld)
 			} else if(parent_i->is_expr() && (parent_i->op == cot_asg)) {
 				if (((cexpr_t *)parent_i)->y == e) { //parents[parents.size() - i]) {
 					char expr_name[MAXSTR] = {};
-					((cexpr_t *)parent_i)->x->print1(expr_name, MAXSTR - 1, NULL);
+					((cexpr_t *)parent_i)->x->print1(expr_name, _countof(expr_name) - 1, NULL);
 					qstring s{ expr_name };
 					tag_remove(&s);
 
@@ -428,7 +429,7 @@ bool idaapi type_builder_t::check_idx(struct_filed &str_fld)
 
 				// get index_value
 				char buff[MAXSTR] = {};
-				expr_2->y->print1(buff, MAXSTR -1, NULL);
+				expr_2->y->print1(buff, _countof(buff) - 1, NULL);
 				qstring s{ buff };
 				tag_remove(&s);
 				int num = atoi(s.c_str());
@@ -461,7 +462,7 @@ int idaapi type_builder_t::visit_expr(cexpr_t *e)
 	{
 		// get the variable name
 		char expr_name[MAXSTR] = {};
-		e->print1(expr_name, MAXSTR - 1, NULL);
+		e->print1(expr_name, _countof(expr_name) - 1, NULL);
 		qstring s{ expr_name };
 		tag_remove(&s);
 
