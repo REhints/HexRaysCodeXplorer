@@ -27,7 +27,7 @@ SRC=$(SRCDIR)CodeXplorer.cpp \
 
 OBJS=$(subst .cpp,.o,$(SRC))
 
-CFLAGS=-m64 -fPIC -D__LINUX__ -D__PLUGIN__ -std=c++11 -D__X64__
+CFLAGS=-m64 -fPIC -D__LINUX__ -D__PLUGIN__ -std=c++11 -D__X64__ -D_GLIBCXX_USE_CXX11_ABI=0
 LIBS=-lc -lpthread -ldl
 
 ifeq ($(EA64),1)
