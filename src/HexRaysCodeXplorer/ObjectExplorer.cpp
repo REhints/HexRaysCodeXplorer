@@ -38,6 +38,7 @@
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #endif
 
+extern plugin_t PLUGIN;
 
 qvector <VTBL_info_t> vtbl_t_list;	// list of vtables found in the binary
 qvector <qstring> vtbl_list;		// list of string for ObjectExplrer vtables view

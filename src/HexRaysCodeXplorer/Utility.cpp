@@ -303,7 +303,7 @@ void idaapi setUnknown(ea_t ea, asize_t size)
 }
 
 
-void MakeName(ea_t ea, const qstring& name, char * prefix, char * postfix)
+void MakeName(ea_t ea, const qstring& name, const qstring& prefix, const qstring& postfix)
 {
 	qstring g_name(prefix);
 	g_name += name;

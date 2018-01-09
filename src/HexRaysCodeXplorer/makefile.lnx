@@ -3,12 +3,13 @@
 CC=g++
 LD=ld
 
-LDFLAGS=-shared -m32 -static-libgcc -static-libstdc++
+LDFLAGS=-shared -m64 -static-libgcc -static-libstdc++
 
 LIBDIR=-L$(IDA_DIR)
 SRCDIR=./
 HEXRAYS_SDK=$(IDA_DIR)/plugins/hexrays_sdk
 INCLUDES=-I$(IDA_SDK)/include -I$(HEXRAYS_SDK)/include
+__X64__=1
 
 SRC=$(SRCDIR)CodeXplorer.cpp \
 	$(SRCDIR)CtreeGraphBuilder.cpp \
@@ -26,31 +27,33 @@ SRC=$(SRCDIR)CodeXplorer.cpp \
 
 OBJS=$(subst .cpp,.o,$(SRC))
 
-CFLAGS=-m32 -fPIC -D__LINUX__ -D__PLUGIN__ -std=c++11
+CFLAGS=-m64 -fPIC -D__LINUX__ -D__PLUGIN__ -std=c++11 -D__X64__ -D_GLIBCXX_USE_CXX11_ABI=0
 LIBS=-lc -lpthread -ldl
 
 ifeq ($(EA64),1)
 	CFLAGS+=-D__EA64__
 	LIBS+=-lida64
-	EXT=plx64
+	EXT=so
+    SUFFIX=64
 else
-	EXT=plx
+	EXT=so
 	LIBS+=-lida
+    SUFFIX=
 endif
 
-all: check-env clean HexRaysCodeXplorer.$(EXT)
+all: check-env clean HexRaysCodeXplorer$(SUFFIX).$(EXT)
 
-HexRaysCodeXplorer.$(EXT): $(OBJS)	
-	$(CC) $(LDFLAGS) $(LIBDIR) -o HexRaysCodeXplorer.$(EXT) $(OBJS) $(LIBS)
+HexRaysCodeXplorer$(SUFFIX).$(EXT): $(OBJS)	
+	$(CC) $(LDFLAGS) $(LIBDIR) -o HexRaysCodeXplorer$(SUFFIX).$(EXT) $(OBJS) $(LIBS)
 
 %.o: %.cpp
 	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
 clean:
-	rm -f $(OBJS) HexRaysCodeXplorer.$(EXT)
+	rm -f $(OBJS) HexRaysCodeXplorer$(SUFFIX).$(EXT)
 
 install:
-	cp -f HexRaysCodeXplorer.$(EXT) $(IDA_DIR)/plugins
+	cp -f HexRaysCodeXplorer$(SUFFIX).$(EXT) $(IDA_DIR)/plugins
 
 check-env:
 ifndef IDA_SDK

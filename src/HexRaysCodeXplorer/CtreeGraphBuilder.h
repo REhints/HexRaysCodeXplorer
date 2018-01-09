@@ -42,7 +42,7 @@ class callgraph_t
 	int_ea_map_t node2ea;
 
 	// current node search ptr
-	char cur_text[MAXSTR];
+	//char cur_text[MAXSTR];
 
 	bool visited(citem_t *i, int *nid);
 
