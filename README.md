@@ -109,7 +109,7 @@ __Compiling__:
 
 ***Windows:*** 
 * Open the solution in Visual Studio
-* Open properties window: open file `src/HexRaysCodeXplorer/PropertySheet.props` in notepad(++) and update values of `IDADIR` and `IDASDK` paths to point to IDA installation path and IDA7 SDK path accordingly. HexRays SDK should be in `$IDADIR\plugins\hexrays_sdk` (like by default)
+* Open file `src/HexRaysCodeXplorer/PropertySheet.props` in notepad(++) and update values of `IDADIR` and `IDASDK` paths to point to IDA installation path and IDA7 SDK path accordingly. HexRays SDK should be in `$IDADIR\plugins\hexrays_sdk` (like by default)
 * Build `Release | x64` and `Release x64 | x64` configurations
 
 ***Linux***:
