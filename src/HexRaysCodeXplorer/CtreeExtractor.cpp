@@ -138,9 +138,8 @@ void ctree_dumper_t::parse_ctree_item(citem_t *item, qstring& rv) const
 		// Display helper names and number values
 		rv.append(' ');
 		{
-			char lbuf[MAXSTR] = {};
-			e->print1(lbuf, _countof(lbuf) - 1, NULL);
-			qstring qbuf(lbuf);
+			qstring qbuf;
+			e->print1(&qbuf, NULL);
 			tag_remove(&qbuf);
 			rv += qbuf;
 		}
