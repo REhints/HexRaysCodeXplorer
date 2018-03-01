@@ -101,9 +101,8 @@ void callgraph_t::get_node_label(int n, qstring& rv) const
 			// Display helper names and number values
 			rv.append(' ');
 			{
-				char lbuf[MAXSTR] = {};
-				e->print1(lbuf, _countof(lbuf), nullptr);
-				qstring qbuf(lbuf);
+				qstring qbuf;
+				e->print1(&qbuf, nullptr);
 				tag_remove(&qbuf);
 				rv += qbuf;
 			}

@@ -61,9 +61,8 @@ int idaapi obj_fint_t::visit_expr(cexpr_t *e)
 		return 0;
 
 	// get the variable name
-	char expr_name[MAXSTR] = {};
-	e->print1(expr_name, _countof(expr_name) - 1, NULL);
-	qstring s{expr_name};
+	qstring s;
+	e->print1(&s, NULL);
 	tag_remove(&s);
 
 	// check for the target variable
@@ -84,8 +83,8 @@ int idaapi obj_fint_t::visit_expr(cexpr_t *e)
 				target_expr = target_expr->x;
 
 			if (target_expr->op == cot_var) {
-				target_expr->print1(expr_name, _countof(expr_name) - 1, NULL);
-				s = expr_name;
+				s.clear();
+				target_expr->print1(&s, NULL);
 				tag_remove(&s);
 
 				var_name = s;
@@ -137,9 +136,8 @@ bool idaapi find_var(void *ud)
 	{
 		cexpr_t *highl_expr = (cexpr_t *)highlight;
 
-		char expr_name[MAXSTR] = {};
-		highlight->print1(expr_name, _countof(expr_name) - 1, NULL);
-		qstring s{ expr_name };
+		qstring s;
+		highlight->print1(&s, NULL);
 		tag_remove(&s);
 
 		// initialize type rebuilder
