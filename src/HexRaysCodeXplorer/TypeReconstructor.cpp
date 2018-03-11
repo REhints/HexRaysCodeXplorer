@@ -597,6 +597,8 @@ bool idaapi reconstruct_type_cb(void *ud)
 			if (!type_bldr.structure.empty() && lvar != NULL)
 			{
 				qstring type_name{ "struct_name" };
+				if (lvar->type().is_ptr()) // doesn't make sense if it's not tbh
+					(void)lvar->type().get_pointed_object().get_type_name(&type_name);
 				if (!ask_str(&type_name, 0, "Enter type name:"))
 					return false;
 
