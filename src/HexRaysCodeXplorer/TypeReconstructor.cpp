@@ -494,6 +494,12 @@ int type_builder_t::get_structure_size()
 tid_t type_builder_t::get_structure(const qstring& name)
 {
 	tid_t struct_type_id = add_struc(BADADDR, name.c_str());
+
+	if (struct_type_id == BADADDR) {
+		// the name is ill-formed or *is already used in the program*
+		struct_type_id = get_struc_id(name.c_str());
+	}
+
 	if (struct_type_id != BADADDR)
 	{
 		struc_t * struc = get_struc(struct_type_id);
