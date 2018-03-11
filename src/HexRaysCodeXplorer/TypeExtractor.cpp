@@ -99,7 +99,7 @@ int idaapi obj_fint_t::visit_expr(cexpr_t *e)
 
 void idaapi reset_pointer_type(cfuncptr_t cfunc, const qstring &var_name) {
 	lvars_t * locals = cfunc->get_lvars();
-	if (!locals != NULL)
+	if (locals == NULL)
 		return;
 
 	qvector<lvar_t>::iterator locals_iter;
