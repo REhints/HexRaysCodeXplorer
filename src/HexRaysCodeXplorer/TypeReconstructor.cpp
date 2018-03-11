@@ -603,32 +603,40 @@ bool idaapi reconstruct_type_cb(void *ud)
 			if (!type_bldr.structure.empty() && lvar != NULL)
 			{
 				qstring type_name{ "struct_name" };
+
 				if (lvar->type().is_ptr()) // doesn't make sense if it's not tbh
 					(void)lvar->type().get_pointed_object().get_type_name(&type_name);
+
 				if (!ask_str(&type_name, 0, "Enter type name:"))
 					return false;
 
+				tid_t struct_type_id = BADADDR;
 				if (!type_name.empty())
 				{
-					tid_t struct_type_id = type_bldr.get_structure(type_name);
-					if (struct_type_id != BADADDR)
+					struct_type_id = type_bldr.get_structure(type_name);
+				}
+
+				if (struct_type_id != BADADDR)
+				{
+					tinfo_t new_type = create_typedef(type_name.c_str());
+					if (new_type.is_correct())
 					{
-						tinfo_t new_type = create_typedef(type_name.c_str());
-						if (new_type.is_correct())
+						qstring type_str;
+						if (new_type.print(&type_str, NULL, PRTYPE_DEF | PRTYPE_MULTI))
 						{
-							qstring type_str;
-							if (new_type.print(&type_str, NULL, PRTYPE_DEF | PRTYPE_MULTI))
-							{
-								msg("New type created:\r\n%s\n", type_str.c_str());
-								logmsg(DEBUG, "New type created:\r\n%s\n", type_str.c_str());
-								tinfo_t ptype = make_pointer(new_type);
-								vu.set_lvar_type(lvar, ptype);
-								vu.refresh_ctext();
-								return true;
-							}
+							msg("New type created:\r\n%s\n", type_str.c_str());
+							logmsg(DEBUG, "New type created:\r\n%s\n", type_str.c_str());
+							tinfo_t ptype = make_pointer(new_type);
+							vu.set_lvar_type(lvar, ptype);
+							vu.refresh_ctext();
+							return true;
 						}
 					}
 				}
+
+				warning("Invalid type name: %s", type_name.c_str());
+				logmsg(DEBUG, "Invalid type name: %s", type_name.c_str());
+				return false;
 			}
 			else
 			{
