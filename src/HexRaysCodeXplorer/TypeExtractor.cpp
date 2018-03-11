@@ -296,7 +296,7 @@ void idaapi dump_type_info(int file_id, const VTBL_info_t& vtbl_info, const qstr
 		qstring line;
 
 		line = key_hash + ";" + file_entry_key + ";";
-		line.cat_sprnt("%p;", vtbl_info.ea_begin);
+		line.cat_sprnt("%a;", vtbl_info.ea_begin);
 		line += file_entry_val + ";";
 
 		if (rtti_vftables.count(vtbl_info.ea_begin) != 0) {
@@ -311,7 +311,7 @@ void idaapi dump_type_info(int file_id, const VTBL_info_t& vtbl_info, const qstr
 
 bool idaapi check_subtype(VTBL_info_t vtbl_info, qstring subtype_name) {
 	qstring search_str;
-	search_str.sprnt("_%p", vtbl_info.ea_begin);
+	search_str.sprnt("_%a", vtbl_info.ea_begin);
 
 	struc_t * struc_type = get_struc(get_struc_id(subtype_name.c_str()));
 	if (!struc_type)
@@ -399,7 +399,7 @@ bool idaapi extract_all_types(void *ud)
 					}
 				}
 				else {
-					info_msg.cat_sprnt(" : none\n", var_name.c_str());
+					info_msg.cat_sprnt(" : none\n");
 					logmsg(DEBUG, info_msg.c_str());
 				}
 			}

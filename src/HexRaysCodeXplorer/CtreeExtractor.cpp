@@ -262,14 +262,14 @@ void dump_ctrees_in_file(std::map<ea_t, ctree_dump_line> &data_to_dump, const qs
 		dump_line.cat_sprnt(";%08X", cdl.func_start);
 		dump_line.cat_sprnt(";%08X", cdl.func_end);
 		if ((cdl.func_name.length() > crypt_prefix_len) && (crypt_prefix_len > 0) && (cdl.func_name.find(crypto_prefix) == 0))
-			dump_line.cat_sprnt(";E", cdl.func_end);
+			dump_line.cat_sprnt(";E");
 		else
-			dump_line.cat_sprnt(";N", cdl.func_end);
+			dump_line.cat_sprnt(";N");
 
 		if ((cdl.heuristic_flag))
-			dump_line.cat_sprnt(";H", cdl.func_end);
+			dump_line.cat_sprnt(";H");
 		else
-			dump_line.cat_sprnt(";N", cdl.func_end);
+			dump_line.cat_sprnt(";N");
 
 		dump_line += "\n";
 
