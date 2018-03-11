@@ -44,7 +44,16 @@
 #pragma warning(push)
 #pragma warning(disable:4309 4244 4267)           // disable "truncation of constant value" warning from IDA SDK, conversion from 'ssize_t' to 'int', possible loss of data
 #endif // __NT__
+#ifndef USE_DANGEROUS_FUNCTIONS
 #define USE_DANGEROUS_FUNCTIONS
+#endif
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wsign-compare"
+#pragma clang diagnostic ignored "-Wvarargs"
+#pragma clang diagnostic ignored "-Wlogical-op-parentheses"
+#pragma clang diagnostic ignored "-Wunused-private-field"
+#endif
 #include <hexrays.hpp>
 #include <ida.hpp>
 #include <idp.hpp>
@@ -66,6 +75,9 @@
 #ifdef __NT__
 #pragma warning(pop)
 #endif // __NT__
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
 
 #include <cstring>
 #include <cstdarg>
