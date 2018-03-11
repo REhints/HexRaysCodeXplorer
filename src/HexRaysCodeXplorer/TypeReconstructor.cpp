@@ -578,72 +578,67 @@ bool idaapi reconstruct_type_cb(void *ud)
 
 	// Determine the ctree item to highlight
 	vu.get_current_item(USE_KEYBOARD);
-	citem_t *highlight = vu.item.is_citem() ? vu.item.e : NULL;
+	lvar_t* lvar = NULL;
 
-	// highlight == NULL might happen if one chooses variable at local variables declaration statement
-	if (highlight != NULL)
-	{
-		// the chosen item must be an expression and of 'variable' type
-		if (highlight->is_expr() && (highlight->op == cot_var))
+	if (vu.item.is_citem()) {
+		citem_t *highlight = vu.item.e;
+		if (highlight && highlight->is_expr() && (highlight->op == cot_var)) {
+			lvar = vu.item.get_lvar();
+		}
+	} else if (vu.item.citype == VDI_LVAR) {
+		lvar = vu.item.get_lvar();
+	}
+
+	if (lvar != NULL) {
+		// initialize type rebuilder
+		type_builder_t type_bldr;
+		type_bldr.expression_to_match.insert(lvar->name);
+		// traverse the ctree structure
+		type_bldr.apply_to(&vu.cfunc->body, NULL);
+
+		if (!type_bldr.structure.empty() && lvar != NULL)
 		{
-			cexpr_t *highl_expr = (cexpr_t *)highlight;
+			qstring type_name{ "struct_name" };
 
-			// initialize type rebuilder
-			type_builder_t type_bldr;
+			if (lvar->type().is_ptr()) // doesn't make sense if it's not tbh
+				(void)lvar->type().get_pointed_object().get_type_name(&type_name);
+
+			if (!ask_str(&type_name, 0, "Enter type name:"))
+				return false;
+
+			tid_t struct_type_id = BADADDR;
+			if (!type_name.empty())
 			{
-				qstring s;
-				print1wrapper(highl_expr, &s, NULL);
-				tag_remove(&s);
-				type_bldr.expression_to_match.insert(s);
+				struct_type_id = type_bldr.get_structure(type_name);
 			}
-			// traverse the ctree structure
-			type_bldr.apply_to(&vu.cfunc->body, NULL);
-			// get local var information
-			lvar_t *lvar = vu.item.get_lvar();
-			if (!type_bldr.structure.empty() && lvar != NULL)
+
+			if (struct_type_id != BADADDR)
 			{
-				qstring type_name{ "struct_name" };
-
-				if (lvar->type().is_ptr()) // doesn't make sense if it's not tbh
-					(void)lvar->type().get_pointed_object().get_type_name(&type_name);
-
-				if (!ask_str(&type_name, 0, "Enter type name:"))
-					return false;
-
-				tid_t struct_type_id = BADADDR;
-				if (!type_name.empty())
+				tinfo_t new_type = create_typedef(type_name.c_str());
+				if (new_type.is_correct())
 				{
-					struct_type_id = type_bldr.get_structure(type_name);
-				}
-
-				if (struct_type_id != BADADDR)
-				{
-					tinfo_t new_type = create_typedef(type_name.c_str());
-					if (new_type.is_correct())
+					qstring type_str;
+					if (new_type.print(&type_str, NULL, PRTYPE_DEF | PRTYPE_MULTI))
 					{
-						qstring type_str;
-						if (new_type.print(&type_str, NULL, PRTYPE_DEF | PRTYPE_MULTI))
-						{
-							msg("New type created:\r\n%s\n", type_str.c_str());
-							logmsg(DEBUG, "New type created:\r\n%s\n", type_str.c_str());
-							tinfo_t ptype = make_pointer(new_type);
-							vu.set_lvar_type(lvar, ptype);
-							vu.refresh_ctext();
-							return true;
-						}
+						msg("New type created:\r\n%s\n", type_str.c_str());
+						logmsg(DEBUG, "New type created:\r\n%s\n", type_str.c_str());
+						tinfo_t ptype = make_pointer(new_type);
+						vu.set_lvar_type(lvar, ptype);
+						vu.refresh_ctext();
+						return true;
 					}
 				}
+			}
 
-				warning("Invalid type name: %s", type_name.c_str());
-				logmsg(DEBUG, "Invalid type name: %s", type_name.c_str());
-				return false;
-			}
-			else
-			{
-				warning("Failed to reconstruct type, no field references have been found ...\n");
-				logmsg(DEBUG, "Failed to reconstruct type, no field references have been found ...\n");
-				return false;
-			}
+			warning("Invalid type name: %s", type_name.c_str());
+			logmsg(DEBUG, "Invalid type name: %s", type_name.c_str());
+			return false;
+		}
+		else
+		{
+			warning("Failed to reconstruct type, no field references have been found ...\n");
+			logmsg(DEBUG, "Failed to reconstruct type, no field references have been found ...\n");
+			return false;
 		}
 	}
 
