@@ -73,7 +73,7 @@ public:
 
 	callgraph_t();
 
-	const int count() const { return node_count; }
+	int count() const { return node_count; }
 
 	// node / func info
 	struct nodeinfo_t
