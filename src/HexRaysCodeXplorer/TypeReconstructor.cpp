@@ -597,7 +597,7 @@ bool idaapi reconstruct_type_cb(void *ud)
 			if (!type_bldr.structure.empty() && lvar != NULL)
 			{
 				qstring type_name{ "struct_name" };
-				if (!ask_str(&type_name, NULL, "Enter type name:"))
+				if (!ask_str(&type_name, 0, "Enter type name:"))
 					return false;
 
 				if (!type_name.empty())

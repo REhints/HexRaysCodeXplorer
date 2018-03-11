@@ -112,7 +112,7 @@ void ctree_dumper_t::parse_ctree_item(citem_t *item, qstring& rv) const
 	{
 	case cot_call:
 		if (e->x->op == cot_obj) {
-			if (get_func_name(&func_name, e->x->obj_ea) == NULL)
+			if (get_func_name(&func_name, e->x->obj_ea) == 0)
 				rv.cat_sprnt(" sub_%a", e->x->obj_ea);
 			else 
 				rv.cat_sprnt(" %s", func_name.c_str());
@@ -390,7 +390,7 @@ bool idaapi extract_all_ctrees(void *ud)
 	va_end(va);
 
 	qstring crypto_prefix = kDefaultPrefix;
-	if (!ask_str(&crypto_prefix, NULL, "Enter prefix of crypto function names", va))
+	if (!ask_str(&crypto_prefix, 0, "Enter prefix of crypto function names", va))
 		return false;
 
 	if(!crypto_prefix.empty()) {
