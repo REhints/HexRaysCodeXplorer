@@ -3,7 +3,10 @@
 #include "offset.hpp"
 #include "Utility.h"
 
-
+#if __clang__
+// Ignore "offset of on non-standard-layout type" warning
+#pragma clang diagnostic ignored "-Winvalid-offsetof"
+#endif
 
 
 GCCTypeInfo::GCCTypeInfo()
