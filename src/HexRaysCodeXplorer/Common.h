@@ -79,6 +79,39 @@
 #pragma clang diagnostic pop
 #endif
 
+template<typename T>
+struct print1_accepts_qstring
+{
+    template<typename U, void (U::*)(qstring *, const cfunc_t *) const> struct yay_sfinae {};
+    template<typename U> static char test(yay_sfinae<U, &U::print1>*);
+    template<typename U> static int test(...);
+    static const bool value = sizeof(test<T>(0)) == sizeof(char);
+};
+
+// For IDA7.1 and newer
+template <class T>
+void print1wrapper(std::true_type, const T *e, qstring *qbuf, const cfunc_t *func) {
+  e->print1(qbuf, func);
+};
+
+// For older SDKs
+template <class T>
+void print1wrapper(std::false_type, const T *e, qstring *qbuf, const cfunc_t *func) {
+  char lbuf[MAXSTR];
+  const size_t len = e->print1(lbuf, sizeof(lbuf) - 1, func);
+  qstring temp(lbuf, len);
+  qbuf->swap(temp);
+};
+
+template <class T>
+void print1wrapper(const T *e, qstring *qbuf, const cfunc_t *func) {
+  return print1wrapper(
+      std::integral_constant<bool, print1_accepts_qstring<T>::value>(),
+      e, qbuf, func);
+}
+
+
+
 #include <cstring>
 #include <cstdarg>
 #include <cstdint>

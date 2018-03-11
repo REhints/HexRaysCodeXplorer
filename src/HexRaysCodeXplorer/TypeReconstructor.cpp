@@ -184,7 +184,7 @@ bool idaapi type_builder_t::check_helper(citem_t *parent, int &off, int &num)
 		if(!strcmp(get_ctype_name(expr_2->x->op), "helper"))
 		{
 			qstring expr;
-			print1hack(expr_2->x, &expr, NULL);
+			print1wrapper(expr_2->x, &expr, NULL);
 			tag_remove(&expr);
 
 			if(expr == "LOBYTE")
@@ -326,7 +326,7 @@ bool idaapi type_builder_t::check_ptr(cexpr_t *e, struct_filed &str_fld)
 
 				// get index_value
 				qstring s;
-				print1hack(expr_2->y, &s, NULL);
+				print1wrapper(expr_2->y, &s, NULL);
 				tag_remove(&s);
 
 				int base = 10;
@@ -358,7 +358,7 @@ bool idaapi type_builder_t::check_ptr(cexpr_t *e, struct_filed &str_fld)
 			} else if(parent_i->is_expr() && (parent_i->op == cot_asg)) {
 				if (((cexpr_t *)parent_i)->y == e) { //parents[parents.size() - i]) {
 					qstring s;
-					print1hack(((cexpr_t *)parent_i)->x, &s, NULL);
+					print1wrapper(((cexpr_t *)parent_i)->x, &s, NULL);
 					tag_remove(&s);
 
 					char comment[258];
@@ -422,7 +422,7 @@ bool idaapi type_builder_t::check_idx(struct_filed &str_fld)
 
 				// get index_value
 				qstring s;
-				print1hack(expr_2->y, &s, NULL);
+				print1wrapper(expr_2->y, &s, NULL);
 				tag_remove(&s);
 				int num = atoi(s.c_str());
 
@@ -454,7 +454,7 @@ int idaapi type_builder_t::visit_expr(cexpr_t *e)
 	{
 		// get the variable name
 		qstring s;
-		print1hack(e, &s, NULL);
+		print1wrapper(e, &s, NULL);
 		tag_remove(&s);
 
 		// check for the target variable
@@ -592,7 +592,7 @@ bool idaapi reconstruct_type_cb(void *ud)
 			type_builder_t type_bldr;
 			{
 				qstring s;
-				print1hack(highl_expr, &s, NULL);
+				print1wrapper(highl_expr, &s, NULL);
 				tag_remove(&s);
 				type_bldr.expression_to_match.insert(s);
 			}

@@ -62,7 +62,7 @@ int idaapi obj_fint_t::visit_expr(cexpr_t *e)
 
 	// get the variable name
 	qstring s;
-	e->print1(&s, NULL);
+	print1wrapper(e, &s, NULL);
 	tag_remove(&s);
 
 	// check for the target variable
@@ -84,7 +84,7 @@ int idaapi obj_fint_t::visit_expr(cexpr_t *e)
 
 			if (target_expr->op == cot_var) {
 				s.clear();
-				target_expr->print1(&s, NULL);
+				print1wrapper(target_expr, &s, NULL);
 				tag_remove(&s);
 
 				var_name = s;
@@ -137,7 +137,7 @@ bool idaapi find_var(void *ud)
 		cexpr_t *highl_expr = (cexpr_t *)highlight;
 
 		qstring s;
-		highlight->print1(&s, NULL);
+		print1wrapper(highlight, &s, NULL);
 		tag_remove(&s);
 
 		// initialize type rebuilder
