@@ -112,7 +112,7 @@ void ctree_dumper_t::parse_ctree_item(citem_t *item, qstring& rv) const
 	{
 	case cot_call:
 		if (e->x->op == cot_obj) {
-			if (get_func_name(&func_name, e->x->obj_ea) == NULL)
+			if (get_func_name(&func_name, e->x->obj_ea) == 0)
 				rv.cat_sprnt(" sub_%a", e->x->obj_ea);
 			else 
 				rv.cat_sprnt(" %s", func_name.c_str());
@@ -139,7 +139,7 @@ void ctree_dumper_t::parse_ctree_item(citem_t *item, qstring& rv) const
 		rv.append(' ');
 		{
 			qstring qbuf;
-			e->print1(&qbuf, NULL);
+			print1wrapper(e, &qbuf, NULL);
 			tag_remove(&qbuf);
 			rv += qbuf;
 		}
@@ -262,14 +262,14 @@ void dump_ctrees_in_file(std::map<ea_t, ctree_dump_line> &data_to_dump, const qs
 		dump_line.cat_sprnt(";%08X", cdl.func_start);
 		dump_line.cat_sprnt(";%08X", cdl.func_end);
 		if ((cdl.func_name.length() > crypt_prefix_len) && (crypt_prefix_len > 0) && (cdl.func_name.find(crypto_prefix) == 0))
-			dump_line.cat_sprnt(";E", cdl.func_end);
+			dump_line.cat_sprnt(";E");
 		else
-			dump_line.cat_sprnt(";N", cdl.func_end);
+			dump_line.cat_sprnt(";N");
 
 		if ((cdl.heuristic_flag))
-			dump_line.cat_sprnt(";H", cdl.func_end);
+			dump_line.cat_sprnt(";H");
 		else
-			dump_line.cat_sprnt(";N", cdl.func_end);
+			dump_line.cat_sprnt(";N");
 
 		dump_line += "\n";
 
@@ -390,7 +390,7 @@ bool idaapi extract_all_ctrees(void *ud)
 	va_end(va);
 
 	qstring crypto_prefix = kDefaultPrefix;
-	if (!ask_str(&crypto_prefix, NULL, "Enter prefix of crypto function names", va))
+	if (!ask_str(&crypto_prefix, 0, "Enter prefix of crypto function names", va))
 		return false;
 
 	if(!crypto_prefix.empty()) {

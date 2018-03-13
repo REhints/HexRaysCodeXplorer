@@ -44,7 +44,16 @@
 #pragma warning(push)
 #pragma warning(disable:4309 4244 4267)           // disable "truncation of constant value" warning from IDA SDK, conversion from 'ssize_t' to 'int', possible loss of data
 #endif // __NT__
+#ifndef USE_DANGEROUS_FUNCTIONS
 #define USE_DANGEROUS_FUNCTIONS
+#endif
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wsign-compare"
+#pragma clang diagnostic ignored "-Wvarargs"
+#pragma clang diagnostic ignored "-Wlogical-op-parentheses"
+#pragma clang diagnostic ignored "-Wunused-private-field"
+#endif
 #include <hexrays.hpp>
 #include <ida.hpp>
 #include <idp.hpp>
@@ -66,6 +75,42 @@
 #ifdef __NT__
 #pragma warning(pop)
 #endif // __NT__
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
+
+template<typename T>
+struct print1_accepts_qstring
+{
+    template<typename U, void (U::*)(qstring *, const cfunc_t *) const> struct yay_sfinae {};
+    template<typename U> static char test(yay_sfinae<U, &U::print1>*);
+    template<typename U> static int test(...);
+    static const bool value = sizeof(test<T>(0)) == sizeof(char);
+};
+
+// For IDA7.1 and newer
+template <class T>
+void print1wrapper(std::true_type, const T *e, qstring *qbuf, const cfunc_t *func) {
+  e->print1(qbuf, func);
+};
+
+// For older SDKs
+template <class T>
+void print1wrapper(std::false_type, const T *e, qstring *qbuf, const cfunc_t *func) {
+  char lbuf[MAXSTR];
+  const size_t len = e->print1(lbuf, sizeof(lbuf) - 1, func);
+  qstring temp(lbuf, len);
+  qbuf->swap(temp);
+};
+
+template <class T>
+void print1wrapper(const T *e, qstring *qbuf, const cfunc_t *func) {
+  return print1wrapper(
+      std::integral_constant<bool, print1_accepts_qstring<T>::value>(),
+      e, qbuf, func);
+}
+
+
 
 #include <cstring>
 #include <cstdarg>

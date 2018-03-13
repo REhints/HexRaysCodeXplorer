@@ -102,7 +102,7 @@ void callgraph_t::get_node_label(int n, qstring& rv) const
 			rv.append(' ');
 			{
 				qstring qbuf;
-				e->print1(&qbuf, nullptr);
+				print1wrapper(e, &qbuf, nullptr);
 				tag_remove(&qbuf);
 				rv += qbuf;
 			}

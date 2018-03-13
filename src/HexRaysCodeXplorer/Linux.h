@@ -38,8 +38,8 @@
 #define BOOL bool
 #define TRUE true
 #define FALSE false
-#define LPCSTR char *const
-#define LPCTSTR char *const
+#define LPCSTR const char *
+#define LPCTSTR const char *
 #define LPSTR char *
 #define WORD uint16_t
 #define DWORD uint32_t

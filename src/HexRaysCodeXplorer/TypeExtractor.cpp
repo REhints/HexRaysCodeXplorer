@@ -62,7 +62,7 @@ int idaapi obj_fint_t::visit_expr(cexpr_t *e)
 
 	// get the variable name
 	qstring s;
-	e->print1(&s, NULL);
+	print1wrapper(e, &s, NULL);
 	tag_remove(&s);
 
 	// check for the target variable
@@ -84,7 +84,7 @@ int idaapi obj_fint_t::visit_expr(cexpr_t *e)
 
 			if (target_expr->op == cot_var) {
 				s.clear();
-				target_expr->print1(&s, NULL);
+				print1wrapper(target_expr, &s, NULL);
 				tag_remove(&s);
 
 				var_name = s;
@@ -99,7 +99,7 @@ int idaapi obj_fint_t::visit_expr(cexpr_t *e)
 
 void idaapi reset_pointer_type(cfuncptr_t cfunc, const qstring &var_name) {
 	lvars_t * locals = cfunc->get_lvars();
-	if (!locals != NULL)
+	if (locals == NULL)
 		return;
 
 	qvector<lvar_t>::iterator locals_iter;
@@ -137,7 +137,7 @@ bool idaapi find_var(void *ud)
 		cexpr_t *highl_expr = (cexpr_t *)highlight;
 
 		qstring s;
-		highlight->print1(&s, NULL);
+		print1wrapper(highlight, &s, NULL);
 		tag_remove(&s);
 
 		// initialize type rebuilder
@@ -296,7 +296,7 @@ void idaapi dump_type_info(int file_id, const VTBL_info_t& vtbl_info, const qstr
 		qstring line;
 
 		line = key_hash + ";" + file_entry_key + ";";
-		line.cat_sprnt("%p;", vtbl_info.ea_begin);
+		line.cat_sprnt("%a;", vtbl_info.ea_begin);
 		line += file_entry_val + ";";
 
 		if (rtti_vftables.count(vtbl_info.ea_begin) != 0) {
@@ -311,7 +311,7 @@ void idaapi dump_type_info(int file_id, const VTBL_info_t& vtbl_info, const qstr
 
 bool idaapi check_subtype(VTBL_info_t vtbl_info, qstring subtype_name) {
 	qstring search_str;
-	search_str.sprnt("_%p", vtbl_info.ea_begin);
+	search_str.sprnt("_%a", vtbl_info.ea_begin);
 
 	struc_t * struc_type = get_struc(get_struc_id(subtype_name.c_str()));
 	if (!struc_type)
@@ -399,7 +399,7 @@ bool idaapi extract_all_types(void *ud)
 					}
 				}
 				else {
-					info_msg.cat_sprnt(" : none\n", var_name.c_str());
+					info_msg.cat_sprnt(" : none\n");
 					logmsg(DEBUG, info_msg.c_str());
 				}
 			}
