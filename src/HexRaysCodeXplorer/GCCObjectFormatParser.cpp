@@ -48,7 +48,7 @@ void GCCObjectFormatParser::getRttiInfo()
 		uval_t ordinal = get_entry_ordinal(i);
 		get_entry_name(&buffer, ordinal);
 		ea_t ea = get_entry(ordinal);
-		ea += sizeof(void *) * 2;
+		ea += offsetof(GCC_RTTI::__vtable_info, origin);
 
 		if (buffer == class_type_info_name)
 		{
@@ -90,12 +90,12 @@ void GCCObjectFormatParser::scanSeg4Vftables(segment_t *seg)
 		ea_t startEA = ((seg->start_ea + sizeof(ea_t)) & ~((ea_t)(sizeof(ea_t) - 1)));
 		ea_t endEA = (seg->end_ea - sizeof(ea_t));
 
-		for (ea_t ptr = startEA; ptr < endEA; ptr += sizeof(void*))
+		for (ea_t ptr = startEA; ptr < endEA; ptr += sizeof(ea_t))
 		{
 			// Struct of vtable is following:
 			// 0: ptrdiff that tells "Where is the original object according to vtable. This one is 0 of -x;
-			// 1*sizeof(void*): ptr to type_info
-			// 2*sizeof(void*) ... : the exact functions.
+			// 1*sizeof(ea_t): ptr to type_info
+			// 2*sizeof(ea_t) ... : the exact functions.
 			// So if we can parse type_info as type_info and we see functions, it should be vtable.
 			//ea_t ea = getEa(ptr);
 			//flags_t flags = get_flags_novalue(ea);
@@ -109,7 +109,7 @@ void GCCObjectFormatParser::scanSeg4Vftables(segment_t *seg)
 					vtbl_info.ea_end = info->ea_end;
 					vtbl_info.vtbl_name = info->typeName;
 					vtbl_info.methods = info->vtables[0].methodsCount;
-					rtti_vftables[ptr + ea_t(2*sizeof(void*))] = vtbl_info;
+					rtti_vftables[ptr + offsetof(GCC_RTTI::__vtable_info, origin)] = vtbl_info;
 					ptr = info->ea_end;
 				}
 				else {

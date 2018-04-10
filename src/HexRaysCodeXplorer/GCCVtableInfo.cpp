@@ -40,11 +40,11 @@ unsigned int findMethodsCount(ea_t addr)
 			}
 		}
 		++methodsCount;
-		addr += sizeof(void*);
+		addr += sizeof(ea_t);
 	}
 	// Now lets remove ending zeroes.
 	while (methodsCount) {
-		addr -= sizeof(void*);
+		addr -= sizeof(ea_t);
 		func = getEa(addr);
 		if (func != 0)
 			break;
@@ -86,7 +86,7 @@ GCCVtableInfo *GCCVtableInfo::parseVtableInfo(ea_t ea)
 	result->typeInfo = type;
 	result->typeName = type->typeName;
 	
-	addr += methodsCount * sizeof(void*);
+	addr += methodsCount * sizeof(ea_t);
 	if (type->parentsCount > 1) {
 		result->vtablesCount = type->parentsCount;
 		result->vtables = new GCCVtable[type->parentsCount]();
@@ -98,7 +98,7 @@ GCCVtableInfo *GCCVtableInfo::parseVtableInfo(ea_t ea)
 				return nullptr;
 			}
 			addr += offsetof(GCC_RTTI::__vtable_info, origin);
-			addr += result->vtables[i].methodsCount * sizeof(void*);
+			addr += result->vtables[i].methodsCount * sizeof(ea_t);
 		}
 	}
 	else
