@@ -8,7 +8,7 @@ namespace GCC_RTTI {
 #pragma pack(push, 1)
 
 	struct __vtable_info {
-		ssize_t ptrdiff;
+		ea_t ptrdiff;
 		ea_t type_info;
 		ea_t origin[1];
 	};
