@@ -255,8 +255,16 @@ tid_t create_vtbl_struct(ea_t vtbl_addr, ea_t vtbl_addr_end, const qstring& vtbl
 		const char* struc_member_name = nullptr;
 		if (is_func(method_flags)) {
 			method_name = get_short_name(method_ea);
-			if (!method_name.empty())
+
+			if (!method_name.empty()) {
+
+				size_t bp = method_name.find('(', 0);
+
+				if (bp != qstring::npos) 
+					method_name = method_name.substr(0, bp);
+
 				struc_member_name = method_name.c_str();
+			}
 		}
 #ifndef __EA64__
 		add_struc_member(new_struc, NULL, offset, dword_flag(), NULL, sizeof(ea_t));
@@ -264,9 +272,17 @@ tid_t create_vtbl_struct(ea_t vtbl_addr, ea_t vtbl_addr_end, const qstring& vtbl
 		add_struc_member(new_struc, NULL, offset, qword_flag(), NULL, sizeof(ea_t));
 #endif
 		if (struc_member_name) {
+			set_member_cmt(get_member(new_struc, offset), get_short_name(method_ea).c_str(), true);
+
 			if (!set_member_name(new_struc, offset, struc_member_name)) {
-				get_ea_name(&method_name, method_ea);
-				set_member_name(new_struc, offset, struc_member_name);
+
+				method_name.cat_sprnt("_%X", offset);
+				struc_member_name = method_name.c_str();
+
+				if (!set_member_name(new_struc, offset, struc_member_name)) {
+					get_ea_name(&method_name, method_ea);
+					set_member_name(new_struc, offset, method_name.c_str());
+				}
 			}
 		}
 
