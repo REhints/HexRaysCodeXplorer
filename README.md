@@ -113,12 +113,12 @@ __Compiling__:
 * Build `Release | x64` and `Release x64 | x64` configurations
 
 ***Linux***:
-* cd src/HexRaysCodeExplorer/
+* cd src/HexRaysCodeXplorer/
 * IDA_DIR=<PATH_TO_IDA> IDA_SDK=<PATH_TO_IDA_SDK> EA64=0 make -f makefile.lnx
 * IDA_DIR=<PATH_TO_IDA> IDA_SDK=<PATH_TO_IDA_SDK> EA64=0 make -f makefile.lnx
   
 ***Mac***:
-* cd src/HexRaysCodeExplorer/
+* cd src/HexRaysCodeXplorer/
 * IDA_DIR=<PATH_TO_IDA> IDA_SDK=<PATH_TO_IDA_SDK> make -f makefile.mac
 * The Mac makefile might need some hand editing, pull requests welcome!
 
