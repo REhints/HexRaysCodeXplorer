@@ -121,6 +121,8 @@ __Compiling__:
 * cd src/HexRaysCodeXplorer/
 * IDA_DIR=<PATH_TO_IDA> IDA_SDK=<PATH_TO_IDA_SDK> make -f makefile.mac
 * The Mac makefile might need some hand editing, pull requests welcome!
+* $: export IDA_DIR="/Applications/IDA\ Pro\ 7.0/ida.app/Contents/MacOS" && export IDA_SDK="/Applications/IDA\ Pro\ 7.0/ida.app/Contents/MacOS/idasdk" && make -f makefile7.mac
+* Or open project in Xcode HexRaysCodeXplorer.xcodeproj
 
 ============================================================================
 

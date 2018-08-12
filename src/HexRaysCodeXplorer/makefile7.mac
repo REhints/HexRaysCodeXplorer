@@ -44,5 +44,6 @@ endif
 ifndef IDA_DIR
     $(error IDA_DIR is undefined)
 endif
+	pwd && cp -f $(IDA_SDK)/lib/x64_mac_gcc_64/pro.a libpro.a
 
 .PHONY: check-env
