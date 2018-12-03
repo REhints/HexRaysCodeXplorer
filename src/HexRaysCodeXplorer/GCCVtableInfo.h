@@ -10,8 +10,9 @@ public:
 	ea_t ea;
 	signed long ptrDiff;
 	unsigned int methodsCount;
-	GCCTypeInfo *typeInfo;
+	std::string name; // name of parent type
 
+	tid_t get_tid();
 };
 
 class GCCVtableInfo
@@ -21,8 +22,8 @@ public:
 	~GCCVtableInfo();
 
 	ea_t ea_start;
-	ea_t vtbl_start;
-	qstring typeName;
+	//ea_t vtbl_start;
+	std::string typeName; 
 	GCCTypeInfo *typeInfo;
 	unsigned int vtablesCount;
 	GCCVtable *vtables;
@@ -32,3 +33,4 @@ public:
 	static bool parseVtableInnerInfo(ea_t ea, GCCVtable *vtbl);
 };
 
+extern std::map<std::string, GCCVtableInfo *>g_KnownVtableNames;

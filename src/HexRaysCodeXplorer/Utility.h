@@ -28,7 +28,8 @@
 #pragma once
 
 #include "Common.h"
-
+#define VTBL_NAME_POSTFIX "::vftable"
+#define VTBL_CLSNAME_POSTFIX "::vtable"
 
 // Simple CustomView Form Init
 struct string_view_form_info_t
@@ -142,5 +143,11 @@ void split_qstring(const qstring &options, const qstring &splitter, qvector<qstr
 void idaapi setUnknown(ea_t ea, asize_t size);
 void MakeName(ea_t ea, const qstring& name, const qstring& prefix = "", const qstring& postfix = "");
 bool MakeArray(ea_t ea, size_t nitems);
+
+inline bool ends_with(std::string const & value, std::string const & ending)
+{
+	if (ending.size() > value.size()) return false;
+	return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
+}
 
 #endif

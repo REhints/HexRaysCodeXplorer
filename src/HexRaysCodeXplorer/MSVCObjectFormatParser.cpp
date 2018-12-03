@@ -951,6 +951,10 @@ void idaapi findVftables()
 	}
 }
 
+static void buildReconstructableTypes() {
+
+}
+
 
 MSVCObjectFormatParser::~MSVCObjectFormatParser()
 {
@@ -963,6 +967,8 @@ void MSVCObjectFormatParser::getRttiInfo()
 	findCols();
 
 	findVftables();
+
+	buildReconstructableTypes();
 }
 
 void MSVCObjectFormatParser::clearInfo()

@@ -8,9 +8,8 @@ namespace GCC_RTTI {
 #pragma pack(push, 1)
 
 	struct __vtable_info {
-		ea_t ptrdiff;
+		sval_t ptrdiff;
 		ea_t type_info;
-		ea_t origin[1];
 	};
 
 
@@ -40,15 +39,17 @@ namespace GCC_RTTI {
 		const __class_type_info *klass;
 	};
 
+	enum vmi_masks {
+		virtual_mask = 0x1,
+		public_mask = 0x2,
+		hwm_bit = 2,
+		offset_shift = 8          /* bits to shift offset by */
+	};
+
 	struct __base_class_info {
 		ea_t base;
-		size_t vmi_offset_flags;
-		enum vmi_masks {
-			virtual_mask = 0x1,
-			public_mask = 0x2,
-			hwm_bit = 2,
-			offset_shift = 8          /* bits to shift offset by */
-		};
+		uval_t vmi_offset_flags;
+
 	};
 
 
@@ -63,9 +64,9 @@ namespace GCC_RTTI {
 										/* publicly) */
 										__contained_ambig,          /* contained ambiguously */
 
-										__contained_virtual_mask = __base_class_info::virtual_mask, /* via a virtual path */
-										__contained_public_mask = __base_class_info::public_mask,   /* via a public path */
-										__contained_mask = 1 << __base_class_info::hwm_bit,         /* contained within us */
+										__contained_virtual_mask = virtual_mask, /* via a virtual path */
+										__contained_public_mask = public_mask,   /* via a public path */
+										__contained_mask = 1 << hwm_bit,         /* contained within us */
 
 										__contained_private = __contained_mask,
 										__contained_public = __contained_mask | __contained_public_mask
@@ -139,7 +140,13 @@ class GCCTypeInfo;
 
 extern std::map<ea_t, GCCVtableInfo *>g_KnownVtables;
 extern std::map<ea_t, GCCTypeInfo *>g_KnownTypes;
+extern std::map<std::string, GCCVtableInfo *>g_KnownVtableNames;
+extern std::map<std::string, GCCTypeInfo *>g_KnownTypeNames;
 
 extern ea_t class_type_info_vtbl;
 extern ea_t si_class_type_info_vtbl;
 extern ea_t vmi_class_type_info_vtbl;
+
+extern std::map<ea_t, VTBL_info_t> rtti_vftables;
+
+

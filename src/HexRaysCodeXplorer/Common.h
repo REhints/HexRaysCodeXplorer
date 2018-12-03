@@ -27,6 +27,15 @@
 
 #pragma once
 
+#ifdef __MAKEDLL__
+#  define DLLEXPORT __declspec(dllexport)
+#else
+#  define DLLEXPORT __declspec(dllimport)
+#endif
+
+
+
+
 #if !defined (__LINUX__) && !defined (__MAC__)
 #pragma warning (disable: 4996 4800 )
 #else
@@ -72,6 +81,11 @@
 #include <auto.hpp>
 #include <entry.hpp>
 #include <demangle.hpp>
+#include <typeinf.hpp>
+#include <moves.hpp>
+#include <bytes.hpp>
+
+
 #ifdef __NT__
 #pragma warning(pop)
 #endif // __NT__

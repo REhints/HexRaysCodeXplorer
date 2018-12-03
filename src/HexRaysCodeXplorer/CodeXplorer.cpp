@@ -35,10 +35,14 @@ along with this program.  If not, see
 #include "IObjectFormatParser.h"
 #include "MSVCObjectFormatParser.h"
 #include "GCCObjectFormatParser.h"
-
+#include "ReconstructableType.h"
+#include "reconstructed_place_t.h"
 #include <functional>
 
 extern plugin_t PLUGIN;
+
+reconstructed_place_t replace_template;
+int g_replace_id;
 
 IObjectFormatParser *objectFormatParser = 0;
 #if defined (__LINUX__) || defined (__MAC__)
@@ -53,20 +57,20 @@ namespace {
 static bool inited = false;
 
 // Hotkey for the new command
-static const char hotkey_dg[] = "T";
-static const char hotkey_ce[] = "O";
-static const char hotkey_rt[] = "R";
-static const char hotkey_gd[] = "J";
-static const char hotkey_et[] = "S";
-static const char hotkey_ec[] = "C";
-static const char hotkey_vc[] = "V";
-static const char hotkey_so[] = "Q"; // After positioning cursor at source code user can press Q to copy to clipboard string of form modulename + 0xoffset. 
+static char hotkey_dg[3] =  {0 };
+static char hotkey_ce[3] = { 0 };
+static char hotkey_rt[3] = { 0 };
+static char hotkey_gd[3] = { 0 };
+static char hotkey_et[3] = { 0 };
+static char hotkey_ec[3] = { 0 };
+static char hotkey_vc[3] = { 0 };
+static char hotkey_so[3] = { 0 }; // After positioning cursor at source code user can press Q to copy to clipboard string of form modulename + 0xoffset. 
 									 // It can be useful while working with WinDbg.
 
-static const char hotkey_rv[] = "E"; // Automatic renaming of duplicating variables by pressing E. 
+static char hotkey_rv[3] = { 0 }; // Automatic renaming of duplicating variables by pressing E. 
 									 // All duplicating successors obtain _2, _3 ... postfixes.
 
-static const qstring kCryptoPrefixParam = "CRYPTO";
+static qstring kCryptoPrefixParam = "CRYPTO";
 
 
 
@@ -553,7 +557,7 @@ bool initObjectFormatParser()
 			objectFormatParser = new GCCObjectFormatParser();
 		if (!objectFormatParser)
 		{
-			info("CodeXplorer doesn't support parsing of not MSVC VTBL's");
+			info("CodeXplorer doesn't support parsing of neither MSVC nor GCC VTBL's");
 			return false;
 		}
 	}
@@ -568,6 +572,7 @@ static bool idaapi display_vtbl_objects(void *ud)
 
 	search_objects();
 	object_explorer_form_init();
+	re_types_form_init();
 	return true;
 }
 
@@ -643,11 +648,18 @@ class MenuActionHandler : public action_handler_t
 {
 public:
 	typedef std::function<bool(void*)> handler_t;
+	bool isEnabled;
 
 	MenuActionHandler(handler_t handler)
-		: handler_(handler)
+		: handler_(handler), isEnabled(true)
 	{
 	}
+
+	MenuActionHandler(handler_t handler, bool enabled)
+		: handler_(handler), isEnabled(enabled)
+	{
+	}
+
 	virtual int idaapi activate(action_activation_ctx_t *ctx)
 	{
 		auto vdui = get_widget_vdui(ctx->widget);
@@ -685,7 +697,39 @@ static action_desc_t kActionDescs[] = {
 	ACTION_DESC_LITERAL("codexplorer::rename_vars", "Rename vars", &kRenameVarsHandler, hotkey_rv, nullptr, -1)
 };
 
+enum action_index_t {
+	ActionIndexCtreeGraph = 0,
+	ActionIndexObjectExplorer,
+	ActionIndexReconstructType,
+	ActionIndexExtractTypes,
+	ActionIndexExtractCTrees,
+	ActionIndexCtreeView,
+	ActionIndexJumpToDisasm,
+	ActionIndexShowCopyoffset,
+	ActionIndexRenameVars
+};
+
+
 }
+
+static const cfgopt_t g_opts[] =
+{
+	cfgopt_t("HOTKEY_DISPLAY_GRAPH", hotkey_dg, (size_t)sizeof(hotkey_dg), false),
+	cfgopt_t("HOTKEY_OBJECT_EXPLORER", hotkey_ce, (size_t)sizeof(hotkey_ce), false),
+	cfgopt_t("HOTKEY_RECONSTRUCT_TYPE", hotkey_rt, (size_t)sizeof(hotkey_rt), false),
+	cfgopt_t("HOTKEY_JUMP_TO_DISASM", hotkey_gd, (size_t)sizeof(hotkey_gd), false),
+	cfgopt_t("HOTKEY_EXTRACT_TYPES", hotkey_et, (size_t)sizeof(hotkey_et), false),
+	cfgopt_t("HOTKEY_EXTRACT_CTREE", hotkey_ec, (size_t)sizeof(hotkey_ec), false),
+	cfgopt_t("HOTKEY_CTREE_VIEW", hotkey_vc, (size_t)sizeof(hotkey_vc), false),
+	cfgopt_t("HOTKEY_SHOW_COPY_ITEM_OFFSET", hotkey_so, (size_t)sizeof(hotkey_so), false),
+	cfgopt_t("HOTKEY_RENAME_VARS", hotkey_rv, (size_t)sizeof(hotkey_rv), false)
+};
+
+
+
+
+
+
 //--------------------------------------------------------------------------
 // Initialize the plugin.
 int idaapi init(void)
@@ -702,8 +746,13 @@ int idaapi init(void)
 	qstring options = get_plugin_options(PLUGIN.wanted_name);
 	parse_plugin_options(options, dump_types, dump_ctrees, crypto_prefix);
 
-	for (unsigned i = 0; i < _countof(kActionDescs); ++i)
-		register_action(kActionDescs[i]);
+	bool config_read = read_config_file("codeexplorer.cfg", g_opts, _countof(g_opts));
+
+	for (unsigned i = 0; i < _countof(kActionDescs); ++i) {
+		if (kActionDescs[i].shortcut[0])
+			register_action(kActionDescs[i]);
+	}
+		
 
 	install_hexrays_callback((hexrays_cb_t*)callback, nullptr);
 	logmsg(INFO, "Hex-rays version %s has been detected\n", get_hexrays_version());
@@ -732,6 +781,9 @@ int idaapi init(void)
 
 		logmsg(INFO, "\nHexRaysCodeXplorer plugin by @REhints exiting...\n\n\n");
 	}
+
+	g_replace_id = register_place_class(&replace_template, 0/*| PCF_EA_CAPABLE*/, &PLUGIN);
+
 
 	return PLUGIN_KEEP;
 }

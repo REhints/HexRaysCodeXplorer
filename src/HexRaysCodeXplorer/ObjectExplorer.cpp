@@ -255,16 +255,8 @@ tid_t create_vtbl_struct(ea_t vtbl_addr, ea_t vtbl_addr_end, const qstring& vtbl
 		const char* struc_member_name = nullptr;
 		if (is_func(method_flags)) {
 			method_name = get_short_name(method_ea);
-
-			if (!method_name.empty()) {
-
-				size_t bp = method_name.find('(', 0);
-
-				if (bp != qstring::npos) 
-					method_name = method_name.substr(0, bp);
-
+			if (!method_name.empty())
 				struc_member_name = method_name.c_str();
-			}
 		}
 #ifndef __EA64__
 		add_struc_member(new_struc, NULL, offset, dword_flag(), NULL, sizeof(ea_t));
@@ -272,17 +264,9 @@ tid_t create_vtbl_struct(ea_t vtbl_addr, ea_t vtbl_addr_end, const qstring& vtbl
 		add_struc_member(new_struc, NULL, offset, qword_flag(), NULL, sizeof(ea_t));
 #endif
 		if (struc_member_name) {
-			set_member_cmt(get_member(new_struc, offset), get_short_name(method_ea).c_str(), true);
-
 			if (!set_member_name(new_struc, offset, struc_member_name)) {
-
-				method_name.cat_sprnt("_%X", offset);
-				struc_member_name = method_name.c_str();
-
-				if (!set_member_name(new_struc, offset, struc_member_name)) {
-					get_ea_name(&method_name, method_ea);
-					set_member_name(new_struc, offset, method_name.c_str());
-				}
+				get_ea_name(&method_name, method_ea);
+				set_member_name(new_struc, offset, struc_member_name);
 			}
 		}
 
@@ -651,10 +635,10 @@ struct HandlerCBAction_t : public action_handler_t
 static HandlerCBAction_t kMakeVTBLStructActionHandler{ make_vtbl_struct_cb };
 static HandlerCBAction_t kShowVTBLXrefsWindowActionHandler{ show_vtbl_xrefs_window_cb };
 
-static const action_desc_t kMakeVTBLStrucActionDesc = ACTION_DESC_LITERAL("codexplorer::make_vtbl_struct",
-	"Make VTBL_Struct", &kMakeVTBLStructActionHandler, "S", NULL, -1);
-static const action_desc_t kShowVTBLXrefsWindowActionDesc = ACTION_DESC_LITERAL("codexplorer::show_vtbl_xrefs_window",
-	"Show all XREFS to VTBL", &kShowVTBLXrefsWindowActionHandler, "X", NULL, -1);
+//static const action_desc_t kMakeVTBLStrucActionDesc = ACTION_DESC_LITERAL("codexplorer::make_vtbl_struct",
+//	"Make VTBL_Struct", &kMakeVTBLStructActionHandler, "S", NULL, -1);
+//static const action_desc_t kShowVTBLXrefsWindowActionDesc = ACTION_DESC_LITERAL("codexplorer::show_vtbl_xrefs_window",
+//	"Show all XREFS to VTBL", &kShowVTBLXrefsWindowActionHandler, "X", NULL, -1);
 
 void object_explorer_form_init()
 {
@@ -679,8 +663,8 @@ void object_explorer_form_init()
 	if (!actionsInitialized)
 	{
 		actionsInitialized = true;
-		register_action(kMakeVTBLStrucActionDesc);
-		register_action(kShowVTBLXrefsWindowActionDesc);
+		//register_action(kMakeVTBLStrucActionDesc);
+		// register_action(kShowVTBLXrefsWindowActionDesc);
 	}
 	object_explorer_info_t *si = new object_explorer_info_t(widget);
 

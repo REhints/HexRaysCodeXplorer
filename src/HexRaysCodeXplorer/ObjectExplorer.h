@@ -50,7 +50,7 @@ struct VTBL_info_t
 
 
 extern qvector <qstring> vtbl_list;
-extern qvector <qstring>::iterator vtbl_iter;
+//extern qvector <qstring>::iterator vtbl_iter;
 
 
 
