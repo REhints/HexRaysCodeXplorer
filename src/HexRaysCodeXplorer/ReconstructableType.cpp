@@ -995,6 +995,16 @@ void re_types_form_init()
 	display_widget(widget, WOPN_TAB | WOPN_MENU | WOPN_RESTORE);
 }
 
+void re_types_form_fini() {
+	unhook_from_notification_point(HT_IDB,
+		hook_idb_events,
+		NULL);
+	TWidget *widget = find_widget("Reconstructed Types");
+	// * no widget, no need to handle a thing
+	if (!widget)
+		return;
+}
+
 ReconstructedMemberType::ReconstructedMemberType(MemberTypeKind k) : kind(k) 
 {
 }

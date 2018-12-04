@@ -795,6 +795,7 @@ void idaapi term(void)
 	{
 		logmsg(INFO, "\nHexRaysCodeXplorer plugin by @REhints terminated.\n\n\n");
 		remove_hexrays_callback((hexrays_cb_t*)callback, NULL);
+		re_types_form_fini();
 		term_hexrays_plugin();
 	}
 }

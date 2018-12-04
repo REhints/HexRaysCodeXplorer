@@ -209,6 +209,7 @@ public:
 };
 
 DLLEXPORT void re_types_form_init();
+DLLEXPORT void re_types_form_fini();
 
 extern DLLEXPORT std::map<std::string, ReconstructableType*> g_ReconstractedTypes;
 
