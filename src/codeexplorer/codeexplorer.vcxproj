@@ -76,28 +76,28 @@
     <LinkIncremental>true</LinkIncremental>
     <TargetExt>.pyd</TargetExt>
     <IncludePath>C:\Program Files (x86)\pybind11\include;C:\Python27\include;C:\Users\user\Documents\HexRaysCodeXplorer\src\HexRaysCodeXplorer;$(IDADIR)\plugins\idasdk71\include;$(IDADIR)\plugins\hexrays_sdk\include;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\Python27\libs;$(IDADIR)\plugins\idasdk71\lib\x64_win_vc_32;$(IDADIR)\plugins\idasdk71\lib\x64_win_qt;$(IDADIR)\plugins;$(LibraryPath)</LibraryPath>
+    <LibraryPath>C:\Python27\libs;$(IDASDK)\lib\x64_win_vc_32;$(IDASDK)\lib\x64_win_qt;$(IDADIR)\plugins;$(LibraryPath)</LibraryPath>
     <OutDir>$(IDADIR)\python\</OutDir>
     <TargetName>$(ProjectName)32</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>C:\Program Files (x86)\pybind11\include;C:\Python27\include;C:\Users\user\Documents\HexRaysCodeXplorer\src\HexRaysCodeXplorer;$(IDADIR)\plugins\idasdk71\include;$(IDADIR)\plugins\hexrays_sdk\include;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\Python27\libs;$(IDADIR)\plugins\idasdk71\lib\x64_win_vc_32;$(IDADIR)\plugins\idasdk71\lib\x64_win_qt;$(IDADIR)\plugins;$(LibraryPath)</LibraryPath>
+    <IncludePath>C:\Program Files (x86)\pybind11\include;C:\Python27\include;C:\Users\user\Documents\HexRaysCodeXplorer\src\HexRaysCodeXplorer;$(IDASDK)\include;$(IDADIR)\plugins\hexrays_sdk\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Python27\libs;$(IDASDK)\lib\x64_win_vc_32;$(IDASDK)\lib\x64_win_qt;$(IDADIR)\plugins;$(LibraryPath)</LibraryPath>
     <TargetExt>.pyd</TargetExt>
     <OutDir>$(IDADIR)\python\</OutDir>
     <TargetName>$(ProjectName)32</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug x64|x64'">
-    <IncludePath>C:\Program Files (x86)\pybind11\include;C:\Python27\include;C:\Users\user\Documents\HexRaysCodeXplorer\src\HexRaysCodeXplorer;$(IDADIR)\plugins\idasdk71\include;$(IDADIR)\plugins\hexrays_sdk\include;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\Python27\libs;$(IDADIR)\plugins\idasdk71\lib\x64_win_vc_64;$(IDADIR)\plugins\idasdk71\lib\x64_win_qt;$(IDADIR)\plugins;$(LibraryPath)</LibraryPath>
+    <IncludePath>C:\Program Files (x86)\pybind11\include;C:\Python27\include;C:\Users\user\Documents\HexRaysCodeXplorer\src\HexRaysCodeXplorer;$(IDASDK)\include;$(IDADIR)\plugins\hexrays_sdk\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Python27\libs;$(IDASDK)\lib\x64_win_vc_64;$(IDASDK)\lib\x64_win_qt;$(IDADIR)\plugins;$(LibraryPath)</LibraryPath>
     <TargetExt>.pyd</TargetExt>
     <OutDir>$(IDADIR)\python\</OutDir>
     <TargetName>$(ProjectName)64</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release x64|x64'">
-    <IncludePath>C:\Program Files %28x86%29\pybind11\include;C:\Python27\include;C:\Users\user\Documents\HexRaysCodeXplorer\src\HexRaysCodeXplorer;$(IDADIR)\plugins\idasdk71\include;$(IDADIR)\plugins\hexrays_sdk\include;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\Python27\libs;$(IDADIR)\plugins\idasdk71\lib\x64_win_vc_64;$(IDADIR)\plugins\idasdk71\lib\x64_win_qt;$(IDADIR)\plugins;$(LibraryPath)</LibraryPath>
+    <IncludePath>C:\Program Files (x86)\pybind11\include;C:\Python27\include;C:\Users\user\Documents\HexRaysCodeXplorer\src\HexRaysCodeXplorer;$(IDASDK)\include;$(IDADIR)\plugins\hexrays_sdk\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Python27\libs;$(IDASDK)\lib\x64_win_vc_64;$(IDASDK)\lib\x64_win_qt;$(IDADIR)\plugins;$(LibraryPath)</LibraryPath>
     <TargetExt>.pyd</TargetExt>
     <OutDir>$(IDADIR)\python\</OutDir>
     <TargetName>$(ProjectName)64</TargetName>
@@ -127,6 +127,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>__NT__;__IDP__;NOMINMAX;__X64__;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -139,6 +140,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release x64|x64'">
     <ClCompile>
       <PreprocessorDefinitions>__NT__;__IDP__;NOMINMAX;__EA64__;__X64__;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
       <AdditionalDependencies>ida.lib;user32.lib;$(IDADIR)\plugins\HexRaysCodeXplorer64.lib;%(AdditionalDependencies)</AdditionalDependencies>

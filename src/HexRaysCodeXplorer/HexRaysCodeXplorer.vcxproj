@@ -74,24 +74,24 @@
     <LinkIncremental>true</LinkIncremental>
     <NMakeBuildCommandLine>build makefile</NMakeBuildCommandLine>
     <TargetExt>.dll</TargetExt>
-    <LibraryPath>$(IDADIR)\plugins\SDK\idasdk70\lib\x64_win_vc_32;$(IDADIR)\plugins\SDK\idasdk70\lib\x64_win_qt;$(LibraryPath)</LibraryPath>
-    <IncludePath>$(IDADIR)\plugins\SDK\idasdk70\include;$(IDADIR)\plugins\SDK\hexrays_sdk\include;$(IncludePath)</IncludePath>
+    <LibraryPath>$(LibraryPath)</LibraryPath>
+    <IncludePath>$(IncludePath)</IncludePath>
     <OutDir>$(IDADIR)\plugins\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug x64|x64'">
     <LinkIncremental>true</LinkIncremental>
     <NMakeBuildCommandLine>build makefile</NMakeBuildCommandLine>
     <TargetExt>.dll</TargetExt>
-    <IncludePath>$(IDADIR)\plugins\SDK\idasdk70\include;$(IDADIR)\plugins\SDK\hexrays_sdk\include;$(IncludePath)</IncludePath>
-    <LibraryPath>$(IDADIR)\plugins\SDK\idasdk70\lib\x64_win_vc_64;$(IDADIR)\plugins\SDK\idasdk70\lib\x64_win_qt;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(IncludePath)</IncludePath>
+    <LibraryPath>$(LibraryPath)</LibraryPath>
     <TargetName>$(ProjectName)64</TargetName>
     <OutDir>$(IDADIR)\plugins\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <TargetExt>.dll</TargetExt>
-    <IncludePath>$(IDADIR)\plugins\SDK\idasdk70\include;$(IDADIR)\plugins\SDK\hexrays_sdk\include;$(IncludePath)</IncludePath>
-    <LibraryPath>$(IDADIR)\plugins\SDK\idasdk70\lib\x64_win_vc_32;$(IDADIR)\plugins\SDK\idasdk70\lib\x64_win_qt;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(IncludePath)</IncludePath>
+    <LibraryPath>$(LibraryPath)</LibraryPath>
     <OutDir>$(IDADIR)\plugins\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release x64|x64'">
@@ -99,8 +99,8 @@
     <TargetExt>.dll</TargetExt>
     <TargetName>$(ProjectName)64</TargetName>
     <OutDir>$(IDADIR)\plugins\</OutDir>
-    <IncludePath>$(IDADIR)\plugins\SDK\idasdk70\include;$(IDADIR)\plugins\SDK\hexrays_sdk\include;$(IncludePath)</IncludePath>
-    <LibraryPath>$(IDADIR)\plugins\SDK\idasdk70\lib\x64_win_vc_64;$(IDADIR)\plugins\SDK\idasdk70\lib\x64_win_qt;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(IncludePath)</IncludePath>
+    <LibraryPath>$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -148,7 +148,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>__MAKEDLL__;__NT__;__IDP__;__X64__;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(IDASDK)\include;$(IDADIR)\plugins\hexrays_sdk\include</AdditionalIncludeDirectories>
-      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <WholeProgramOptimization>false</WholeProgramOptimization>
     </ClCompile>
     <Link>
@@ -171,7 +171,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>__MAKEDLL__;__NT__;__IDP__;__EA64__;__X64__;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(IDASDK)\include;$(IDADIR)\plugins\hexrays_sdk\include</AdditionalIncludeDirectories>
-      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <WholeProgramOptimization>false</WholeProgramOptimization>
     </ClCompile>
     <Link>

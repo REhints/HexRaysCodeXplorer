@@ -479,7 +479,7 @@ bool idaapi show_vtbl_xrefs_window_cb()
 	si->cv = create_custom_viewer("", &s1, &s2, &s1, nullptr, &si->sv, nullptr, nullptr, widget);
 	si->codeview = create_code_viewer(si->cv, CDVF_STATUSBAR, widget);
 	set_custom_viewer_handler(si->cv, CVH_DBLCLICK, (void *)ct_vtbl_xrefs_window_dblclick);
-	display_widget(widget, WOPN_ONTOP | WOPN_RESTORE);
+	display_widget(widget, WOPN_RESTORE);
 
 	return true;
 }
@@ -683,5 +683,5 @@ void object_explorer_form_init()
 	set_custom_viewer_handlers(si->cv, &cvh, si);
 
 	hook_to_notification_point(HT_UI, ui_object_explorer_callback, si);
-	display_widget(widget, WOPN_TAB | WOPN_MENU | WOPN_RESTORE);
+	display_widget(widget, WOPN_TAB | WOPN_RESTORE);
 }

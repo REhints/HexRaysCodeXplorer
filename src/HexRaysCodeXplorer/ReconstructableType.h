@@ -212,5 +212,8 @@ DLLEXPORT void re_types_form_init();
 DLLEXPORT void re_types_form_fini();
 
 extern DLLEXPORT std::map<std::string, ReconstructableType*> g_ReconstractedTypes;
+extern DLLEXPORT ea_t class_type_info_vtbl;
+extern DLLEXPORT ea_t si_class_type_info_vtbl;
+extern DLLEXPORT ea_t vmi_class_type_info_vtbl;
 
 #endif

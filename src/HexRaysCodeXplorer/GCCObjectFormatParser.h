@@ -143,9 +143,9 @@ extern std::map<ea_t, GCCTypeInfo *>g_KnownTypes;
 extern std::map<std::string, GCCVtableInfo *>g_KnownVtableNames;
 extern std::map<std::string, GCCTypeInfo *>g_KnownTypeNames;
 
-extern ea_t class_type_info_vtbl;
-extern ea_t si_class_type_info_vtbl;
-extern ea_t vmi_class_type_info_vtbl;
+extern DLLEXPORT ea_t class_type_info_vtbl;
+extern DLLEXPORT ea_t si_class_type_info_vtbl;
+extern DLLEXPORT ea_t vmi_class_type_info_vtbl;
 
 extern std::map<ea_t, VTBL_info_t> rtti_vftables;
 

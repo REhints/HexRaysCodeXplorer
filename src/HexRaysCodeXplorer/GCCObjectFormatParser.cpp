@@ -50,19 +50,19 @@ int  import_enum_cb(ea_t ea, const char *name, uval_t ord, void *param) {
 		return 1;
 	//msg("import name %s\n", name);
 	ea += sizeof(GCC_RTTI::__vtable_info); // BUG From IDA. Hello funny imports.
-	if (!memcmp(class_type_info_name, name, sizeof(class_type_info_name) - 1))
+	if (class_type_info_vtbl == BADADDR && !memcmp(class_type_info_name, name, sizeof(class_type_info_name) - 1))
 	{
 		class_type_info_vtbl = ea;
 		set_name(class_type_info_vtbl, "__cxxabiv1::__class_type_info::vtable", SN_NOWARN);
 	}
 
-	if (!memcmp(si_class_type_info_name, name, sizeof(si_class_type_info_name) - 1))
+	if (si_class_type_info_vtbl == BADADDR && !memcmp(si_class_type_info_name, name, sizeof(si_class_type_info_name) - 1))
 	{
 		si_class_type_info_vtbl = ea;
 		set_name(si_class_type_info_vtbl, "__cxxabiv1::__si_class_type_info::vtable", SN_NOWARN);
 	}
 
-	if (!memcmp(vmi_class_type_info_name, name, sizeof(vmi_class_type_info_name) - 1))
+	if (vmi_class_type_info_vtbl == BADADDR && !memcmp(vmi_class_type_info_name, name, sizeof(vmi_class_type_info_name) - 1))
 	{
 		vmi_class_type_info_vtbl = ea;
 		set_name(vmi_class_type_info_vtbl, "__cxxabiv1::__vmi_class_type_info::vtable", SN_NOWARN);
@@ -76,7 +76,7 @@ void GCCObjectFormatParser::getRttiInfo()
 {
 	qstring buffer;
 	size_t count = get_entry_qty();
-
+	
 	// First collect info about __cxxabiv1:: vtables
 	for (int i = 0; i < count; ++i) {
 		uval_t ordinal = get_entry_ordinal(i);
@@ -84,19 +84,19 @@ void GCCObjectFormatParser::getRttiInfo()
 		ea_t ea = get_entry(ordinal);
 		ea += sizeof(GCC_RTTI::__vtable_info);
 			
-		if (!memcmp(class_type_info_name, buffer.c_str(), sizeof(class_type_info_name) - 1))
+		if (class_type_info_vtbl == BADADDR && !memcmp(class_type_info_name, buffer.c_str(), sizeof(class_type_info_name) - 1))
 		{
 			class_type_info_vtbl = ea;
 			set_name(ea, "__cxxabiv1::__class_type_info::vtable", SN_NOWARN);
 		}
 		
-		if (!memcmp(si_class_type_info_name, buffer.c_str(), sizeof(si_class_type_info_name) - 1))
+		if (si_class_type_info_vtbl == BADADDR && !memcmp(si_class_type_info_name, buffer.c_str(), sizeof(si_class_type_info_name) - 1))
 		{
 			si_class_type_info_vtbl = ea;
 			set_name(ea, "__cxxabiv1::__si_class_type_info::vtable", SN_NOWARN);
 		}
 
-		if (!memcmp(vmi_class_type_info_name, buffer.c_str(), sizeof(vmi_class_type_info_name) - 1))
+		if (vmi_class_type_info_vtbl == BADADDR && !memcmp(vmi_class_type_info_name, buffer.c_str(), sizeof(vmi_class_type_info_name) - 1))
 		{
 			vmi_class_type_info_vtbl = ea;
 			set_name(ea, "__cxxabiv1::__vmi_class_type_info::vtable", SN_NOWARN);
@@ -114,12 +114,12 @@ void GCCObjectFormatParser::getRttiInfo()
 	}
 
 
-
+	
 	if (class_type_info_vtbl == -1 &&
 		si_class_type_info_vtbl == -1 &&
 		vmi_class_type_info_vtbl == -1)
-		// if no any rtti vtables, we cant read it.
 		return;
+		// if no any rtti vtables, we cant read it.
 	// now we can scan  segments for vtables.
 	int segCount = get_segm_qty();
 	for (int i = 0; i < segCount; i++)

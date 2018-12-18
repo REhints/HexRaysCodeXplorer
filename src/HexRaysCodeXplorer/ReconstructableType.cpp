@@ -992,7 +992,7 @@ void re_types_form_init()
 	set_custom_viewer_handlers(si->cv, &cvh, si);
 	set_code_viewer_line_handlers(si->codeview, 0, 0, 0, 0, reconstructed_types_lines_linenum);
 	//hook_to_notification_point(HT_UI, ui_object_explorer_callback, si);
-	display_widget(widget, WOPN_TAB | WOPN_MENU | WOPN_RESTORE);
+	display_widget(widget, WOPN_TAB | WOPN_RESTORE);
 }
 
 void re_types_form_fini() {
