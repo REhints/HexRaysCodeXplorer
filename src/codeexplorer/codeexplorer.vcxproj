@@ -75,7 +75,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <TargetExt>.pyd</TargetExt>
-    <IncludePath>C:\Program Files (x86)\pybind11\include;C:\Python27\include;C:\Users\user\Documents\HexRaysCodeXplorer\src\HexRaysCodeXplorer;$(IDADIR)\plugins\idasdk71\include;$(IDADIR)\plugins\hexrays_sdk\include;$(IncludePath)</IncludePath>
+    <IncludePath>C:\Program Files (x86)\pybind11\include;C:\Python27\include;C:\Users\user\Documents\HexRaysCodeXplorer\src\HexRaysCodeXplorer;$(IDASDK)\include;$(IDADIR)\plugins\hexrays_sdk\include;$(IncludePath)</IncludePath>
     <LibraryPath>C:\Python27\libs;$(IDASDK)\lib\x64_win_vc_32;$(IDASDK)\lib\x64_win_qt;$(IDADIR)\plugins;$(LibraryPath)</LibraryPath>
     <OutDir>$(IDADIR)\python\</OutDir>
     <TargetName>$(ProjectName)32</TargetName>
