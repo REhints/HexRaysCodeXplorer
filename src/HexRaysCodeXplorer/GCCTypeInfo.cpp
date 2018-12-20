@@ -66,6 +66,7 @@ GCCTypeInfo *GCCTypeInfo::parseTypeInfo(ea_t ea)
 
 	GCCTypeInfo * result = new GCCTypeInfo();
 	result->ea = ea;
+	result->size = sizeof(GCC_RTTI::type_info);
 	result->typeName = demangled_name;
 	result->typeinfo_vtbl = tmp.__type_info_vtable;
 
@@ -119,7 +120,7 @@ GCCTypeInfo *GCCTypeInfo::parseTypeInfo(ea_t ea)
 		result->parentsTypes[0]->flags = 0;
 		result->parentsTypes[0]->offset = 0;
 		g_KnownTypes[ea] = result;
-
+		result->size = sizeof(GCC_RTTI::__si_class_type_info);
 		return result;
 	}
 
@@ -182,6 +183,7 @@ GCCTypeInfo *GCCTypeInfo::parseTypeInfo(ea_t ea)
 			flags += " offset_shift ";
 		set_cmt(addr + ea_t(offsetof(GCC_RTTI::__base_class_info, vmi_offset_flags)), flags.c_str(), false);
 	}
+	result->size = sizeof(GCC_RTTI::__vmi_class_type_info) + (vmi_class.vmi_base_count - 1)*sizeof(GCC_RTTI::__base_class_info);
 	g_KnownTypes[ea] = result;
 	return result;
 }

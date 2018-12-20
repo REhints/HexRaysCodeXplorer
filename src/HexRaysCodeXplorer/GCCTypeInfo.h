@@ -19,6 +19,7 @@ public:
 	~GCCTypeInfo();
 
 	ea_t ea;
+	size_t size;
 	std::string typeName;
 	ea_t typeinfo_vtbl; // vtable of std::typeinfo.
 	unsigned int parentsCount;
