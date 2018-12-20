@@ -71,6 +71,58 @@ int  import_enum_cb(ea_t ea, const char *name, uval_t ord, void *param) {
 	return 1;
 }
 
+int __get_ea_of_name(size_t index, ea_t *value) {
+	ea_t ea = get_nlist_ea(index);
+	if (ea == BADADDR)
+		return -1;
+	*value = ea;
+	return 0;
+}
+
+int find_vtbls_by_name() {
+	size_t cnt = get_nlist_size();
+	unsigned int found_vtbls = 0;
+	ea_t ea;
+	if (class_type_info_vtbl != BADADDR)
+		++found_vtbls;
+	if (si_class_type_info_vtbl != BADADDR)
+		++found_vtbls;
+	if (vmi_class_type_info_vtbl != BADADDR)
+		++found_vtbls;
+	for (size_t i = 0; i < cnt && found_vtbls < 3; ++i) {
+		const char *name = get_nlist_name(i);
+		if (name && memcmp(name, "_ZTVN10__cxxabiv", sizeof("_ZTVN10__cxxabiv")-1) == 0) {
+			if (class_type_info_vtbl == BADADDR)
+				if (memcmp(name, class_type_info_name, sizeof(class_type_info_name)-1) == 0)
+					if (!__get_ea_of_name(i, &ea))
+					{
+						ea += sizeof(GCC_RTTI::__vtable_info);
+						class_type_info_vtbl = ea;
+						++found_vtbls;
+						continue;
+					}
+			if (si_class_type_info_vtbl == BADADDR)
+				if (memcmp(name, si_class_type_info_name, sizeof(si_class_type_info_name)-1) == 0)
+					if (!__get_ea_of_name(i, &ea))
+					{
+						ea += sizeof(GCC_RTTI::__vtable_info);
+						si_class_type_info_vtbl = ea;
+						++found_vtbls;
+						continue;
+					}
+			if (vmi_class_type_info_vtbl == BADADDR)
+				if (memcmp(name, vmi_class_type_info_name, sizeof(vmi_class_type_info_name)-1) == 0)
+					if (!__get_ea_of_name(i, &ea))
+					{
+						ea += sizeof(GCC_RTTI::__vtable_info);
+						vmi_class_type_info_vtbl = ea;
+						++found_vtbls;
+						continue;
+					}
+		}
+	}
+	return 0;
+}
 
 void GCCObjectFormatParser::getRttiInfo()
 {
@@ -112,7 +164,7 @@ void GCCObjectFormatParser::getRttiInfo()
 		}
 		enum_import_names(index, &import_enum_cb, this);
 	}
-
+	find_vtbls_by_name();
 
 	
 	if (class_type_info_vtbl == -1 &&
