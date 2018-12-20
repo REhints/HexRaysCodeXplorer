@@ -392,7 +392,8 @@ void fixupRecounstructableTypesId() {
 
 static void buildReconstructableTypes() {
 	visitedTypes.clear();
-	
+	SyncTypeInfoMethod curMethod = syncTypeInfoMethod;
+	syncTypeInfoMethod = SyncTypeInfo_Names;
 	std::map<ea_t, GCCTypeInfo *>::iterator typesIterator;
 	for (typesIterator = g_KnownTypes.begin(); typesIterator != g_KnownTypes.end(); ++typesIterator) {
 		GCCTypeInfo *curType = typesIterator->second;
@@ -401,6 +402,11 @@ static void buildReconstructableTypes() {
 		buildReconstructableTypesRecursive(curType);
 	}
 	fixupRecounstructableTypesId();
+	syncTypeInfoMethod = curMethod;
+	for (auto typeIt = g_ReconstractedTypes.begin(); typeIt != g_ReconstractedTypes.end(); ++typeIt) {
+		typeIt->second->SyncTypeInfo();
+	}
+
 	return;
 }
 

@@ -29,6 +29,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #define BAD_RETYPE_ID -1
 
+SyncTypeInfoMethod syncTypeInfoMethod;
+
 std::map<std::string, ReconstructableType*> g_ReconstractedTypes;
 
 bool inside_hook = false;
@@ -398,6 +400,8 @@ void ReconstructableType::SyncTypeInfo()
 		}
 	}
 
+	if (syncTypeInfoMethod == SyncTypeInfo_Names)
+		return;
 
 	/* lets do it in a stupid way 
 	if (struc->memqty)

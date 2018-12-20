@@ -38,6 +38,11 @@ enum MemberTypeKind {
 	MemberType_IDAGate
 };
 
+enum SyncTypeInfoMethod {
+	SyncTypeInfo_Names = 0,
+	SyncTypeInfo_Full
+};
+extern DLLEXPORT SyncTypeInfoMethod syncTypeInfoMethod;
 
 class ReconstructableType;
 class ReconstructableMember;
