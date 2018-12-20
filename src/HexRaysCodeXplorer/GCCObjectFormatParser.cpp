@@ -190,25 +190,44 @@ void GCCObjectFormatParser::getRttiInfo()
 
 void GCCObjectFormatParser::scanSeg4Vftables(segment_t *seg)
 {
-	UINT found = 0;
-	unsigned int counter = 0;
-	if (seg->size() >= sizeof(ea_t))
+	size_t size = max(sizeof(GCC_RTTI::__vtable_info), sizeof(GCC_RTTI::type_info));
+	unsigned char buffer[max(sizeof(GCC_RTTI::__vtable_info), sizeof(GCC_RTTI::type_info))];
+
+	ea_t startEA = ((seg->start_ea + sizeof(ea_t)) & ~((ea_t)(sizeof(ea_t) - 1)));
+	ea_t endEA = (seg->end_ea - sizeof(ea_t));
+	ea_t ea = startEA;
+	while (ea < endEA)
 	{
-		ea_t startEA = ((seg->start_ea + sizeof(ea_t)) & ~((ea_t)(sizeof(ea_t) - 1)));
-		ea_t endEA = (seg->end_ea - sizeof(ea_t));
-		
-		for (ea_t ptr = startEA; ptr < endEA; ptr += sizeof(ea_t))
-		{
-			// Struct of vtable is following:
-			// 0: ptrdiff that tells "Where is the original object according to vtable. This one is 0 of -x;
-			// 1*sizeof(ea_t): ptr to type_info
-			// 2*sizeof(ea_t) ... : the exact functions.
-			// So if we can parse type_info as type_info and we see functions, it should be vtable.
-			//ea_t ea = getEa(ptr);
-			//flags_t flags = get_flags_novalue(ea);
-			//if (isData(flags))
-			//{
-				GCCVtableInfo * info = GCCVtableInfo::parseVtableInfo(ptr);
+		// Struct of vtable is following:
+		// 0: ptrdiff that tells "Where is the original object according to vtable. This one is 0 of -x;
+		// 1*sizeof(ea_t): ptr to type_info
+		// 2*sizeof(ea_t) ... : the exact functions.
+		// So if we can parse type_info as type_info and we see functions, it should be vtable.
+		//ea_t ea = getEa(ptr);
+		//flags_t flags = get_flags_novalue(ea);
+		//if (isData(flags))
+		//{
+		if (g_KnownTypes.count(ea)) {
+			ea += g_KnownTypes[ea]->size;
+			continue;
+		}
+
+		if (g_KnownVtables.count(ea)) {
+			ea = g_KnownVtables[ea]->ea_end;
+			continue;
+		}
+		if (!get_bytes(buffer, size, ea)) {
+			ea += sizeof(ea_t);
+			continue;
+		}
+
+		GCC_RTTI::type_info *ti = (GCC_RTTI::type_info *)buffer;
+		GCC_RTTI::__vtable_info *vt = (GCC_RTTI::__vtable_info *)buffer;
+		// do some sanity checks  if it looks like a Virtual Table
+		if (vt->ptrdiff == 0) {
+			GCCTypeInfo *type = GCCTypeInfo::parseTypeInfo(vt->type_info);
+			if (type != 0) {
+				GCCVtableInfo * info = GCCVtableInfo::parseVtableInfo(ea);
 				if (info)
 				{
 					VTBL_info_t vtbl_info;
@@ -216,24 +235,20 @@ void GCCObjectFormatParser::scanSeg4Vftables(segment_t *seg)
 					vtbl_info.ea_end = info->ea_end;
 					vtbl_info.vtbl_name = info->typeName.c_str();
 					vtbl_info.methods = info->vtables[0].methodsCount;
-					rtti_vftables[ptr + sizeof(GCC_RTTI::__vtable_info)] = vtbl_info;
-					ptr = info->ea_end;
-				}
-				else {
-
-					GCCTypeInfo *typeInfo = GCCTypeInfo::parseTypeInfo(ptr);
-					if (typeInfo)
-					{
-						counter++;
-						;
-					}
-
+					rtti_vftables[ea + sizeof(GCC_RTTI::__vtable_info)] = vtbl_info;
+					ea = info->ea_end;
+					continue;
 				}
 
-			//}
+			}
 		}
-	}
 
+		GCCTypeInfo *typeInfo = GCCTypeInfo::parseTypeInfo(ea);
+		if (typeInfo)
+			ea += typeInfo->size;
+		else
+			ea += sizeof(ea_t);
+	}
 	return;
 }
 
