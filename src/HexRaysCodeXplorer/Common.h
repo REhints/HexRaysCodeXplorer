@@ -84,6 +84,7 @@
 #include <typeinf.hpp>
 #include <moves.hpp>
 #include <bytes.hpp>
+#include <unordered_map>
 
 
 #ifdef __NT__

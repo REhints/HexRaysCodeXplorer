@@ -20,10 +20,10 @@
 #define class_type_info_name "_ZTVN10__cxxabiv117__class_type_infoE"
 #define si_class_type_info_name "_ZTVN10__cxxabiv120__si_class_type_infoE"
 
-std::map<ea_t, GCCVtableInfo *>g_KnownVtables;
-std::map<ea_t, GCCTypeInfo *>g_KnownTypes;
-std::map<std::string, GCCVtableInfo *>g_KnownVtableNames;
-std::map<std::string, GCCTypeInfo *>g_KnownTypeNames;
+std::unordered_map<ea_t, GCCVtableInfo *>g_KnownVtables;
+std::unordered_map<ea_t, GCCTypeInfo *>g_KnownTypes;
+std::unordered_map<std::string, GCCVtableInfo *>g_KnownVtableNames;
+std::unordered_map<std::string, GCCTypeInfo *>g_KnownTypeNames;
 
 ea_t class_type_info_vtbl = -1;
 ea_t si_class_type_info_vtbl = -1;
@@ -461,7 +461,7 @@ static void buildReconstructableTypes() {
 	visitedTypes.clear();
 	SyncTypeInfoMethod curMethod = syncTypeInfoMethod;
 	syncTypeInfoMethod = SyncTypeInfo_Names;
-	std::map<ea_t, GCCTypeInfo *>::iterator typesIterator;
+	std::unordered_map<ea_t, GCCTypeInfo *>::iterator typesIterator;
 	for (typesIterator = g_KnownTypes.begin(); typesIterator != g_KnownTypes.end(); ++typesIterator) {
 		GCCTypeInfo *curType = typesIterator->second;
 		if (visitedTypes.count(curType))

@@ -43,7 +43,7 @@ extern plugin_t PLUGIN;
 qvector <VTBL_info_t> vtbl_t_list;	// list of vtables found in the binary
 qvector <qstring> vtbl_list;		// list of string for ObjectExplrer vtables view
 
-std::map<ea_t, VTBL_info_t> rtti_vftables;
+std::unordered_map<ea_t, VTBL_info_t> rtti_vftables;
 
 void free_vtable_lists() {
 	vtbl_t_list.clear();
@@ -292,7 +292,7 @@ void find_vtables_rtti()
 	objectFormatParser->getRttiInfo();
 
 	// store this inormation in the lists
-	for (std::map<ea_t, VTBL_info_t>::iterator it = rtti_vftables.begin(); it != rtti_vftables.end(); it++) {
+	for (std::unordered_map<ea_t, VTBL_info_t>::iterator it = rtti_vftables.begin(); it != rtti_vftables.end(); it++) {
 		VTBL_info_t vftable_info_t;
 		vftable_info_t.ea_begin = it->second.ea_begin;
 		vftable_info_t.ea_end = it->second.ea_end;

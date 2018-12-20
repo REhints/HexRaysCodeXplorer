@@ -3,7 +3,7 @@
 #include "GCCVtableInfo.h"
 #include "Utility.h"
 
-extern std::map<std::string, GCCVtableInfo *>g_KnownVtableNames;
+extern std::unordered_map<std::string, GCCVtableInfo *>g_KnownVtableNames;
 
 reconstructed_place_t g_replace;
 

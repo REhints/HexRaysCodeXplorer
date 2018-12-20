@@ -33,4 +33,4 @@ public:
 	static bool parseVtableInnerInfo(ea_t ea, GCCVtable *vtbl);
 };
 
-extern std::map<std::string, GCCVtableInfo *>g_KnownVtableNames;
+extern std::unordered_map<std::string, GCCVtableInfo *>g_KnownVtableNames;
