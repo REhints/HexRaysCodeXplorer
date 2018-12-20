@@ -29,7 +29,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #define BAD_RETYPE_ID -1
 
-SyncTypeInfoMethod syncTypeInfoMethod;
+SyncTypeInfoMethod syncTypeInfoMethod = SyncTypeInfo_Full;
 
 std::map<std::string, ReconstructableType*> g_ReconstractedTypes;
 
