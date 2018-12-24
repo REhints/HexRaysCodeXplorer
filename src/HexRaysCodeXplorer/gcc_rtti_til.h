@@ -1,3 +1,5 @@
+#pragma once
+
 struct GCC_RTTI::__vtable_info {
 	size_t ptrdiff;
 	void* type_info;

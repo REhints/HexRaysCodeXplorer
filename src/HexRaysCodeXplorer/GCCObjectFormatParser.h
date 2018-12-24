@@ -127,10 +127,22 @@ class GCCObjectFormatParser :
 
 public:
 	GCCObjectFormatParser();
-	virtual ~GCCObjectFormatParser();
 
+	virtual ~GCCObjectFormatParser();
+	/* Collect rtti info from a binary.
+	*/
 	virtual void getRttiInfo();
+	/* clear collected rtti info.
+	*/
 	virtual void clearInfo();
+	/* Collect class_type_info_name, si_class_type_info_name,
+		and vmi_class_type_info_name vtbls info from a binary.
+		@param force when set will try to redifine already existant
+		addresses of vtabls.
+		@return zero if success.
+	*/
+	int collect_info_vtbls(bool force=false);
+
 
 	void scanSeg4Vftables(segment_t *seg);
 };

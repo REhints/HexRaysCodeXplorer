@@ -29,10 +29,6 @@ ea_t class_type_info_vtbl = -1;
 ea_t si_class_type_info_vtbl = -1;
 ea_t vmi_class_type_info_vtbl = -1;
 
-
-std::set <GCCTypeInfo *> visitedTypes;
-std::set <ReconstructableType *> visited;
-
 static void buildReconstructableTypes();
 
 GCCObjectFormatParser::GCCObjectFormatParser()
@@ -44,11 +40,9 @@ GCCObjectFormatParser::~GCCObjectFormatParser()
 }
 
 
-int  import_enum_cb(ea_t ea, const char *name, uval_t ord, void *param) {
-	GCCObjectFormatParser *parser = (GCCObjectFormatParser*)param;
+static int  import_enum_cb(ea_t ea, const char *name, uval_t ord, void *param) {
 	if (name == 0)
 		return 1;
-	//msg("import name %s\n", name);
 	ea += sizeof(GCC_RTTI::__vtable_info); // BUG From IDA. Hello funny imports.
 	if (class_type_info_vtbl == BADADDR && !memcmp(class_type_info_name, name, sizeof(class_type_info_name) - 1))
 	{
@@ -71,7 +65,7 @@ int  import_enum_cb(ea_t ea, const char *name, uval_t ord, void *param) {
 	return 1;
 }
 
-int __get_ea_of_name(size_t index, ea_t *value) {
+static int __get_ea_of_name(size_t index, ea_t *value) {
 	ea_t ea = get_nlist_ea(index);
 	if (ea == BADADDR)
 		return -1;
@@ -79,16 +73,21 @@ int __get_ea_of_name(size_t index, ea_t *value) {
 	return 0;
 }
 
-int find_vtbls_by_name() {
+static int find_vtbls_by_names(bool force) {
 	size_t cnt = get_nlist_size();
 	unsigned int found_vtbls = 0;
 	ea_t ea;
-	if (class_type_info_vtbl != BADADDR)
-		++found_vtbls;
-	if (si_class_type_info_vtbl != BADADDR)
-		++found_vtbls;
-	if (vmi_class_type_info_vtbl != BADADDR)
-		++found_vtbls;
+
+	if (force)
+		class_type_info_vtbl = si_class_type_info_vtbl = vmi_class_type_info_vtbl = BADADDR;
+	else {
+		if (class_type_info_vtbl != BADADDR)
+			++found_vtbls;
+		if (si_class_type_info_vtbl != BADADDR)
+			++found_vtbls;
+		if (vmi_class_type_info_vtbl != BADADDR)
+			++found_vtbls;
+	}
 	for (size_t i = 0; i < cnt && found_vtbls < 3; ++i) {
 		const char *name = get_nlist_name(i);
 		if (name && memcmp(name, "_ZTVN10__cxxabiv", sizeof("_ZTVN10__cxxabiv")-1) == 0) {
@@ -124,24 +123,31 @@ int find_vtbls_by_name() {
 	return 0;
 }
 
-void GCCObjectFormatParser::getRttiInfo()
-{
-	qstring buffer;
+int GCCObjectFormatParser::collect_info_vtbls(bool force) {
 	size_t count = get_entry_qty();
+	qstring buffer;
+
+	/* We already know some values, so lets omit the search. */
+	if (!force && (class_type_info_vtbl != -1 ||
+		si_class_type_info_vtbl != -1 ||
+		vmi_class_type_info_vtbl != -1))
+		return 0;
 	
-	// First collect info about __cxxabiv1:: vtables
+	if (force) {
+		class_type_info_vtbl = si_class_type_info_vtbl = vmi_class_type_info_vtbl = BADADDR;
+	}
 	for (int i = 0; i < count; ++i) {
 		uval_t ordinal = get_entry_ordinal(i);
 		get_entry_name(&buffer, ordinal);
 		ea_t ea = get_entry(ordinal);
 		ea += sizeof(GCC_RTTI::__vtable_info);
-			
+
 		if (class_type_info_vtbl == BADADDR && !memcmp(class_type_info_name, buffer.c_str(), sizeof(class_type_info_name) - 1))
 		{
 			class_type_info_vtbl = ea;
 			set_name(ea, "__cxxabiv1::__class_type_info::vtable", SN_NOWARN);
 		}
-		
+
 		if (si_class_type_info_vtbl == BADADDR && !memcmp(si_class_type_info_name, buffer.c_str(), sizeof(si_class_type_info_name) - 1))
 		{
 			si_class_type_info_vtbl = ea;
@@ -153,20 +159,25 @@ void GCCObjectFormatParser::getRttiInfo()
 			vmi_class_type_info_vtbl = ea;
 			set_name(ea, "__cxxabiv1::__vmi_class_type_info::vtable", SN_NOWARN);
 		}
-		//msg("export %s\n", buffer.c_str());
 	}
 
 	count = get_import_module_qty();
-	for (uint index = 0; index < count; ++index) {
-		if (get_import_module_name(&buffer, index))
-		{
-			//msg("import module %s\n", buffer.c_str());
-		}
+	for (uint index = 0; index < count; ++index)
 		enum_import_names(index, &import_enum_cb, this);
-	}
-	find_vtbls_by_name();
-
 	
+	find_vtbls_by_names(false);
+
+
+	if (class_type_info_vtbl == -1 &&
+		si_class_type_info_vtbl == -1 &&
+		vmi_class_type_info_vtbl == -1)
+		return -1;
+	return 0;
+}
+
+void GCCObjectFormatParser::getRttiInfo()
+{
+	collect_info_vtbls();
 	if (class_type_info_vtbl == -1 &&
 		si_class_type_info_vtbl == -1 &&
 		vmi_class_type_info_vtbl == -1)
@@ -198,15 +209,6 @@ void GCCObjectFormatParser::scanSeg4Vftables(segment_t *seg)
 	ea_t ea = startEA;
 	while (ea < endEA)
 	{
-		// Struct of vtable is following:
-		// 0: ptrdiff that tells "Where is the original object according to vtable. This one is 0 of -x;
-		// 1*sizeof(ea_t): ptr to type_info
-		// 2*sizeof(ea_t) ... : the exact functions.
-		// So if we can parse type_info as type_info and we see functions, it should be vtable.
-		//ea_t ea = getEa(ptr);
-		//flags_t flags = get_flags_novalue(ea);
-		//if (isData(flags))
-		//{
 		if (g_KnownTypes.count(ea)) {
 			ea += g_KnownTypes[ea]->size;
 			continue;
@@ -261,41 +263,7 @@ void GCCObjectFormatParser::clearInfo()
 	assert(false); // reasonable question what to do with ReconstructableTypes.
 }
 
-void buildReconstructableTypesRecursive(GCCTypeInfo *type) {
-	/*
-	std::map<std::string, ReconstructableType*> reTypesCopy;
-	std::map<std::string, ReconstructableType*>::iterator reconstructedTypesIt;
-	for (reconstructedTypesIt = g_ReconstractedTypes.begin(); reconstructedTypesIt != g_ReconstractedTypes.end(); ++reconstructedTypesIt) {
-
-		ReconstructableType* type = reconstructedTypesIt->second;
-		if (reTypesCopy.count(type->name) != 0) // ignore what we already proceed
-			continue;
-		if (!ends_with(type->name, VTBL_CLSNAME_POSTFIX)) // ignore non-vtables
-			continue;
-		if (g_KnownVtableNames.count(type->name) == 0) {
-			//assert(false);
-			msg("Failed to find vtable for %s", type->name.c_str());
-			continue;
-		}
-		GCCVtableInfo *info = g_KnownVtableNames[type->name];
-		//assert(info);
-		GCCTypeInfo *typeInfo = info->typeInfo;
-
-		for (unsigned int i = 0; i < typeInfo->parentsCount; ++i) {
-			GCCTypeInfo *parentInfo = typeInfo->parentsTypes[i]->info;
-			assert(parentInfo);
-			if (g_ReconstractedTypes.count(parentInfo->typeName + VTBL_CLSNAME_POSTFIX) == 0)
-				continue; // for those who dont have vtables in base class.
-			ReconstructableType* parentType = g_ReconstractedTypes[parentInfo->typeName + VTBL_CLSNAME_POSTFIX];
-			ReconstructableMember *newMember = new ReconstructableMember();
-			newMember->offset = typeInfo->parentsTypes[i]->offset;
-			newMember->name = parentInfo->typeName;
-
-			type->AddDerivedMember(newMember);
-		}
-		reTypesCopy[type->name] = type;
-	}
-	*/
+void buildReconstructableTypesRecursive(GCCTypeInfo *type,  std::set <GCCTypeInfo *> &visitedTypes) {
 	if (visitedTypes.count(type))
 		return;
 	// Handle parents first
@@ -303,7 +271,7 @@ void buildReconstructableTypesRecursive(GCCTypeInfo *type) {
 	{
 		for (unsigned long i = 0; i < type->parentsCount; ++i) {
 			GCCParentType * parent = type->parentsTypes[i];
-			buildReconstructableTypesRecursive(parent->info);
+			buildReconstructableTypesRecursive(parent->info, visitedTypes);
 		}
 	}
 
@@ -316,10 +284,7 @@ void buildReconstructableTypesRecursive(GCCTypeInfo *type) {
 		reType = ReconstructableType::getReconstructableType(type->typeName);
 		reType->SyncTypeInfo();
 	}
-	// type->ea;
-	// type->parentsCount;
-	// type->typeinfo_vtbl;
-	// type->vtable;
+
 	if (type->vtable) // type has vtable;
 	{	
 		GCCVtableInfo *vtblInfo = type->vtable;
@@ -414,12 +379,8 @@ void buildReconstructableTypesRecursive(GCCTypeInfo *type) {
 				ReconstructableMember *dmember = new ReconstructableMember();
 				dmember->name = parentVtbl->name;
 				dmember->offset = 0;
-
 				dmember->memberType = new ReconstructedMemberReType(parentVtbl);
 				reVtbl->AddDerivedMember(dmember);
-				
-
-
 			}
 			reVtbl->SyncTypeInfo();
 			// we have vtable, we have it as structure, lets apply its name and type to IDB
@@ -458,7 +419,7 @@ void fixupRecounstructableTypesId() {
 }
 
 static void buildReconstructableTypes() {
-	visitedTypes.clear();
+	std::set <GCCTypeInfo *> visitedTypes;
 	SyncTypeInfoMethod curMethod = syncTypeInfoMethod;
 	syncTypeInfoMethod = SyncTypeInfo_Names;
 	std::unordered_map<ea_t, GCCTypeInfo *>::iterator typesIterator;
@@ -466,7 +427,7 @@ static void buildReconstructableTypes() {
 		GCCTypeInfo *curType = typesIterator->second;
 		if (visitedTypes.count(curType))
 			continue; // already parsed
-		buildReconstructableTypesRecursive(curType);
+		buildReconstructableTypesRecursive(curType, visitedTypes);
 	}
 	fixupRecounstructableTypesId();
 	syncTypeInfoMethod = curMethod;
@@ -475,38 +436,4 @@ static void buildReconstructableTypes() {
 	}
 
 	return;
-}
-
-void reconstructVtablesRecursive(ReconstructableType *type) {
-	if (visited.count(type))
-		return;
-	if (!ends_with(type->name, VTBL_CLSNAME_POSTFIX))
-	{
-		visited.emplace(type);
-		return;
-	}
-	if (type->getParents().size())
-	{
-		std::set<ReconstructableType*> parents = type->getParents();
-		std::set<ReconstructableType*>::iterator it;
-		for (it = parents.begin(); it != parents.end(); ++it)
-			reconstructVtablesRecursive(*it);
-	}
-	if (!g_KnownVtableNames.count(type->name))
-	{
-		msg("Failed to find vtable %s\n", type->name);
-		visited.emplace(type);
-		return;
-	}
-	GCCVtableInfo *vtblInfo = g_KnownVtableNames[type->name];
-
-	vtblInfo->vtables[0].methodsCount;
-
-}
-
-void reconstructVtables() {
-	visited.clear();
-	std::map<std::string, ReconstructableType*>::iterator it;
-	for (it = g_ReconstractedTypes.begin(); it != g_ReconstractedTypes.end(); ++it)
-		reconstructVtablesRecursive(it->second);
 }

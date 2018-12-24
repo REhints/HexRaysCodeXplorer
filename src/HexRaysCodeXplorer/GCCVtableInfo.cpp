@@ -53,97 +53,6 @@ unsigned int findMethodsCount(ea_t addr)
 	return methodsCount;
 }
 
-tid_t create_vtbl_struct1(ea_t vtbl_addr, ea_t vtbl_addr_end, const qstring& vtbl_name)
-{
-	struc_error_t error;
-	qstring struc_name = vtbl_name;
-	struc_name += "::vtable";
-	tid_t id = add_struc(BADADDR, struc_name.c_str());
-	unsigned long members_count = 0;
-	if (id == BADADDR) {
-		if (!ask_str(&struc_name, HIST_IDENT, "Default name %s not correct. Enter other structure name: ", struc_name.c_str()))
-			return BADNODE;
-		id = add_struc(BADADDR, struc_name.c_str());
-		if (id == BADADDR)
-		{
-			msg("failed to add struct: %s\n", struc_name.c_str());
-			return BADNODE;
-		}
-		set_struc_cmt(id, vtbl_name.c_str(), true);
-	}
-
-	struc_t* new_struc = get_struc(id);
-	if (!new_struc)
-		return BADNODE;
-
-	ea_t ea = vtbl_addr;
-	ea_t offset = 0;
-	for( ea_t ea = vtbl_addr; ea < vtbl_addr_end; ea += sizeof(ea_t))
-	{
-		++members_count;
-		offset = ea - vtbl_addr;
-		qstring method_name;
-		ea_t method_ea = getEa(ea);
-
-		if (ph.id == PLFM_ARM)
-			method_ea &= (ea_t)-2;
-		if (method_ea == 0)
-			continue;
-		if (!is_mapped(method_ea))
-			continue; // We not going to check if it valid
-
-		flags_t method_flags = get_flags(method_ea);
-		const char* struc_member_name = nullptr;
-		if (is_func(method_flags)) {
-			method_name = get_short_name(method_ea);
-			if (!method_name.empty())
-				struc_member_name = method_name.c_str();
-		}
-#ifndef __EA64__
-		error = add_struc_member(new_struc, NULL, offset, dword_flag(), NULL, sizeof(ea_t));
-#else
-		error = add_struc_member(new_struc, NULL, offset, qword_flag(), NULL, sizeof(ea_t));
-#endif
-		if (struc_member_name) {
-			if (!set_member_name(new_struc, offset, struc_member_name)) {
-				get_ea_name(&method_name, method_ea);
-				set_member_name(new_struc, offset, struc_member_name);
-			}
-		}
-	}
-
-
-	qstring rttistruc_name = "RTTI::";
-	rttistruc_name += vtbl_name;
-	rttistruc_name += "::vtable";
-	tid_t rtti_id = add_struc(BADADDR, rttistruc_name.c_str());
-
-	if (rtti_id == BADADDR) {
-		if (!ask_str(&rttistruc_name, HIST_IDENT, "Default name %s not correct. Enter other structure name: ", rttistruc_name.c_str()))
-			return BADNODE;
-		rtti_id = add_struc(BADADDR, rttistruc_name.c_str());
-		if (rtti_id == BADADDR)
-		{
-			msg("failed to add struct: %s\n", rttistruc_name.c_str());
-			return BADNODE;
-		}
-		set_struc_cmt(rtti_id, vtbl_name.c_str(), true);
-	}
-
-	struc_t* newrtti_struc = get_struc(rtti_id);
-	if (!newrtti_struc)
-		return BADNODE;
-
-
-	opinfo_t info;
-	info.tid = get_struc_id("GCC_RTTI::__vtable_info");
-	error = add_struc_member(newrtti_struc, "rtti_info", 0, stru_flag(), &info, sizeof(GCC_RTTI::__vtable_info));
-
-	info.tid = id;
-	error = add_struc_member(newrtti_struc, "vtable", sizeof(GCC_RTTI::__vtable_info), stru_flag(), &info, vtbl_addr_end - vtbl_addr);
-	
-	return rtti_id;
-}
 
 GCCVtableInfo *GCCVtableInfo::parseVtableInfo(ea_t ea)
 {
@@ -260,6 +169,3 @@ bool GCCVtableInfo::parseVtableInnerInfo(ea_t ea, GCCVtable *vtbl)
 	return true;	
 }
 
-tid_t GCCVtable::get_tid() {
-	return get_struc_id(name.c_str());
-}
