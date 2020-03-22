@@ -1,3 +1,29 @@
+/*	Copyright (c) 2013-2020
+	REhints <info@rehints.com>
+	All rights reserved.
+
+	==============================================================================
+
+	This file is part of HexRaysCodeXplorer
+
+	HexRaysCodeXplorer is free software: you can redistribute it and/or modify it
+	under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
+
+	This program is distributed in the hope that it will be useful, but
+	WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+	General Public License for more details.
+
+	You should have received a copy of the GNU General Public License
+	along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+	==============================================================================
+*/
+
+
+
 #pragma once
 #include "Common.h"
 #include "IObjectFormatParser.h"
@@ -8,9 +34,8 @@ namespace GCC_RTTI {
 #pragma pack(push, 1)
 
 	struct __vtable_info {
-		ea_t ptrdiff;
+		sval_t ptrdiff;
 		ea_t type_info;
-		ea_t origin[1];
 	};
 
 
@@ -40,15 +65,17 @@ namespace GCC_RTTI {
 		const __class_type_info *klass;
 	};
 
+	enum vmi_masks {
+		virtual_mask = 0x1,
+		public_mask = 0x2,
+		hwm_bit = 2,
+		offset_shift = 8          /* bits to shift offset by */
+	};
+
 	struct __base_class_info {
 		ea_t base;
-		size_t vmi_offset_flags;
-		enum vmi_masks {
-			virtual_mask = 0x1,
-			public_mask = 0x2,
-			hwm_bit = 2,
-			offset_shift = 8          /* bits to shift offset by */
-		};
+		uval_t vmi_offset_flags;
+
 	};
 
 
@@ -63,9 +90,9 @@ namespace GCC_RTTI {
 										/* publicly) */
 										__contained_ambig,          /* contained ambiguously */
 
-										__contained_virtual_mask = __base_class_info::virtual_mask, /* via a virtual path */
-										__contained_public_mask = __base_class_info::public_mask,   /* via a public path */
-										__contained_mask = 1 << __base_class_info::hwm_bit,         /* contained within us */
+										__contained_virtual_mask = virtual_mask, /* via a virtual path */
+										__contained_public_mask = public_mask,   /* via a public path */
+										__contained_mask = 1 << hwm_bit,         /* contained within us */
 
 										__contained_private = __contained_mask,
 										__contained_public = __contained_mask | __contained_public_mask
@@ -126,10 +153,22 @@ class GCCObjectFormatParser :
 
 public:
 	GCCObjectFormatParser();
-	virtual ~GCCObjectFormatParser();
 
-	virtual void getRttiInfo();
-	virtual void clearInfo();
+	virtual ~GCCObjectFormatParser();
+	/* Collect rtti info from a binary.
+	*/
+	virtual void get_rtti_info();
+	/* clear collected rtti info.
+	*/
+	virtual void clear_info();
+	/* Collect class_type_info_name, si_class_type_info_name,
+		and vmi_class_type_info_name vtbls info from a binary.
+		@param force when set will try to redifine already existant
+		addresses of vtabls.
+		@return zero if success.
+	*/
+	int collect_info_vtbls(bool force=false);
+
 
 	void scanSeg4Vftables(segment_t *seg);
 };
@@ -137,9 +176,15 @@ public:
 class GCCVtableInfo;
 class GCCTypeInfo;
 
-extern std::map<ea_t, GCCVtableInfo *>g_KnownVtables;
-extern std::map<ea_t, GCCTypeInfo *>g_KnownTypes;
+extern std::unordered_map<ea_t, GCCVtableInfo *>g_KnownVtables;
+extern std::unordered_map<ea_t, GCCTypeInfo *>g_KnownTypes;
+extern std::unordered_map<std::string, GCCVtableInfo *>g_KnownVtableNames;
+extern std::unordered_map<std::string, GCCTypeInfo *>g_KnownTypeNames;
 
-extern ea_t class_type_info_vtbl;
-extern ea_t si_class_type_info_vtbl;
-extern ea_t vmi_class_type_info_vtbl;
+extern DLLEXPORT ea_t class_type_info_vtbl;
+extern DLLEXPORT ea_t si_class_type_info_vtbl;
+extern DLLEXPORT ea_t vmi_class_type_info_vtbl;
+
+extern std::unordered_map<ea_t, VTBL_info_t> rtti_vftables;
+
+

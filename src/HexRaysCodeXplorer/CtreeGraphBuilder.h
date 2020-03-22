@@ -1,4 +1,4 @@
-/*	Copyright (c) 2013-2015
+/*	Copyright (c) 2013-2020
 	REhints <info@rehints.com>
 	All rights reserved.
 	
@@ -33,13 +33,13 @@
 class callgraph_t
 {
 	// total number of the nodes in the graph
-	int node_count;
+	int node_count_;
 
 	// node id to func addr and reverse lookup
 	typedef std::map<citem_t *, int> ea_int_map_t;
 	typedef std::map<int, citem_t *> int_ea_map_t;
-	ea_int_map_t ea2node;
-	int_ea_map_t node2ea;
+	ea_int_map_t ea2node_;
+	int_ea_map_t node2ea_;
 
 	// current node search ptr
 	//char cur_text[MAXSTR];
@@ -56,7 +56,7 @@ public:
 	{
 		int id1;
 		int id2;
-		edge_t(int i1, int i2): id1(i1), id2(i2) { }
+		edge_t(const int i1, const int i2): id1(i1), id2(i2) { }
 		edge_t(): id1(0), id2(0) { }
 	};
 
@@ -73,7 +73,7 @@ public:
 
 	callgraph_t();
 
-	int count() const { return node_count; }
+	int count() const { return node_count_; }
 
 	// node / func info
 	struct nodeinfo_t

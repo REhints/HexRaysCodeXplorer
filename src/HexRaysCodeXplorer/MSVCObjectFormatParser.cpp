@@ -1,4 +1,4 @@
-/*	Copyright (c) 2013-2015
+/*	Copyright (c) 2013-2020
 REhints <info@rehints.com>
 All rights reserved.
 
@@ -951,21 +951,27 @@ void idaapi findVftables()
 	}
 }
 
+static void buildReconstructableTypes() {
+
+}
+
 
 MSVCObjectFormatParser::~MSVCObjectFormatParser()
 {
 }
 
-void MSVCObjectFormatParser::getRttiInfo()
+void MSVCObjectFormatParser::get_rtti_info()
 {
 	freeWorkingData();
 
 	findCols();
 
 	findVftables();
+
+	buildReconstructableTypes();
 }
 
-void MSVCObjectFormatParser::clearInfo()
+void MSVCObjectFormatParser::clear_info()
 {
 	freeWorkingData();
 }

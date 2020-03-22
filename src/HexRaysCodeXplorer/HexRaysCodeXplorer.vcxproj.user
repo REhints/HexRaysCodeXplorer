@@ -30,9 +30,9 @@
     <LocalDebuggerCommand>$(IDADIR)\ida64.exe</LocalDebuggerCommand>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug x64|x64'">
-    <LocalDebuggerWorkingDirectory>$(IDADIR)</LocalDebuggerWorkingDirectory>
+    <LocalDebuggerWorkingDirectory>C:\Program Files\IDA</LocalDebuggerWorkingDirectory>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
-    <LocalDebuggerCommand>$(IDADIR)\ida64.exe</LocalDebuggerCommand>
+    <LocalDebuggerCommand>C:\Program Files\IDA\ida64.exe</LocalDebuggerCommand>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LocalDebuggerWorkingDirectory>$(IDADIR)</LocalDebuggerWorkingDirectory>

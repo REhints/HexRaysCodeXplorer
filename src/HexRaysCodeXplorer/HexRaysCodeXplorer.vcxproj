@@ -23,32 +23,32 @@
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>HexRaysCodeXplorer</RootNamespace>
     <ProjectName>HexRaysCodeXplorer</ProjectName>
-    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.18362.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>MultiByte</CharacterSet>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug x64|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>MultiByte</CharacterSet>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <CharacterSet>MultiByte</CharacterSet>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release x64|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <CharacterSet>MultiByte</CharacterSet>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -74,33 +74,33 @@
     <LinkIncremental>true</LinkIncremental>
     <NMakeBuildCommandLine>build makefile</NMakeBuildCommandLine>
     <TargetExt>.dll</TargetExt>
-    <LibraryPath>$(IDADIR)\plugins\SDK\idasdk70\lib\x64_win_vc_32;$(IDADIR)\plugins\SDK\idasdk70\lib\x64_win_qt;$(LibraryPath)</LibraryPath>
-    <IncludePath>$(IDADIR)\plugins\SDK\idasdk70\include;$(IDADIR)\plugins\SDK\hexrays_sdk\include;$(IncludePath)</IncludePath>
-    <OutDir>$(IDADIR)\plugins\</OutDir>
+    <LibraryPath>$(LibraryPath)</LibraryPath>
+    <IncludePath>$(IncludePath)</IncludePath>
+    <OutDir>PLUGIN_BIN</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug x64|x64'">
     <LinkIncremental>true</LinkIncremental>
     <NMakeBuildCommandLine>build makefile</NMakeBuildCommandLine>
     <TargetExt>.dll</TargetExt>
-    <IncludePath>$(IDADIR)\plugins\SDK\idasdk70\include;$(IDADIR)\plugins\SDK\hexrays_sdk\include;$(IncludePath)</IncludePath>
-    <LibraryPath>$(IDADIR)\plugins\SDK\idasdk70\lib\x64_win_vc_64;$(IDADIR)\plugins\SDK\idasdk70\lib\x64_win_qt;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(IncludePath)</IncludePath>
+    <LibraryPath>$(LibraryPath)</LibraryPath>
     <TargetName>$(ProjectName)64</TargetName>
-    <OutDir>$(IDADIR)\plugins\</OutDir>
+    <OutDir>IDA_PUGIN\Debug\x64</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <TargetExt>.dll</TargetExt>
-    <IncludePath>$(IDADIR)\plugins\SDK\idasdk70\include;$(IDADIR)\plugins\SDK\hexrays_sdk\include;$(IncludePath)</IncludePath>
-    <LibraryPath>$(IDADIR)\plugins\SDK\idasdk70\lib\x64_win_vc_32;$(IDADIR)\plugins\SDK\idasdk70\lib\x64_win_qt;$(LibraryPath)</LibraryPath>
-    <OutDir>$(IDADIR)\plugins\</OutDir>
+    <IncludePath>$(IncludePath)</IncludePath>
+    <LibraryPath>$(LibraryPath)</LibraryPath>
+    <OutDir>PLUGIN_BIN/x86</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release x64|x64'">
     <LinkIncremental>false</LinkIncremental>
     <TargetExt>.dll</TargetExt>
     <TargetName>$(ProjectName)64</TargetName>
-    <OutDir>$(IDADIR)\plugins\</OutDir>
-    <IncludePath>$(IDADIR)\plugins\SDK\idasdk70\include;$(IDADIR)\plugins\SDK\hexrays_sdk\include;$(IncludePath)</IncludePath>
-    <LibraryPath>$(IDADIR)\plugins\SDK\idasdk70\lib\x64_win_vc_64;$(IDADIR)\plugins\SDK\idasdk70\lib\x64_win_qt;$(LibraryPath)</LibraryPath>
+    <OutDir>PLUGIN_BIN\x64</OutDir>
+    <IncludePath>$(IncludePath)</IncludePath>
+    <LibraryPath>$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -108,17 +108,17 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>__NT__;__IDP__;__X64__;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(IDASDK)\include;$(IDADIR)\plugins\hexrays_sdk\include</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>__MAKEDLL__;__NT__;__IDP__;__X64__;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>C:\Program Files\IDA\plugins\hexrays_sdk\include;C:\Program Files\IDA\plugins\SDK\idasdk\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>ida.lib;user32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalOptions>/EXPORT:PLUGIN %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalLibraryDirectories>$(IDASDK)\lib\x64_win_vc_32</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\Program Files\IDA\plugins\SDK\idasdk\lib\x64_win_vc_32</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug x64|x64'">
@@ -127,17 +127,16 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>__NT__;__IDP__;__EA64__;__X64__;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(IDASDK)\include;$(IDADIR)\plugins\hexrays_sdk\include</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>__MAKEDLL__;__NT__;__IDP__;__EA64__;__X64__;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>C:\Program Files\IDA\plugins\SDK\idasdk\include;C:\Program Files\IDA\plugins\SDK\hexrays_sdk\include</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
-      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>ida.lib;user32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalOptions>/EXPORT:PLUGIN %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalLibraryDirectories>$(IDASDK)\lib\x64_win_vc_64</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\Program Files\IDA\plugins\SDK\idasdk\lib\x64_win_vc_64</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -148,11 +147,10 @@
       <Optimization>Disabled</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>__NT__;__IDP__;__X64__;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(IDASDK)\include;$(IDADIR)\plugins\hexrays_sdk\include</AdditionalIncludeDirectories>
-      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <PreprocessorDefinitions>__MAKEDLL__;__NT__;__IDP__;__X64__;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>C:\Program Files\IDA\plugins\SDK\idasdk\include;C:\Program Files\IDA\plugins\SDK\hexrays_sdk\include</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <WholeProgramOptimization>false</WholeProgramOptimization>
-      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -161,7 +159,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalDependencies>ida.lib;user32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalOptions>/EXPORT:PLUGIN %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalLibraryDirectories>$(IDASDK)\lib\x64_win_vc_32</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\Program Files\IDA\plugins\SDK\idasdk\lib\x64_win_vc_32</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release x64|x64'">
@@ -172,11 +170,10 @@
       <Optimization>Disabled</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>__NT__;__IDP__;__EA64__;__X64__;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(IDASDK)\include;$(IDADIR)\plugins\hexrays_sdk\include</AdditionalIncludeDirectories>
-      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <PreprocessorDefinitions>__MAKEDLL__;__NT__;__IDP__;__EA64__;__X64__;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>C:\Program Files\IDA\plugins\SDK\idasdk\include;C:\Program Files\IDA\plugins\SDK\hexrays_sdk\include</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <WholeProgramOptimization>false</WholeProgramOptimization>
-      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -185,7 +182,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalDependencies>ida.lib;user32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalOptions>/EXPORT:PLUGIN %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalLibraryDirectories>$(IDASDK)\lib\x64_win_vc_64</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\Program Files\IDA\plugins\SDK\idasdk\lib\x64_win_vc_64</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -195,10 +192,13 @@
     <ClCompile Include="GCCTypeInfo.cpp" />
     <ClCompile Include="GCCVtableInfo.cpp" />
     <ClCompile Include="IObjectFormatParser.cpp" />
+    <ClCompile Include="MicrocodeExtractor.cpp" />
     <ClCompile Include="MSVCObjectFormatParser.cpp" />
     <ClCompile Include="ObjectExplorer.cpp" />
     <ClCompile Include="CodeXplorer.cpp" />
     <ClCompile Include="CtreeGraphBuilder.cpp" />
+    <ClCompile Include="ReconstructableType.cpp" />
+    <ClCompile Include="reconstructed_place_t.cpp" />
     <ClCompile Include="TypeReconstructor.cpp" />
     <ClCompile Include="TypeExtractor.cpp" />
     <ClCompile Include="Utility.cpp" />
@@ -212,9 +212,12 @@
     <ClInclude Include="GCCVtableInfo.h" />
     <ClInclude Include="IObjectFormatParser.h" />
     <ClInclude Include="Linux.h" />
+    <ClInclude Include="MicrocodeExtractor.h" />
     <ClInclude Include="MSVCObjectFormatParser.h" />
     <ClInclude Include="ObjectExplorer.h" />
     <ClInclude Include="CtreeGraphBuilder.h" />
+    <ClInclude Include="ReconstructableType.h" />
+    <ClInclude Include="reconstructed_place_t.h" />
     <ClInclude Include="TypeReconstructor.h" />
     <ClInclude Include="TypeExtractor.h" />
     <ClInclude Include="Utility.h" />

@@ -1,4 +1,4 @@
-/*	Copyright (c) 2013-2015
+/*	Copyright (c) 2013-2020
 	REhints <info@rehints.com>
 	All rights reserved.
 	
@@ -42,9 +42,10 @@
 
 #define MAX_FUNC_DEPTH 100
 
+
 bool idaapi ctree_dumper_t::filter_citem(citem_t *item) {
 	if (item->is_expr()) {
-		cexpr_t * expr = (cexpr_t *)item;
+		auto expr = static_cast<cexpr_t*>(item);
 		
 		if (item->op == cot_cast)
 			return true;
@@ -99,11 +100,11 @@ void ctree_dumper_t::parse_ctree_item(citem_t *item, qstring& rv) const
 {
 	rv.clear();
 	// Each node will have the element type at the first line
-	if (auto v = get_ctype_name(item->op))
+	if (const auto v = get_ctype_name(item->op))
 		rv = v;
 
-	const cexpr_t *e = (const cexpr_t *)item;
-	const cinsn_t *i = (const cinsn_t *)item;
+	const auto e = static_cast<const cexpr_t*>(item);
+	const auto i = static_cast<const cinsn_t*>(item);
 
 	// For some item types, display additional information
 	qstring func_name;
@@ -139,7 +140,7 @@ void ctree_dumper_t::parse_ctree_item(citem_t *item, qstring& rv) const
 		rv.append(' ');
 		{
 			qstring qbuf;
-			print1wrapper(e, &qbuf, NULL);
+			print1wrapper(e, &qbuf, nullptr);
 			tag_remove(&qbuf);
 			rv += qbuf;
 		}
@@ -176,7 +177,7 @@ void ctree_dumper_t::parse_ctree_item(citem_t *item, qstring& rv) const
 
 		if(e->type.is_ptr())
 		{
-			tinfo_t ptr_rem = ::remove_pointer(e->type);
+			const auto ptr_rem = ::remove_pointer(e->type);
 			if(ptr_rem.is_struct())
 			{
 				qstring typenm;
@@ -192,15 +193,19 @@ struct ctree_dump_line {
 	qstring ctree_for_hash;
 	qstring ctree_dump;
 	qstring func_name;
-	int func_depth;
-	ea_t func_start;
-	ea_t func_end;
-	bool heuristic_flag;
+	int func_depth{};
+	ea_t func_start{};
+	ea_t func_end{};
+	bool heuristic_flag{};
+};
+
+struct ctree_dump_line_impl : ctree_dump_line
+{
 };
 
 
 int create_open_file(const char* file_name) {
-	int file_id = qopen(file_name, O_BINARY | O_TRUNC | O_CREAT);
+	auto file_id = qopen(file_name, O_BINARY | O_TRUNC | O_CREAT);
 	if (file_id == BADADDR)
 		file_id = qcreate(file_name, 511);
 
@@ -209,18 +214,17 @@ int create_open_file(const char* file_name) {
 
 int get_hash_of_string(const qstring &string_to_hash, qstring &hash) {
 	SHA1Context sha;
-	uint8_t Message_Digest[SHA1HashSize];
-	int err;
+	uint8_t message_digest[SHA1HashSize];
 
-	err = SHA1Reset(&sha);
+	auto err = SHA1Reset(&sha);
 	if (err == shaSuccess) {
 		err = SHA1Input(&sha, (uint8_t *)string_to_hash.c_str(), static_cast<unsigned>(string_to_hash.length()));
 		if (err == shaSuccess) {
-			err = SHA1Result(&sha, Message_Digest);
+			err = SHA1Result(&sha, message_digest);
 			if (err == shaSuccess) {
 				char digest_hex[SHA1HashSize * 2 + 1];
 				memset(digest_hex, 0x00, sizeof(digest_hex));
-				SHA1MessageDigestToString(Message_Digest, digest_hex);
+				SHA1MessageDigestToString(message_digest, digest_hex);
 
 				hash = digest_hex;
 			}
@@ -231,7 +235,7 @@ int get_hash_of_string(const qstring &string_to_hash, qstring &hash) {
 }
 
 void dump_ctrees_in_file(std::map<ea_t, ctree_dump_line> &data_to_dump, const qstring &crypto_prefix) {
-	int file_id = create_open_file("ctrees.txt");
+	const auto file_id = create_open_file("ctrees.txt");
 	if (file_id == -1)
 	{
 		logmsg(ERROR, "Failed to open file for dumping ctress\r\n");
@@ -241,16 +245,16 @@ void dump_ctrees_in_file(std::map<ea_t, ctree_dump_line> &data_to_dump, const qs
 	size_t crypt_prefix_len = crypto_prefix.length();
 
 	for (auto ctrees_iter = data_to_dump.begin(); ctrees_iter != data_to_dump.end(); ++ctrees_iter) {
-		const ctree_dump_line& cdl = ctrees_iter->second;
+		const auto& cdl = ctrees_iter->second;
 
 		qstring sha_hash;
-		int err = get_hash_of_string(cdl.ctree_for_hash, sha_hash);
+		auto err = get_hash_of_string(cdl.ctree_for_hash, sha_hash);
 		if (err != shaSuccess) {
 			logmsg(ERROR, "Error in computing SHA1 hash\r\n");
 			continue;
 		}
 
-		qstring dump_line = sha_hash + ";";
+		auto dump_line = sha_hash + ";";
 		err = get_hash_of_string(cdl.ctree_dump, sha_hash);
 		if (err != shaSuccess) {
 			logmsg(ERROR, "Error in computing SHA1 hash\r\n");
@@ -280,12 +284,12 @@ void dump_ctrees_in_file(std::map<ea_t, ctree_dump_line> &data_to_dump, const qs
 }
 
 
-inline bool func_name_has_prefix(const qstring &prefix, ea_t startEA) {
+inline bool func_name_has_prefix(const qstring &prefix, const ea_t start_ea) {
 	if (prefix.length() <= 0)
 		return false;
 
 	qstring func_name;
-	if (get_func_name(&func_name, startEA) <= 0)
+	if (get_func_name(&func_name, start_ea) <= 0)
 		return false;
 
 	if (func_name.empty())
@@ -300,15 +304,13 @@ bool idaapi dump_funcs_ctree(void *ud, const qstring &crypto_prefix)
 
 	std::map<ea_t, ctree_dump_line> data_to_dump;
 
-	// enumerate through all the functions in the idb file
-	bool heuristic_flag;
 	size_t count = 0, heur_count = 0, crypto_count = 0;
 	size_t total_func_qty = get_func_qty();
 	for (size_t i = 0 ; i < total_func_qty ; i ++) {
-		heuristic_flag = 0;
+		auto heuristic_flag = false;
 
 		func_t *function = getn_func(i);
-		if (function != NULL) {
+		if (function != nullptr) {
 			bool crypto_flag = func_name_has_prefix(crypto_prefix, function->start_ea);
 
 			// skip libs that are not marked as crypto
@@ -323,7 +325,7 @@ bool idaapi dump_funcs_ctree(void *ud, const qstring &crypto_prefix)
 
 			// If function is bigger than MIN_HEURISTIC_FUNC_SIZE_DUMP, mark as being triggered by the heuristic
 			if (function->end_ea - function->start_ea > MIN_HEURISTIC_FUNC_SIZE_DUMP)
-				heuristic_flag = 1;
+				heuristic_flag = true;
 
 			// dump up to N_CRYPTO_FUNCS_TO_DUMP crypto functions
 			// dump up to N_HEUR_FUNCS_TO_DUMP heuristic functions
@@ -333,9 +335,9 @@ bool idaapi dump_funcs_ctree(void *ud, const qstring &crypto_prefix)
 				cfuncptr_t cfunc = decompile(function, &hf);
 
 				logmsg(DEBUG, "\nafter decompile()\n");
-				if (cfunc != NULL) {
+				if (cfunc != nullptr) {
 					ctree_dumper_t ctree_dumper;
-					ctree_dumper.apply_to(&cfunc->body, NULL);
+					ctree_dumper.apply_to(&cfunc->body, nullptr);
 
 					ctree_dump_line func_dump;
 					func_dump.ctree_dump = ctree_dumper.ctree_dump;
@@ -356,7 +358,7 @@ bool idaapi dump_funcs_ctree(void *ud, const qstring &crypto_prefix)
 					func_parent_iterator_t fpi(function);
 					for (ea_t addr = get_first_cref_to(function->start_ea); addr != BADADDR; addr = get_next_cref_to(function->start_ea, addr)) {
 						func_t *referer = get_func(addr);
-						if (referer != NULL) {
+						if (referer != nullptr) {
 							func_dump.referres.push_back(referer->start_ea);
 						}
 					}
@@ -389,12 +391,12 @@ bool idaapi extract_all_ctrees(void *ud)
 	va_list va;
 	va_end(va);
 
-	qstring crypto_prefix = kDefaultPrefix;
+	auto crypto_prefix = kDefaultPrefix;
 	if (!ask_str(&crypto_prefix, 0, "Enter prefix of crypto function names", va))
 		return false;
 
 	if(!crypto_prefix.empty()) {
-		dump_funcs_ctree(NULL, crypto_prefix);
+		dump_funcs_ctree(nullptr, crypto_prefix);
 	} else {
 		warning("Incorrect prefix!!");
 	}
@@ -410,7 +412,7 @@ struct func_ctree_info_t
 	TWidget *cv;
 	TWidget *codeview;
 	strvec_t sv;
-	func_ctree_info_t(TWidget *f) : widget(f), cv(nullptr), codeview(nullptr){}
+	explicit func_ctree_info_t(TWidget *f) : widget(f), cv(nullptr), codeview(nullptr){}
 };
 
 
@@ -418,8 +420,8 @@ bool idaapi show_citem_custom_view(void *ud, const qstring& ctree_item, const qs
 {
 	qstring form_name = "Ctree Item View: ";
 	form_name.append(item_name);
-	TWidget *widget = create_empty_widget(form_name.c_str());
-	func_ctree_info_t *si = new func_ctree_info_t(widget);
+	const auto widget = create_empty_widget(form_name.c_str());
+	auto si = new func_ctree_info_t(widget);
 
 	istringstream s_citem_str(ctree_item.c_str());
 	string tmp_str;
@@ -433,8 +435,8 @@ bool idaapi show_citem_custom_view(void *ud, const qstring& ctree_item, const qs
 	simpleline_place_t s2(static_cast<int>(ctree_item.size()));
 	si->cv = create_custom_viewer("", &s1, &s2, &s1, nullptr, &si->sv, nullptr, nullptr, widget);
 	si->codeview = create_code_viewer(si->cv, CDVF_NOLINES, widget);
-	set_custom_viewer_handlers(si->cv, NULL, si);
-	display_widget(widget, WOPN_ONTOP | WOPN_RESTORE);
+	set_custom_viewer_handlers(si->cv, nullptr, si);
+	display_widget(widget, WOPN_RESTORE);
 
 	return false;
 }

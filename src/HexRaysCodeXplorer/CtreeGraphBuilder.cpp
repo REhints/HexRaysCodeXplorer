@@ -1,4 +1,4 @@
-/*	Copyright (c) 2013-2015
+/*	Copyright (c) 2013-2020
 	REhints <info@rehints.com>
 	All rights reserved.
 	
@@ -35,10 +35,10 @@
 
 bool callgraph_t::visited(citem_t *i, int *nid)
 {
-	ea_int_map_t::const_iterator it = ea2node.find(i);
-	if (it != ea2node.end())
+	const ea_int_map_t::const_iterator it = ea2node_.find(i);
+	if (it != ea2node_.end())
 	{
-		if (nid != NULL)
+		if (nid != nullptr)
 			*nid = it->second;
 		return true;
 	}
@@ -46,7 +46,7 @@ bool callgraph_t::visited(citem_t *i, int *nid)
 }
 
 
-void callgraph_t::create_edge(int id1, int id2)
+void callgraph_t::create_edge(const int id1, const int id2)
 {
 	edges.push_back(edge_t(id1, id2));
 }
@@ -54,20 +54,20 @@ void callgraph_t::create_edge(int id1, int id2)
 
 void callgraph_t::get_node_label(int n, qstring& rv) const
 {
-	int_ea_map_t::const_iterator it = node2ea.find(n);
+	const auto it = node2ea_.find(n);
 	rv.clear();
 
-	if ( it != node2ea.end() )
+	if ( it != node2ea_.end() )
 	{
 		const citem_t *item = it->second;
 
 		// Each node will have the element type at the first line
-		auto ctype_name = get_ctype_name(item->op);
+		const auto ctype_name = get_ctype_name(item->op);
 		if (ctype_name)
 			rv = ctype_name;
 
-		const cexpr_t *e = (const cexpr_t *)item;
-		const cinsn_t *i = (const cinsn_t *)item;
+		const auto e = static_cast<const cexpr_t*>(item);
+		const auto i = static_cast<const cinsn_t*>(item);
 
 		// For some item types, display additional information
 		qstring func_name;
@@ -138,7 +138,7 @@ void callgraph_t::get_node_label(int n, qstring& rv) const
 
 			if(e->type.is_ptr())
 			{
-				tinfo_t ptr_rem = remove_pointer(e->type);
+				const auto ptr_rem = remove_pointer(e->type);
 				if(ptr_rem.is_struct())
 				{
 					qstring typenm;
@@ -152,12 +152,12 @@ void callgraph_t::get_node_label(int n, qstring& rv) const
 
 callgraph_t::nodeinfo_t *callgraph_t::get_info(int nid)
 {
-	nodeinfo_t *ret = NULL;
+	nodeinfo_t *ret = nullptr;
 
 	do
 	{
 		// returned cached name
-		int_funcinfo_map_t::iterator it = cached_funcs.find(nid);
+		auto it = cached_funcs.find(nid);
 		if (it != cached_funcs.end())
 		{
 			ret = &it->second;
@@ -165,21 +165,21 @@ callgraph_t::nodeinfo_t *callgraph_t::get_info(int nid)
 		}
 
 		// node does not exist?
-		int_ea_map_t::const_iterator it_ea = node2ea.find(nid);
-		if (it_ea == node2ea.end())
+		const int_ea_map_t::const_iterator it_ea = node2ea_.find(nid);
+		if (it_ea == node2ea_.end())
 			break;
 
-		citem_t *pfn = it_ea->second;
+		const auto pfn = it_ea->second;
 		if (!pfn)
 			break;
 
 		nodeinfo_t fi;
 
 		// get name
-		qstring nodeLabel;
-		get_node_label(nid, nodeLabel);
-		if (!nodeLabel.empty())
-			fi.name = nodeLabel;
+		qstring node_label;
+		get_node_label(nid, node_label);
+		if (!node_label.empty())
+			fi.name = node_label;
 		else
 			fi.name = "?unknown";
 
@@ -210,22 +210,22 @@ callgraph_t::nodeinfo_t *callgraph_t::get_info(int nid)
 int callgraph_t::add(citem_t *i)
 {
 	// check if we are trying to add existing node
-	ea_int_map_t::const_iterator it = ea2node.find(i);
-	if ( it != ea2node.end() )
+	ea_int_map_t::const_iterator it = ea2node_.find(i);
+	if ( it != ea2node_.end() )
 		return it->second;
 
-	ea2node[i] = node_count;
-	node2ea[node_count] = i;
+	ea2node_[i] = node_count_;
+	node2ea_[node_count_] = i;
 
-	int ret_val = node_count;
-	node_count ++;
+	const auto ret_val = node_count_;
+	node_count_ ++;
 	return ret_val;
 }
 
 
 //--------------------------------------------------------------------------
 callgraph_t::callgraph_t()
-	: node_count(0)
+	: node_count_(0)
 	, highlighted(nullptr)
 {
 	//cur_text[0] = '\0';
@@ -254,13 +254,13 @@ graph_info_t::graph_info_t()
 
 //--------------------------------------------------------------------------
 // Create graph for current decompiled function
-graph_info_t * graph_info_t::create(ea_t func_ea, citem_t *highlighted)
+graph_info_t * graph_info_t::create(const ea_t func_ea, citem_t *highlighted)
 {
-	func_t *pfn = get_func(func_ea);
+	const auto pfn = get_func(func_ea);
 	if (!pfn)
 		return nullptr;
 
-	graph_info_t *r = new graph_info_t();
+	auto r = new graph_info_t();
 	r->func_ea = pfn->start_ea;
 	r->fg.highlighted = highlighted;
 
@@ -281,7 +281,7 @@ graph_info_t * graph_info_t::create(ea_t func_ea, citem_t *highlighted)
 
 
 //--------------------------------------------------------------------------
-bool graph_info_t::get_title(ea_t func_ea, size_t num_inst, qstring *out)
+bool graph_info_t::get_title(const ea_t func_ea, size_t num_inst, qstring *out)
 {
 	// we should succeed in getting the name
 	qstring func_name;
@@ -297,7 +297,7 @@ bool graph_info_t::get_title(ea_t func_ea, size_t num_inst, qstring *out)
 void graph_info_t::destroy(graph_info_t *gi)
 {
 	// FIXME: never called
-	for(graphinfo_list_t::iterator it = instances.begin() ; it != instances.end() ; ++it)
+	for(auto it = instances.begin() ; it != instances.end() ; ++it)
 	{
 		if (*it == gi)
 		{

@@ -1,4 +1,4 @@
-/*	Copyright (c) 2013-2016
+/*	Copyright (c) 2013-2020
 REhints <info@rehints.com>
 All rights reserved.
 
@@ -24,6 +24,7 @@ along with this program.  If not, see
 */
 
 #include "Common.h"
+#include "MicrocodeExtractor.h"
 #include "CtreeGraphBuilder.h"
 #include "ObjectExplorer.h"
 #include "TypeReconstructor.h"
@@ -35,57 +36,63 @@ along with this program.  If not, see
 #include "IObjectFormatParser.h"
 #include "MSVCObjectFormatParser.h"
 #include "GCCObjectFormatParser.h"
-
+#include "ReconstructableType.h"
+#include "reconstructed_place_t.h"
 #include <functional>
+#include <utility>
 
 extern plugin_t PLUGIN;
 
-IObjectFormatParser *objectFormatParser = 0;
+reconstructed_place_t replace_template;
+int g_replace_id;
+
+IObjectFormatParser *object_format_parser = nullptr;
 #if defined (__LINUX__) || defined (__MAC__)
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #endif
 
 // Hex-Rays API pointer
-hexdsp_t *hexdsp = NULL;
+hexdsp_t *hexdsp = nullptr;
 
 namespace {
 
 static bool inited = false;
 
 // Hotkey for the new command
-static const char hotkey_dg[] = "T";
-static const char hotkey_ce[] = "O";
-static const char hotkey_rt[] = "R";
-static const char hotkey_gd[] = "J";
-static const char hotkey_et[] = "S";
-static const char hotkey_ec[] = "C";
-static const char hotkey_vc[] = "V";
-static const char hotkey_so[] = "Q"; // After positioning cursor at source code user can press Q to copy to clipboard string of form modulename + 0xoffset. 
+static char hotkey_dg[] = "T";
+static char hotkey_ce[] = "O";
+static char hotkey_rt[] = "R";
+static char hotkey_gd[] = "J";
+static char hotkey_et[] = "S";
+static char hotkey_ec[] = "C";
+static char hotkey_vc[] = "V";
+static char hotkey_mc[] = "M";
+static char hotkey_so[] = "Q"; // After positioning cursor at source code user can press Q to copy to clipboard string of form modulename + 0xoffset. 
 									 // It can be useful while working with WinDbg.
 
-static const char hotkey_rv[] = "E"; // Automatic renaming of duplicating variables by pressing E. 
+static char hotkey_rv[] = "E"; // Automatic renaming of duplicating variables by pressing E. 
 									 // All duplicating successors obtain _2, _3 ... postfixes.
 
-static const qstring kCryptoPrefixParam = "CRYPTO";
+static qstring k_crypto_prefix_param = "CRYPTO";
 
 
 
 //--------------------------------------------------------------------------
 // Helper class to build graph from ctree.
-struct graph_builder_t : public ctree_parentee_t
+struct graph_builder_t final : public ctree_parentee_t
 {
 	callgraph_t &cg;
 	std::map<citem_t *, int> reverse;  // Reverse mapping for tests and adding edges
 
-	graph_builder_t(callgraph_t &_cg) : cg(_cg) {}
+	explicit graph_builder_t(callgraph_t &cg) : cg(cg) {}
 
 	// overriding functions
 	int add_node(citem_t *i);
 	int process(citem_t *i);
 
 	// We treat expressions and statements the same way: add them to the graph
-	int idaapi visit_insn(cinsn_t *i) { return process(i); }
-	int idaapi visit_expr(cexpr_t *e) { return process(e); }
+	int idaapi visit_insn(cinsn_t *i) override { return process(i); }
+	int idaapi visit_expr(cexpr_t *e) override { return process(e); }
 };
 
 // Add a new node to the graph
@@ -100,7 +107,7 @@ int graph_builder_t::add_node(citem_t *i)
 	}
 
 	// Add a node to the graph
-	int n = cg.add(i);
+	const auto n = cg.add(i);
 
 	// Also remember the reverse mapping (citem_t* -> n)
 	reverse[i] = n;
@@ -109,16 +116,16 @@ int graph_builder_t::add_node(citem_t *i)
 }
 
 // Process a ctree item
-int graph_builder_t::process(citem_t *item)
+int graph_builder_t::process(citem_t *i)
 {
 	// Add a node for citem
-	int n = add_node(item);
+	const auto n = add_node(i);
 	if (n == -1)
 		return -1; // error
 
 	if (parents.size() > 1)             // The current item has a parent?
 	{
-		int p = reverse[parents.back()];    // Parent node number
+		const auto p = reverse[parents.back()];    // Parent node number
 		// cg.add_edge(p, n);               // Add edge from the parent to the current item
 		cg.create_edge(p, n);
 	}
@@ -128,9 +135,9 @@ int graph_builder_t::process(citem_t *item)
 
 typedef map<lvar_t*, qstring> to_raname_t;
 
-const qstring kRoot = "*&|";
+const qstring k_root = "*&|";
 
-struct ida_local renamer_t : public ctree_visitor_t
+struct ida_local renamer_t final : public ctree_visitor_t
 {
 	to_raname_t& to_rename_;
 	lvars_t& lvars_;
@@ -147,12 +154,11 @@ struct ida_local renamer_t : public ctree_visitor_t
 	map<qstring, vector<qstring>> roots;
 
 	qstring rvar_depends_on(cexpr_t* e) {
-		qstring rvar_name = lvars_[e->y->v.idx].name;
-		map<qstring, vector<qstring>>::iterator it;
-		for (it = roots.begin(); it != roots.end(); ++it)
+		const auto rvar_name = lvars_[e->y->v.idx].name;
+		for (auto it = roots.begin(); it != roots.end(); ++it)
 		{
 			if (it->first == rvar_name)
-				return kRoot;
+				return k_root;
 			vector<qstring>::iterator yt;
 			for (yt = it->second.begin(); yt != it->second.end(); ++yt)
 			{
@@ -160,20 +166,18 @@ struct ida_local renamer_t : public ctree_visitor_t
 					return it->first;
 			}
 		}
-		return kRoot;
+		return k_root;
 	}
 
-	int idaapi visit_expr(cexpr_t *e)
+	int idaapi visit_expr(cexpr_t *e) override
 	{
 		char pstx_buf[8];
-		qstring new_name;
-		qstring lvar_name, rvar_name, tvar_name;
 		if (e->op == cot_asg && e->x->op == cot_var && e->y->op == cot_var)
 		{
-			lvar_name = lvars_[e->x->v.idx].name;
-			rvar_name = lvars_[e->y->v.idx].name;
-			tvar_name = rvar_depends_on(e);
-			if (tvar_name == kRoot)
+			const auto lvar_name = lvars_[e->x->v.idx].name;
+			auto rvar_name = lvars_[e->y->v.idx].name;
+			const auto tvar_name = rvar_depends_on(e);
+			if (tvar_name == k_root)
 			{
 				//rvar is root variable
 				if (rvar_name != lvar_name)
@@ -189,15 +193,15 @@ struct ida_local renamer_t : public ctree_visitor_t
 				}
 			}
 
-			for (size_t i = 0; i < roots[lvar_name].size(); i++)
+			for (auto& i : roots[lvar_name])
 			{
-				if (roots[lvar_name][i] == rvar_name)
+				if (i == rvar_name)
 					return 0;
 			}
 
 			postfixes.insert(pair<qstring, int>(rvar_name, 2));
 			sprintf(pstx_buf, "%d", postfixes[rvar_name]++);
-			new_name = rvar_name + "_" + pstx_buf;
+			const auto new_name = rvar_name + "_" + pstx_buf;
 			to_rename_[&lvars_[e->x->v.idx]] = new_name;
 			roots[rvar_name].push_back(new_name);
 		}
@@ -215,9 +219,9 @@ struct ida_local renamer_t : public ctree_visitor_t
   callgraph_t *fg = &gi->fg
 
 //--------------------------------------------------------------------------
-static ssize_t idaapi gr_callback(void *ud, int code, va_list va)
+static ssize_t idaapi gr_callback(void *ud, const int code, va_list va)
 {
-	bool result = false;
+	auto result = false;
 	switch (code)
 	{
 		// refresh user-defined graph nodes and edges
@@ -226,24 +230,24 @@ static ssize_t idaapi gr_callback(void *ud, int code, va_list va)
 		// out: success
 	{
 		DECLARE_GI_VARS;
-		func_t *f = get_func(gi->func_ea);
-		if (f == NULL)
+		const auto f = get_func(gi->func_ea);
+		if (f == nullptr)
 			break;
 
 		graph_builder_t gb(*fg);       // Graph builder helper class
-		gb.apply_to(&gi->vu->cfunc->body, NULL);
+		gb.apply_to(&gi->vu->cfunc->body, nullptr);
 
-		mutable_graph_t *mg = va_arg(va, mutable_graph_t *);
+		auto mg = va_arg(va, mutable_graph_t *);
 
 		// we have to resize
 		mg->resize(fg->count());
 
-		callgraph_t::edge_iterator end = fg->end_edges();
-		for (callgraph_t::edge_iterator it = fg->begin_edges();
-		it != end;
-			++it)
+		const auto end = fg->end_edges();
+		for (auto it = fg->begin_edges();
+		     it != end;
+		     ++it)
 		{
-			mg->add_edge(it->id1, it->id2, NULL);
+			mg->add_edge(it->id1, it->id2, nullptr);
 		}
 
 		fg->clear_edges();
@@ -262,16 +266,16 @@ static ssize_t idaapi gr_callback(void *ud, int code, va_list va)
 	{
 		DECLARE_GI_VARS;
 		va_arg(va, mutable_graph_t *);
-		int node = va_arg(va, int);
-		const char **text = va_arg(va, const char **);
-		bgcolor_t *bgcolor = va_arg(va, bgcolor_t *);
+		const auto node = va_arg(va, int);
+		const auto text = va_arg(va, const char **);
+		const auto bgcolor = va_arg(va, bgcolor_t *);
 
-		callgraph_t::nodeinfo_t *ni = fg->get_info(node);
-		result = ni != NULL;
+		const auto ni = fg->get_info(node);
+		result = ni != nullptr;
 		if (result)
 		{
 			*text = ni->name.c_str();
-			if (bgcolor != NULL)
+			if (bgcolor != nullptr)
 				*bgcolor = ni->color;
 		}
 	}
@@ -281,13 +285,13 @@ static ssize_t idaapi gr_callback(void *ud, int code, va_list va)
 	{
 		DECLARE_GI_VARS;
 		va_arg(va, mutable_graph_t *);
-		int mousenode = va_argi(va, int);
-		int to = va_argi(va, int);
-		int from = va_argi(va, int);
-		char **hint = va_arg(va, char **);
+		const auto mousenode = va_argi(va, int);
+		const auto to = va_argi(va, int);
+		const auto from = va_argi(va, int);
+		const auto hint = va_arg(va, char **);
 
-		callgraph_t::nodeinfo_t *ni = fg->get_info(mousenode);
-		result = ni != NULL;
+		const auto ni = fg->get_info(mousenode);
+		result = ni != nullptr;
 		if (result && ni->ea != BADADDR)
 		{
 			qstring s;
@@ -300,38 +304,38 @@ static ssize_t idaapi gr_callback(void *ud, int code, va_list va)
 	case grcode_dblclicked:
 	{
 		DECLARE_GI_VARS;
-		graph_viewer_t *v = va_arg(va, graph_viewer_t *);
-		selection_item_t *s = va_arg(va, selection_item_t *);
-		if (s != NULL) {
-			callgraph_t::nodeinfo_t *ni = fg->get_info(s->node);
-			result = ni != NULL;
+		const auto v = va_arg(va, graph_viewer_t *);
+		const auto s = va_arg(va, selection_item_t *);
+		if (s != nullptr) {
+			const auto ni = fg->get_info(s->node);
+			result = ni != nullptr;
 			if (result && s->is_node && ni->ea != BADADDR)
 				jumpto(ni->ea);
 		}
 	}
 	break;
-
+	default: ;
 	}
-	return (int)result;
+	return static_cast<int>(result);
 }
 
 
 // Display ctree graph for current decompiled function
 static bool idaapi display_ctree_graph(void *ud)
 {
-	vdui_t &vu = *(vdui_t *)ud;
+	auto& vu = *static_cast<vdui_t*>(ud);
 
 	// Determine the ctree item to highlight
 	vu.get_current_item(USE_KEYBOARD);
-	citem_t *highlight = vu.item.is_citem() ? vu.item.e : NULL;
-	graph_info_t *gi = graph_info_t::create(vu.cfunc->entry_ea, highlight);
+	citem_t *highlight = vu.item.is_citem() ? vu.item.e : nullptr;
+	const auto gi = graph_info_t::create(vu.cfunc->entry_ea, highlight);
 
 	netnode id;
 	id.create();
 
-	qstring title = gi->title;
+	const auto title = gi->title;
 
-	TWidget *widget = find_widget(title.c_str());
+	auto widget = find_widget(title.c_str());
 	if (widget)
 	{
 		warning("Ctree Graph window already open. Switching to it.\n");
@@ -341,11 +345,11 @@ static bool idaapi display_ctree_graph(void *ud)
 	}
 	widget = create_empty_widget(title.c_str());
 
-	gi->vu = (vdui_t *)ud;
+	gi->vu = static_cast<vdui_t*>(ud);
 	gi->widget = widget;
 	gi->gv = create_graph_viewer("ctree", id, gr_callback, gi, 0, widget);
 	activate_widget(widget, true);
-	display_widget(widget, WOPN_TAB | WOPN_MENU);
+	display_widget(widget, WOPN_DP_TAB);
 
 	viewer_fit_window(gi->gv);
 
@@ -390,10 +394,10 @@ static bool get_expr_name(citem_t *citem, qstring& rv)
 	if (!citem->is_expr())
 		return false;
 
-	cexpr_t *e = (cexpr_t *)citem;
+	const auto e = static_cast<cexpr_t*>(citem);
 
 	// retrieve the name of the routine
-	print1wrapper(e, &rv, NULL);
+	print1wrapper(e, &rv, nullptr);
 	tag_remove(&rv);
 
 	return true;
@@ -404,7 +408,7 @@ static bool idaapi decompile_func(vdui_t &vu)
 {
 	// Determine the ctree item to highlight
 	vu.get_current_item(USE_KEYBOARD);
-	citem_t* highlight = vu.item.is_citem() ? vu.item.e : NULL;
+	citem_t* highlight = vu.item.is_citem() ? vu.item.e : nullptr;
 	if (!highlight)
 		return false;
 
@@ -412,21 +416,21 @@ static bool idaapi decompile_func(vdui_t &vu)
 	if (!highlight->is_expr())
 		return false;
 
-	cexpr_t *e = (cexpr_t *)highlight;
+	auto*e = static_cast<cexpr_t*>(highlight);
 
 	qstring qcitem_name;
 	if (!get_expr_name(highlight, qcitem_name))
 		return false;
 
-	const char* citem_name = qcitem_name.c_str();
-	const char *proc_name = citem_name + strlen(citem_name);
+	const auto citem_name = qcitem_name.c_str();
+	auto proc_name = citem_name + strlen(citem_name);
 
 	while ((proc_name > citem_name) && (*(proc_name - 1) != '>'))  // WTF is going here?
 		proc_name--;
 
 	if (proc_name != citem_name)
 	{
-		if (func_t* func = get_func_by_name(proc_name))
+		if (const auto func = get_func_by_name(proc_name))
 			open_pseudocode(func->start_ea, -1);
 	}
 
@@ -439,16 +443,16 @@ static bool idaapi decompile_func(vdui_t &vu)
 
 static bool idaapi rename_simple_expr(void *ud) 
 {
-	vdui_t &vu = *(vdui_t *)ud;
-	cfuncptr_t pfunc = vu.cfunc;
+	auto& vu = *static_cast<vdui_t*>(ud);
+	auto pfunc = vu.cfunc;
 
-	lvars_t& lvars = *pfunc->get_lvars();
+	auto& lvars = *pfunc->get_lvars();
 
 	map<lvar_t*, qstring> to_rename;
 	renamer_t zc{to_rename, lvars};
-	zc.apply_to(&pfunc->body, NULL);
-	for (map<lvar_t*, qstring>::iterator it = to_rename.begin(); it != to_rename.end(); ++it)
-		vu.rename_lvar(it->first, it->second.c_str(), 0);
+	zc.apply_to(&pfunc->body, nullptr);
+	for (auto it = to_rename.begin(); it != to_rename.end(); ++it)
+		vu.rename_lvar(it->first, it->second.c_str(), false);
 	vu.refresh_ctext();
 	return true;
 }
@@ -457,10 +461,9 @@ static bool idaapi show_offset_in_windbg_format(void *ud) {
 	char _offset[32] = { 0 };
 	char module_name[256] = { 0 };
 	qstring result;
-	adiff_t offset;
-	vdui_t &vu = *(vdui_t *)ud;
+	auto& vu = *static_cast<vdui_t*>(ud);
 	vu.get_current_item(USE_KEYBOARD);
-	offset = vu.item.i->ea - get_imagebase();
+	const adiff_t offset = vu.item.i->ea - get_imagebase();
 
 	if (offset < 0)
 	{
@@ -469,12 +472,12 @@ static bool idaapi show_offset_in_windbg_format(void *ud) {
 	}
 
 	get_root_filename(module_name, 255);
-	for (int i = 0; i < 255; i++)
+	for (auto i = 0; i < 255; i++)
 		if (module_name[i] == '.') { module_name[i] = 0; break; }
 #ifdef __EA64__
 	const char *fmt = "%llx";
 #else
-	const char *fmt = "%x";
+	const auto fmt = "%x";
 #endif
 	sprintf(_offset, fmt, offset);
 	result.cat_sprnt("%s+0x%s", module_name, _offset);
@@ -488,7 +491,7 @@ static bool idaapi show_offset_in_windbg_format(void *ud) {
 #else
 	OpenClipboard(0);
 	EmptyClipboard();
-	HGLOBAL hg = GlobalAlloc(GMEM_MOVEABLE, result.size());
+	const auto hg = GlobalAlloc(GMEM_MOVEABLE, result.size());
 
 	if (!hg)
 	{
@@ -509,11 +512,11 @@ static bool idaapi show_offset_in_windbg_format(void *ud) {
 // show disassembly line for ctree->item
 bool idaapi decompiled_line_to_disasm_cb(void *ud)
 {
-	vdui_t &vu = *(vdui_t *)ud;
+	auto& vu = *static_cast<vdui_t*>(ud);
 	vu.ctree_to_disasm();
 
 	vu.get_current_item(USE_KEYBOARD);
-	citem_t *highlight = vu.item.is_citem() ? vu.item.e : NULL;
+	citem_t *highlight = vu.item.is_citem() ? vu.item.e : nullptr;
 
 	return true;
 }
@@ -522,19 +525,19 @@ bool idaapi decompiled_line_to_disasm_cb(void *ud)
 // extract ctree to custom view
 static bool idaapi show_current_citem_in_custom_view(void *ud)
 {
-	vdui_t &vu = *(vdui_t *)ud;
+	auto& vu = *static_cast<vdui_t*>(ud);
 	vu.get_current_item(USE_KEYBOARD);
-	citem_t *highlight_item = vu.item.is_citem() ? vu.item.e : NULL;
+	citem_t *highlight_item = vu.item.is_citem() ? vu.item.e : nullptr;
 	if (!highlight_item)
 		return false;
 
-	ctree_dumper_t ctree_dump;
+	const ctree_dumper_t ctree_dump;
 	qstring ctree_item;
 	ctree_dump.parse_ctree_item(highlight_item, ctree_item);
 
 	if (highlight_item->is_expr())
 	{
-		cexpr_t *e = (cexpr_t *)highlight_item;
+		auto*e = static_cast<cexpr_t*>(highlight_item);
 		qstring item_name;
 		get_expr_name(highlight_item, item_name);
 		show_citem_custom_view(&vu, ctree_item, item_name);
@@ -542,18 +545,17 @@ static bool idaapi show_current_citem_in_custom_view(void *ud)
 	return true;
 }
 
-bool initObjectFormatParser()
+bool init_object_format_parser()
 {
-	if (!objectFormatParser)
+	if (!object_format_parser)
 	{
-		//if (isMSVC())
 		if (compilerIs(MSVC_COMPILER_ABBR))
-			objectFormatParser = new MSVCObjectFormatParser();
+			object_format_parser = new MSVCObjectFormatParser();
 		if (compilerIs(GCC_COMPILER_ABBR))
-			objectFormatParser = new GCCObjectFormatParser();
-		if (!objectFormatParser)
+			object_format_parser = new GCCObjectFormatParser();
+		if (!object_format_parser)
 		{
-			info("CodeXplorer doesn't support parsing of not MSVC VTBL's");
+			info("CodeXplorer doesn't support yet parsing of neither MSVC nor GCC VTBL's");
 			return false;
 		}
 	}
@@ -563,11 +565,19 @@ bool initObjectFormatParser()
 // display Object Explorer
 static bool idaapi display_vtbl_objects(void *ud)
 {
-	if (!initObjectFormatParser())
+	if (!init_object_format_parser())
 		return false;
 
 	search_objects();
 	object_explorer_form_init();
+	re_types_form_init();
+	return true;
+}
+
+// display Microcode Explorer window
+static bool idaapi display_micvrocode_explorer(void* ud)
+{
+	show_microcode_explorer();
 	return true;
 }
 
@@ -578,56 +588,56 @@ static ssize_t idaapi callback(void* ud, hexrays_event_t event, va_list va)
 {
 	switch (event)
 	{
-	case hxe_populating_popup:
-	{
-		TWidget *widget = va_arg(va, TWidget *);
-		TPopupMenu *popup = va_arg(va, TPopupMenu *);
-		vdui_t &vu = *va_arg(va, vdui_t *);
+		case hxe_populating_popup:
+		{
+			TWidget *widget = va_arg(va, TWidget *);
+			TPopupMenu *popup = va_arg(va, TPopupMenu *);
+			vdui_t &vu = *va_arg(va, vdui_t *);
 
-		// add new command to the popup menu
-		attach_action_to_popup(vu.ct, popup, "codexplorer::display_ctree_graph");
-		attach_action_to_popup(vu.ct, popup, "codexplorer::object_explorer");
-		attach_action_to_popup(vu.ct, popup, "codexplorer::reconstruct_type");
+			// add new command to the popup menu
+			attach_action_to_popup(vu.ct, popup, "codexplorer::display_ctree_graph");
+			attach_action_to_popup(vu.ct, popup, "codexplorer::object_explorer");
+			attach_action_to_popup(vu.ct, popup, "codexplorer::reconstruct_type");
 
-		attach_action_to_popup(vu.ct, popup, "codexplorer::extract_types_to_file");
-		attach_action_to_popup(vu.ct, popup, "codexplorer::extract_ctrees_to_file");
-		attach_action_to_popup(vu.ct, popup, "codexplorer::ctree_item_view");
-		attach_action_to_popup(vu.ct, popup, "codexplorer::jump_to_disasm");
-		attach_action_to_popup(vu.ct, popup, "codexplorer::show_copy_item_offset");
-		attach_action_to_popup(vu.ct, popup, "codexplorer::rename_vars");
-	}
-	break;
+			attach_action_to_popup(vu.ct, popup, "codexplorer::extract_types_to_file");
+			attach_action_to_popup(vu.ct, popup, "codexplorer::extract_ctrees_to_file");
+			attach_action_to_popup(vu.ct, popup, "codexplorer::ctree_item_view");
+			attach_action_to_popup(vu.ct, popup, "codexplorer::microcode_view");
+			attach_action_to_popup(vu.ct, popup, "codexplorer::jump_to_disasm");
+			attach_action_to_popup(vu.ct, popup, "codexplorer::show_copy_item_offset");
+			attach_action_to_popup(vu.ct, popup, "codexplorer::rename_vars");
+		}
+		break;
 
-	case hxe_double_click:
-	{
-		vdui_t &vu = *va_arg(va, vdui_t *);
-		decompile_func(vu);
-	}
-	break;
-	default:
+		case hxe_double_click:
+		{
+			auto& vu = *va_arg(va, vdui_t *);
+			decompile_func(vu);
+		}
 		break;
 	}
+	
 	return 0;
 }
 
 void parse_plugin_options(qstring &options, bool &dump_types, bool &dump_ctrees, qstring &crypto_prefix) {
 	qvector<qstring> params;
-	qstring splitter = ":";
+	const qstring splitter = ":";
 	split_qstring(options, splitter, params);
 
 	dump_types = false;
 	dump_ctrees = false;
 	crypto_prefix = "";
 
-	for (const qstring& param : params) {
+	for (const auto& param : params) {
 		if (param == "dump_types") {
 			dump_types = true;
 		}
 		else if (param == "dump_ctrees") {
 			dump_ctrees = true;
 		}
-		else if (param.length() > kCryptoPrefixParam.length() && param.find(kCryptoPrefixParam) == 0) {
-			crypto_prefix = param.substr(kCryptoPrefixParam.length());
+		else if (param.length() > k_crypto_prefix_param.length() && param.find(k_crypto_prefix_param) == 0) {
+			crypto_prefix = param.substr(k_crypto_prefix_param.length());
 		}
 		else {
 			qstring message = "Invalid argument: ";
@@ -639,73 +649,108 @@ void parse_plugin_options(qstring &options, bool &dump_types, bool &dump_ctrees,
 
 namespace {
 
-class MenuActionHandler : public action_handler_t
-{
-public:
-	typedef std::function<bool(void*)> handler_t;
-
-	MenuActionHandler(handler_t handler)
-		: handler_(handler)
+	class menu_action_handler final : public action_handler_t
 	{
-	}
-	virtual int idaapi activate(action_activation_ctx_t *ctx)
+	public:
+		typedef std::function<bool(void*)> handler_t;
+		bool is_enabled;
+
+		explicit menu_action_handler(handler_t handler)
+			: is_enabled(true), handler_(std::move(handler))
+		{
+		}
+
+		menu_action_handler(handler_t handler, const bool enabled)
+			: is_enabled(enabled), handler_(std::move(handler))
+		{
+		}
+
+		int idaapi activate(action_activation_ctx_t* ctx) override
+		{
+			const auto vdui = get_widget_vdui(ctx->widget);
+			return handler_(vdui) ? TRUE : FALSE;
+		}
+
+		action_state_t idaapi update(action_update_ctx_t* ctx) override
+		{
+			return ctx->widget_type == BWN_PSEUDOCODE ? AST_ENABLE_FOR_WIDGET : AST_DISABLE_FOR_WIDGET;
+		}
+
+	private:
+		handler_t handler_;
+	};
+
+	static menu_action_handler k_display_ctree_graph_handler{ display_ctree_graph };
+	static menu_action_handler k_object_explorer_handler{ display_vtbl_objects };
+	static menu_action_handler k_reconstruct_type_handler{ reconstruct_type_cb };
+	static menu_action_handler k_extract_all_types_handler{ extract_all_types };
+	static menu_action_handler k_extract_all_ctrees_handler{ extract_all_ctrees };
+	static menu_action_handler k_show_current_c_item_in_custom_view{ show_current_citem_in_custom_view };
+	static menu_action_handler k_show_microcode_explorer_view{ display_micvrocode_explorer };
+	static menu_action_handler k_jump_to_disasm_handler{ decompiled_line_to_disasm_cb };
+	static menu_action_handler k_show_offset_in_windbg_format_handler{ show_offset_in_windbg_format };
+	static menu_action_handler k_rename_vars_handler{ rename_simple_expr };
+
+	static action_desc_t k_action_descs[] = {
+		ACTION_DESC_LITERAL("codexplorer::display_ctree_graph", "Display Ctree Graph", &k_display_ctree_graph_handler, hotkey_dg, nullptr, -1),
+		ACTION_DESC_LITERAL("codexplorer::object_explorer", "Object Explorer", &k_object_explorer_handler, hotkey_ce, nullptr, -1),
+		ACTION_DESC_LITERAL("codexplorer::reconstruct_type", "REconstruct Type", &k_reconstruct_type_handler, hotkey_rt, nullptr, -1),
+		ACTION_DESC_LITERAL("codexplorer::extract_types_to_file", "Extract Types to File", &k_extract_all_types_handler, hotkey_et, nullptr, -1),
+		ACTION_DESC_LITERAL("codexplorer::extract_ctrees_to_file", "Extract Ctrees to File", &k_extract_all_ctrees_handler, hotkey_ec, nullptr, -1),
+		ACTION_DESC_LITERAL("codexplorer::ctree_item_view", "Ctree Item View", &k_show_current_c_item_in_custom_view, hotkey_vc, nullptr, -1),
+		ACTION_DESC_LITERAL("codexplorer::microcode_view", "Microcode View", &k_show_microcode_explorer_view, hotkey_mc, nullptr, -1),
+		ACTION_DESC_LITERAL("codexplorer::jump_to_disasm", "Jump to Disasm", &k_jump_to_disasm_handler, hotkey_gd, nullptr, -1),
+		ACTION_DESC_LITERAL("codexplorer::show_copy_item_offset", "Show/Copy item offset", &k_show_offset_in_windbg_format_handler, hotkey_so, nullptr, -1),
+		ACTION_DESC_LITERAL("codexplorer::rename_vars", "Rename vars", &k_rename_vars_handler, hotkey_rv, nullptr, -1)
+	};
+
+
+	static const cfgopt_t g_opts[] =
 	{
-		auto vdui = get_widget_vdui(ctx->widget);
-		return handler_(vdui) ? TRUE : FALSE;
-	}
+		cfgopt_t("HOTKEY_DISPLAY_GRAPH", hotkey_dg, (size_t)sizeof(hotkey_dg), false),
+		cfgopt_t("HOTKEY_OBJECT_EXPLORER", hotkey_ce, (size_t)sizeof(hotkey_ce), false),
+		cfgopt_t("HOTKEY_RECONSTRUCT_TYPE", hotkey_rt, (size_t)sizeof(hotkey_rt), false),
+		cfgopt_t("HOTKEY_JUMP_TO_DISASM", hotkey_gd, (size_t)sizeof(hotkey_gd), false),
+		cfgopt_t("HOTKEY_EXTRACT_TYPES", hotkey_et, (size_t)sizeof(hotkey_et), false),
+		cfgopt_t("HOTKEY_EXTRACT_CTREE", hotkey_ec, (size_t)sizeof(hotkey_ec), false),
+		cfgopt_t("HOTKEY_CTREE_EXPLORER", hotkey_vc, (size_t)sizeof(hotkey_vc), false),
+		cfgopt_t("HOTKEY_MICROCODE_EXPLORER", hotkey_vc, (size_t)sizeof(hotkey_mc), false),
+		cfgopt_t("HOTKEY_SHOW_COPY_ITEM_OFFSET", hotkey_so, (size_t)sizeof(hotkey_so), false),
+		cfgopt_t("HOTKEY_RENAME_VARS", hotkey_rv, (size_t)sizeof(hotkey_rv), false)
+	};
 
-	virtual action_state_t idaapi update(action_update_ctx_t *ctx)
-	{
-		return ctx->widget_type == BWN_PSEUDOCODE ? AST_ENABLE_FOR_WIDGET : AST_DISABLE_FOR_WIDGET;
-	}
+} 
 
-private:
-	handler_t handler_;
-};
-
-static MenuActionHandler kDisplayCtreeGraphHandler{ display_ctree_graph };
-static MenuActionHandler kObjectExplorerHandler{ display_vtbl_objects };
-static MenuActionHandler kReconstructTypeHandler{ reconstruct_type_cb };
-static MenuActionHandler kExtractAllTypesHandler{ extract_all_types };
-static MenuActionHandler kExtractAllCtreesHandler{ extract_all_ctrees };
-static MenuActionHandler kShowCurrentCItemInCustomView{ show_current_citem_in_custom_view };
-static MenuActionHandler kJumpToDisasmHandler{ decompiled_line_to_disasm_cb };
-static MenuActionHandler kShowOffsetInWindbgFormatHandler{ show_offset_in_windbg_format };
-static MenuActionHandler kRenameVarsHandler{ rename_simple_expr };
-
-static action_desc_t kActionDescs[] = {
-	ACTION_DESC_LITERAL("codexplorer::display_ctree_graph", "Display Ctree Graph", &kDisplayCtreeGraphHandler, hotkey_dg, nullptr, -1),
-	ACTION_DESC_LITERAL("codexplorer::object_explorer", "Object Explorer", &kObjectExplorerHandler, hotkey_ce, nullptr, -1),
-	ACTION_DESC_LITERAL("codexplorer::reconstruct_type", "REconstruct Type", &kReconstructTypeHandler, hotkey_rt, nullptr, -1),
-	ACTION_DESC_LITERAL("codexplorer::extract_types_to_file", "Extract Types to File", &kExtractAllTypesHandler, hotkey_et, nullptr, -1),
-	ACTION_DESC_LITERAL("codexplorer::extract_ctrees_to_file", "Extract Ctrees to File", &kExtractAllCtreesHandler, hotkey_ec, nullptr, -1),
-	ACTION_DESC_LITERAL("codexplorer::ctree_item_view", "Ctree Item View", &kShowCurrentCItemInCustomView, hotkey_vc, nullptr, -1),
-	ACTION_DESC_LITERAL("codexplorer::jump_to_disasm", "Jump to Disasm", &kJumpToDisasmHandler, hotkey_gd, nullptr, -1),
-	ACTION_DESC_LITERAL("codexplorer::show_copy_item_offset", "Show/Copy item offset", &kShowOffsetInWindbgFormatHandler, hotkey_so, nullptr, -1),
-	ACTION_DESC_LITERAL("codexplorer::rename_vars", "Rename vars", &kRenameVarsHandler, hotkey_rv, nullptr, -1)
-};
-
-}
 //--------------------------------------------------------------------------
 // Initialize the plugin.
 int idaapi init(void)
 {
 	logmsg(INFO, "\nHexRaysCodeXplorer plugin by @REhints loaded.\n\n\n");
+	msg("\nHexRaysCodeXplorer plugin by @REhints loaded.\n\n\n");
 
 	if (!init_hexrays_plugin())
+	{
+		warning("Hex-Rays Decompiler not found!");
 		return PLUGIN_SKIP; // no decompiler
+	}
 
-	bool dump_types = false;
-	bool dump_ctrees = false;
+	auto dump_types = false;
+	auto dump_ctrees = false;
 	qstring crypto_prefix;
 
 	qstring options = get_plugin_options(PLUGIN.wanted_name);
 	parse_plugin_options(options, dump_types, dump_ctrees, crypto_prefix);
 
-	for (unsigned i = 0; i < _countof(kActionDescs); ++i)
-		register_action(kActionDescs[i]);
+	auto config_read = read_config_file("codeexplorer.cfg", g_opts, _countof(g_opts));
 
-	install_hexrays_callback((hexrays_cb_t*)callback, nullptr);
+	for (auto& k_action_desc : k_action_descs)
+	{
+		if (k_action_desc.shortcut[0])
+			register_action(k_action_desc);
+	}
+		
+
+	install_hexrays_callback(static_cast<hexrays_cb_t*>(callback), nullptr);
 	logmsg(INFO, "Hex-rays version %s has been detected\n", get_hexrays_version());
 	inited = true;
 
@@ -714,24 +759,27 @@ int idaapi init(void)
 
 		if (dump_types) {
 			logmsg(DEBUG, "Dumping types\n");
-			extract_all_types(NULL);
+			extract_all_types(nullptr);
 
-			int file_id = qcreate("codexplorer_types_done", 511);
+			const auto file_id = qcreate("codexplorer_types_done", 511);
 			if (file_id != -1)
 				qclose(file_id);
 		}
 
 		if (dump_ctrees) {
 			logmsg(DEBUG, "Dumping ctrees\n");
-			dump_funcs_ctree(NULL, crypto_prefix);
+			dump_funcs_ctree(nullptr, crypto_prefix);
 
-			int file_id = qcreate("codexplorer_ctrees_done", 511);
+			const auto file_id = qcreate("codexplorer_ctrees_done", 511);
 			if (file_id != -1)
 				qclose(file_id);
 		}
 
 		logmsg(INFO, "\nHexRaysCodeXplorer plugin by @REhints exiting...\n\n\n");
 	}
+
+	g_replace_id = register_place_class(&replace_template, 0/*| PCF_EA_CAPABLE*/, &PLUGIN);
+
 
 	return PLUGIN_KEEP;
 }
@@ -742,7 +790,8 @@ void idaapi term(void)
 	if (inited)
 	{
 		logmsg(INFO, "\nHexRaysCodeXplorer plugin by @REhints terminated.\n\n\n");
-		remove_hexrays_callback((hexrays_cb_t*)callback, NULL);
+		remove_hexrays_callback(static_cast<hexrays_cb_t*>(callback), nullptr);
+		re_types_form_fini();
 		term_hexrays_plugin();
 	}
 }
@@ -767,12 +816,12 @@ plugin_t PLUGIN =
 {
 	IDP_INTERFACE_VERSION,
 	PLUGIN_HIDE,          // plugin flags
-	init,                 // initialize
-	term,                 // terminate. this pointer may be NULL.
-	run,                  // invoke plugin
-	comment,              // long comment about the plugin
-						  // it could appear in the status line or as a hint
-	"",                   // multiline help about the plugin
+	init,						// initialize
+	term,						// terminate. this pointer may be NULL.
+	run,						// invoke plugin
+	comment,				// long comment about the plugin
+								// it could appear in the status line or as a hint
+	"",					// multiline help about the plugin
 	"HexRaysCodeXplorer by @REhints", // the preferred short name of the plugin (PLUGIN.wanted_name)
-	""                    // the preferred hotkey to run the plugin
+	""              // the preferred hotkey to run the plugin
 };

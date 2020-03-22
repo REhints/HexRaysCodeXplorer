@@ -38,7 +38,7 @@
 #define STRUCT_DUMP_MIN_MEMBER_COUNT  4
 
 extern qvector <VTBL_info_t> vtbl_t_list;
-extern std::map<ea_t, VTBL_info_t> rtti_vftables;
+extern std::unordered_map<ea_t, VTBL_info_t> rtti_vftables;
 
 struct obj_fint_t : public ctree_parentee_t
 {
@@ -236,7 +236,7 @@ tid_t idaapi merge_types(const qvector<qstring>& types_to_merge, const qstring& 
 	return struct_type_id;
 }
 
-void get_struct_key(struc_t * struc_type, const VTBL_info_t& vtbl_info, qstring &file_entry_key, bool &filtered, const std::map<ea_t, VTBL_info_t>& vtbl_map) {
+void get_struct_key(struc_t * struc_type, const VTBL_info_t& vtbl_info, qstring &file_entry_key, bool &filtered, const std::unordered_map<ea_t, VTBL_info_t>& vtbl_map) {
 	qstring sub_key;
 	qstring vtables_sub_key;
 	int vftbales_num = 0;
@@ -274,7 +274,7 @@ void get_struct_key(struc_t * struc_type, const VTBL_info_t& vtbl_info, qstring 
 		filtered = true;
 }
 
-void idaapi dump_type_info(int file_id, const VTBL_info_t& vtbl_info, const qstring& type_name, const std::map<ea_t, VTBL_info_t>& vtbl_map) {
+void idaapi dump_type_info(int file_id, const VTBL_info_t& vtbl_info, const qstring& type_name, const std::unordered_map<ea_t, VTBL_info_t>& vtbl_map) {
 	struc_t * struc_type = get_struc(get_struc_id(type_name.c_str()));
 	if (!struc_type)
 		return;
@@ -340,7 +340,7 @@ bool idaapi extract_all_types(void *ud)
 
 	qvector <VTBL_info_t>::iterator vtbl_iter;
 
-	std::map<ea_t, VTBL_info_t> vtbl_map;
+	std::unordered_map<ea_t, VTBL_info_t> vtbl_map;
 	for (vtbl_iter = vtbl_t_list.begin(); vtbl_iter != vtbl_t_list.end(); vtbl_iter++)
 		vtbl_map[(*vtbl_iter).ea_begin] = (*vtbl_iter);
 

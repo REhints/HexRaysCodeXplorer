@@ -33,7 +33,7 @@ struct object_explorer_info_t
 	TWidget *cv;
 	TWidget *codeview;
 	strvec_t sv;
-	object_explorer_info_t(TWidget *f) : widget(f), cv(nullptr), codeview(nullptr) {}
+	explicit object_explorer_info_t(TWidget *f) : widget(f), cv(nullptr), codeview(nullptr) {}
 };
 
 void object_explorer_form_init();
@@ -50,14 +50,14 @@ struct VTBL_info_t
 
 
 extern qvector <qstring> vtbl_list;
-extern qvector <qstring>::iterator vtbl_iter;
+//extern qvector <qstring>::iterator vtbl_iter;
 
 
 
 inline BOOL is_valid_name(LPCSTR name){ return(*((PDWORD) name) == 0x375F3F3F /*"??_7"*/); }
 //void parse_vft_members(LPCTSTR name, ea_t ea_start, ea_t ea_end);
 
-void search_objects(bool bForce = true);
+void search_objects(bool b_force = true);
 
 
 template <class T> BOOL verify_32_t(ea_t ea_ptr, T &rvalue)

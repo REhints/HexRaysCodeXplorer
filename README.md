@@ -12,8 +12,6 @@
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](http://www.gnu.org/licenses/gpl-3.0)
 [![Code Climate](https://codeclimate.com/github/REhints/HexRaysCodeXplorer/badges/gpa.svg)](https://codeclimate.com/github/REhints/HexRaysCodeXplorer)
 [![Issue Count](https://codeclimate.com/github/REhints/HexRaysCodeXplorer/badges/issue_count.svg)](https://codeclimate.com/github/REhints/HexRaysCodeXplorer)
-[![Join the chat at https://gitter.im/REhints/HexRaysCodeXplorer](https://badges.gitter.im/REhints/HexRaysCodeXplorer.svg)](https://gitter.im/REhints/HexRaysCodeXplorer?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-[![Codewake](https://www.codewake.com/badges/ask_question.svg)](https://www.codewake.com/p/hexrayscodexplorer)
 
 The Hex-Rays Decompiler plugin for better code navigation in RE process. CodeXplorer automates code REconstruction of C++ applications or modern malware like Stuxnet, Flame, Equation, Animal Farm ... :octocat:
 

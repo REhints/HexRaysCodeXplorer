@@ -176,7 +176,7 @@ class MSVCObjectFormatParser :
 public:
 	virtual ~MSVCObjectFormatParser();
 
-	virtual void getRttiInfo();
-	virtual void clearInfo();
+	virtual void get_rtti_info();
+	virtual void clear_info();
 };
 

@@ -1,4 +1,4 @@
-/*	Copyright (c) 2013-2015
+/*	Copyright (c) 2013-2020
 	REhints <info@rehints.com>
 	All rights reserved.
 	
@@ -28,7 +28,7 @@
 #pragma once
 
 // Helper class to get ctree
-struct ctree_dumper_t : public ctree_parentee_t
+struct ctree_dumper_t final : public ctree_parentee_t
 {
 	ctree_dumper_t() : ctree_parentee_t(true) {}
 	qstring ctree_dump;
@@ -38,12 +38,12 @@ struct ctree_dumper_t : public ctree_parentee_t
 	int process_leave(citem_t *i);
 	void process_for_hash(citem_t *i);
 	// We treat expressions and statements the same way: add them to the graph
-	int idaapi visit_insn(cinsn_t *i) { return process(i); }
-	int idaapi visit_expr(cexpr_t *e) { return process(e); }
+	int idaapi visit_insn(cinsn_t *i) override { return process(i); }
+	int idaapi visit_expr(cexpr_t *e) override { return process(e); }
 	// We treat expressions and statements the same way: add them to the graph
-	int idaapi leave_insn(cinsn_t *i) { return process_leave(i); }
-	int idaapi leave_expr(cexpr_t *e) { return process_leave(e); }
-	bool idaapi filter_citem(citem_t *item);
+	int idaapi leave_insn(cinsn_t *i) override { return process_leave(i); }
+	int idaapi leave_expr(cexpr_t *e) override { return process_leave(e); }
+	static bool idaapi filter_citem(citem_t *item);
 	void parse_ctree_item(citem_t *item, qstring& rv) const;
 };
 
