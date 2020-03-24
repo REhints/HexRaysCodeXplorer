@@ -26,7 +26,7 @@
 // This code mostly adopted from https://github.com/RolfRolles/HexRaysDeob
 // All kudos going to Rolf https://www.hexblog.com/?p=1248
 
-//#include <memory>
+#include <memory>
 #include <utility>
 #include "Common.h"
 #include "MicrocodeExtractor.h"
