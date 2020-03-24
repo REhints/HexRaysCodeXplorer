@@ -25,6 +25,7 @@ SRC=$(SRCDIR)CodeXplorer.cpp \
     $(SRCDIR)reconstructed_place_t.cpp \
     $(SRCDIR)TypeExtractor.cpp \
     $(SRCDIR)TypeReconstructor.cpp \
+    $(SRCDIR)MicrocodeExtractor.cpp \
     $(SRCDIR)Utility.cpp
 
 OBJS=$(subst .cpp,.o,$(SRC))
