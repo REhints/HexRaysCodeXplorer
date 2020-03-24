@@ -67,7 +67,7 @@ void idaapi reconstructed_place_t::copyfrom(const place_t * from)
 
 place_t *idaapi reconstructed_place_t::makeplace(void * ud, uval_t x, int lnnum) const
 {
-	int offset = (int)ud;
+	int offset = (long)ud;
 	std::map<std::string, ReconstructableType*>::iterator it = g_ReconstractedTypes.begin();
 	while (it != g_ReconstractedTypes.end()) {
 		if (it->second->typeId == x)
