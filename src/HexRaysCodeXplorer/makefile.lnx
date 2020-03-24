@@ -12,18 +12,20 @@ INCLUDES=-I$(IDA_SDK)/include -I$(HEXRAYS_SDK)/include
 __X64__=1
 
 SRC=$(SRCDIR)CodeXplorer.cpp \
-	$(SRCDIR)CtreeGraphBuilder.cpp \
-	$(SRCDIR)ObjectExplorer.cpp \
-	$(SRCDIR)TypeReconstructor.cpp \
-	$(SRCDIR)CtreeExtractor.cpp \
-	$(SRCDIR)TypeExtractor.cpp \
-	$(SRCDIR)Utility.cpp \
-	$(SRCDIR)MSVCObjectFormatParser.cpp \
-	$(SRCDIR)IObjectFormatParser.cpp \
-	$(SRCDIR)GCCObjectFormatParser.cpp \
-	$(SRCDIR)GCCVtableInfo.cpp \
-	$(SRCDIR)GCCTypeInfo.cpp \
-	$(SRCDIR)Debug.cpp
+    $(SRCDIR)CtreeExtractor.cpp \
+    $(SRCDIR)CtreeGraphBuilder.cpp \
+    $(SRCDIR)Debug.cpp \
+    $(SRCDIR)GCCObjectFormatParser.cpp \
+    $(SRCDIR)GCCTypeInfo.cpp \
+    $(SRCDIR)GCCVtableInfo.cpp \
+    $(SRCDIR)IObjectFormatParser.cpp \
+    $(SRCDIR)MSVCObjectFormatParser.cpp \
+    $(SRCDIR)ObjectExplorer.cpp \
+    $(SRCDIR)ReconstructableType.cpp \
+    $(SRCDIR)reconstructed_place_t.cpp \
+    $(SRCDIR)TypeExtractor.cpp \
+    $(SRCDIR)TypeReconstructor.cpp \
+    $(SRCDIR)Utility.cpp
 
 OBJS=$(subst .cpp,.o,$(SRC))
 
