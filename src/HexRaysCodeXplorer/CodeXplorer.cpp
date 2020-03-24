@@ -437,9 +437,11 @@ static bool idaapi decompile_func(vdui_t &vu)
 	return true;
 }
 
-/*
-* TODO: Make changes persistent
-*/
+
+//--------------------------------------------------------------------------
+//
+// TODO: Make changes persistent
+//
 
 static bool idaapi rename_simple_expr(void *ud) 
 {
@@ -457,6 +459,7 @@ static bool idaapi rename_simple_expr(void *ud)
 	return true;
 }
 
+//--------------------------------------------------------------------------
 static bool idaapi show_offset_in_windbg_format(void *ud) {
 	char _offset[32] = { 0 };
 	char module_name[256] = { 0 };
@@ -475,7 +478,7 @@ static bool idaapi show_offset_in_windbg_format(void *ud) {
 	for (auto i = 0; i < 255; i++)
 		if (module_name[i] == '.') { module_name[i] = 0; break; }
 #ifdef __EA64__
-	const char *fmt = "%llx";
+	const auto fmt = "%llx";
 #else
 	const auto fmt = "%x";
 #endif
@@ -509,6 +512,7 @@ static bool idaapi show_offset_in_windbg_format(void *ud) {
 	return true;
 }
 
+//--------------------------------------------------------------------------
 // show disassembly line for ctree->item
 bool idaapi decompiled_line_to_disasm_cb(void *ud)
 {
@@ -521,13 +525,13 @@ bool idaapi decompiled_line_to_disasm_cb(void *ud)
 	return true;
 }
 
-
+//--------------------------------------------------------------------------
 // extract ctree to custom view
 static bool idaapi show_current_citem_in_custom_view(void *ud)
 {
-	auto& vu = *static_cast<vdui_t*>(ud);
+	auto &vu = *static_cast<vdui_t*>(ud);
 	vu.get_current_item(USE_KEYBOARD);
-	citem_t *highlight_item = vu.item.is_citem() ? vu.item.e : nullptr;
+	auto *highlight_item = vu.item.is_citem() ? vu.item.e : nullptr;
 	if (!highlight_item)
 		return false;
 
@@ -537,7 +541,7 @@ static bool idaapi show_current_citem_in_custom_view(void *ud)
 
 	if (highlight_item->is_expr())
 	{
-		auto*e = static_cast<cexpr_t*>(highlight_item);
+		auto *e = static_cast<cexpr_t*>(highlight_item);
 		qstring item_name;
 		get_expr_name(highlight_item, item_name);
 		show_citem_custom_view(&vu, ctree_item, item_name);
@@ -545,6 +549,8 @@ static bool idaapi show_current_citem_in_custom_view(void *ud)
 	return true;
 }
 
+
+//--------------------------------------------------------------------------
 bool init_object_format_parser()
 {
 	if (!object_format_parser)
@@ -562,7 +568,9 @@ bool init_object_format_parser()
 	return true;
 }
 
+//--------------------------------------------------------------------------
 // display Object Explorer
+
 static bool idaapi display_vtbl_objects(void *ud)
 {
 	if (!init_object_format_parser())
@@ -574,25 +582,29 @@ static bool idaapi display_vtbl_objects(void *ud)
 	return true;
 }
 
+//--------------------------------------------------------------------------
 // display Microcode Explorer window
+
 static bool idaapi display_micvrocode_explorer(void* ud)
 {
+	clear_cached_cfuncs();
 	show_microcode_explorer();
+
 	return true;
 }
 
 
 //--------------------------------------------------------------------------
 // This callback handles various hexrays events.
-static ssize_t idaapi callback(void* ud, hexrays_event_t event, va_list va)
+static ssize_t idaapi callback(void* ud, const hexrays_event_t event, va_list va)
 {
 	switch (event)
 	{
 		case hxe_populating_popup:
 		{
-			TWidget *widget = va_arg(va, TWidget *);
-			TPopupMenu *popup = va_arg(va, TPopupMenu *);
-			vdui_t &vu = *va_arg(va, vdui_t *);
+			auto widget = va_arg(va, TWidget *);
+			const auto popup = va_arg(va, TPopupMenu *);
+			auto &vu = *va_arg(va, vdui_t *);
 
 			// add new command to the popup menu
 			attach_action_to_popup(vu.ct, popup, "codexplorer::display_ctree_graph");

@@ -329,7 +329,7 @@ void buildReconstructableTypesRecursive(GCCTypeInfo *type,  std::set <GCCTypeInf
 				snprintf(buffer, sizeof(buffer), "%s_%x_of_%s", vtbl_class_name.c_str(), offset, parentName.c_str());
 				vtblName = buffer;
 			}
-			ReconstructableType * reVtbl = ReconstructableTypeVtable::getReconstructableTypeVtable(vtblName, vtblInfo->ea_start);
+			ReconstructableType * reVtbl = ReconstructableTypeVtable::get_reconstructable_type_vtable(vtblName, vtblInfo->ea_start);
 			if (i != 0) {
 				ReconstructableType *parent;
 				if (g_ReconstractedTypes.count(type->parentsTypes[i]->info->typeName))
