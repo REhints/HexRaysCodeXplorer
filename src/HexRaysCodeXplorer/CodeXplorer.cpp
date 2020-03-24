@@ -59,7 +59,7 @@ namespace {
 static bool inited = false;
 
 // Hotkey for the new command
-static char hotkey_dg[] = "T";
+static char hotkey_dg[] = "Ctrl-Alt-T";
 static char hotkey_ce[] = "O";
 static char hotkey_rt[] = "R";
 static char hotkey_gd[] = "J";
