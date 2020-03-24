@@ -479,7 +479,9 @@ bool idaapi show_vtbl_xrefs_window_cb()
 	simpleline_place_t s2(static_cast<int>(si->sv.size()) - 1);
 	si->cv = create_custom_viewer("", &s1, &s2, &s1, nullptr, &si->sv, nullptr, nullptr, widget);
 	si->codeview = create_code_viewer(si->cv, CDVF_STATUSBAR, widget);
-	set_custom_viewer_handler(si->cv, CVH_DBLCLICK, static_cast<void*>(ct_vtbl_xrefs_window_dblclick));
+	auto fptr = &ct_vtbl_xrefs_window_dblclick;
+	set_custom_viewer_handler(si->cv, CVH_DBLCLICK, reinterpret_cast<void *&>(fptr));
+
 	display_widget(widget, WOPN_RESTORE);
 
 	return true;
