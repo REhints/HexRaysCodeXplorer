@@ -66,7 +66,7 @@ static char hotkey_gd[] = "J";
 static char hotkey_et[] = "S";
 static char hotkey_ec[] = "C";
 static char hotkey_vc[] = "V";
-static char hotkey_mc[] = "M";
+static char hotkey_mc[] = "Ctrl-Shift-M";
 static char hotkey_so[] = "Q"; // After positioning cursor at source code user can press Q to copy to clipboard string of form modulename + 0xoffset. 
 									 // It can be useful while working with WinDbg.
 
