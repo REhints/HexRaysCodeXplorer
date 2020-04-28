@@ -113,7 +113,7 @@ __Compiling__:
 ***Linux***:
 * cd src/HexRaysCodeXplorer/
 * IDA_DIR=<PATH_TO_IDA> IDA_SDK=<PATH_TO_IDA_SDK> EA64=0 make -f makefile.lnx
-* IDA_DIR=<PATH_TO_IDA> IDA_SDK=<PATH_TO_IDA_SDK> EA64=0 make -f makefile.lnx
+* IDA_DIR=<PATH_TO_IDA> IDA_SDK=<PATH_TO_IDA_SDK> EA64=0 make -f makefile.lnx install
   
 ***Mac***:
 * cd src/HexRaysCodeXplorer/
