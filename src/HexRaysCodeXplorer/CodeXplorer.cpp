@@ -735,7 +735,7 @@ namespace {
 
 //--------------------------------------------------------------------------
 // Initialize the plugin.
-int idaapi init(void)
+plugmod_t *idaapi init(void)
 {
 	logmsg(INFO, "\nHexRaysCodeXplorer plugin by @REhints loaded.\n\n\n");
 	msg("\nHexRaysCodeXplorer plugin by @REhints loaded.\n\n\n");
