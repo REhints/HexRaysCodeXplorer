@@ -539,7 +539,9 @@ tid_t type_builder_t::get_structure(const qstring& name)
 
 						member_t * membr = get_member_by_name(struc, fncstr);
 						if (membr != NULL) {
-							tinfo_t new_type = create_typedef(vftbl_name.c_str());
+							qstring real_vftbl_name = vftbl_name;
+							real_vftbl_name += "::vtable";
+							tinfo_t new_type = create_typedef(real_vftbl_name.c_str());
 							if (new_type.is_correct()) {
 								smt_code_t dd = set_member_tinfo(struc, membr, 0, make_pointer(new_type), SET_MEMTI_COMPATIBLE);
 							}

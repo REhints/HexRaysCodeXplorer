@@ -726,7 +726,7 @@ namespace {
 		cfgopt_t("HOTKEY_EXTRACT_TYPES", hotkey_et, (size_t)sizeof(hotkey_et), false),
 		cfgopt_t("HOTKEY_EXTRACT_CTREE", hotkey_ec, (size_t)sizeof(hotkey_ec), false),
 		cfgopt_t("HOTKEY_CTREE_EXPLORER", hotkey_vc, (size_t)sizeof(hotkey_vc), false),
-		cfgopt_t("HOTKEY_MICROCODE_EXPLORER", hotkey_vc, (size_t)sizeof(hotkey_mc), false),
+		cfgopt_t("HOTKEY_MICROCODE_EXPLORER", hotkey_mc, (size_t)sizeof(hotkey_mc), false),
 		cfgopt_t("HOTKEY_SHOW_COPY_ITEM_OFFSET", hotkey_so, (size_t)sizeof(hotkey_so), false),
 		cfgopt_t("HOTKEY_RENAME_VARS", hotkey_rv, (size_t)sizeof(hotkey_rv), false)
 	};
