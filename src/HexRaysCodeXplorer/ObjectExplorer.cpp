@@ -444,7 +444,9 @@ static bool idaapi ct_vtbl_xrefs_window_dblclick(TWidget *v, int shift, void *ud
 {
 	int x, y;
 	const auto place = get_custom_viewer_place(v, true, &x, &y);
-	const auto spl = dynamic_cast<simpleline_place_t*>(place);
+	if (!place)
+		return false;
+	const auto spl = reinterpret_cast<simpleline_place_t*>(place);
 	const auto line_num = spl->n;
 
 	if (line_num < 0 || line_num >= static_cast<int>(xref_addr.size()))
@@ -520,7 +522,7 @@ static bool idaapi ct_object_explorer_dblclick(TWidget *v, int shift, void *ud)
 {
 	int x, y;
 	const auto place = get_custom_viewer_place(v, true, &x, &y);
-	const auto spl = dynamic_cast<simpleline_place_t*>(place);
+	const auto spl = reinterpret_cast<simpleline_place_t*>(place);
 	const int line_num = spl->n;
 
 	if (line_num < 0 || line_num >= static_cast<int>(vtbl_t_list.size()))
@@ -582,7 +584,7 @@ ssize_t idaapi ui_object_explorer_callback(void *ud, const int code, va_list va)
 				if ( place == nullptr )
 					return 0;
 
-				const auto spl = dynamic_cast<simpleline_place_t*>(place);
+				const auto spl = reinterpret_cast<simpleline_place_t*>(place);
 				hint = get_vtbl_hint (spl->n);
 				*important_lines = 20;
 				return 1;
