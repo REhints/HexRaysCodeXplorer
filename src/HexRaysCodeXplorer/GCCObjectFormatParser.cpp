@@ -305,7 +305,7 @@ void buildReconstructableTypesRecursive(GCCTypeInfo *type,  std::set <GCCTypeInf
 	ReconstructableType *reType;
 	if (g_ReconstractedTypes.count(type->typeName)) {
 		reType = g_ReconstractedTypes[type->typeName];
-		assert(false); // probably we already visited this type, need to check it.
+		return;
 	}
 	else {
 		reType = ReconstructableType::getReconstructableType(type->typeName);
