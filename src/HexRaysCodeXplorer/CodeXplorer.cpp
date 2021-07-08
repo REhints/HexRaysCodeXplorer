@@ -733,6 +733,29 @@ namespace {
 
 } 
 
+// Plugin context, necessary for the correct work of the plugin with the flag PLUGIN_MULTI
+struct codexplorer_ctx_t : public plugmod_t
+{
+	~codexplorer_ctx_t()
+	{
+		if (inited)
+		{
+			logmsg(INFO, "\nHexRaysCodeXplorer plugin by @REhints terminated.\n\n\n");
+			remove_hexrays_callback(static_cast<hexrays_cb_t*>(callback), nullptr);
+			re_types_form_fini();
+			term_hexrays_plugin();
+		}
+	}
+	virtual bool idaapi run(size_t) override;
+};
+
+bool idaapi codexplorer_ctx_t::run(size_t)
+{
+	// This function won't be called because our plugin is invisible (no menu
+	// item in the Edit, Plugins menu) because of PLUGIN_HIDE
+	return true;
+}
+
 //--------------------------------------------------------------------------
 // Initialize the plugin.
 plugmod_t *idaapi init(void)
@@ -743,7 +766,7 @@ plugmod_t *idaapi init(void)
 	if (!init_hexrays_plugin())
 	{
 		warning("Hex-Rays Decompiler not found!");
-		return PLUGIN_SKIP; // no decompiler
+		return nullptr; // no decompiler
 	}
 
 	auto dump_types = false;
@@ -760,7 +783,6 @@ plugmod_t *idaapi init(void)
 		if (k_action_desc.shortcut[0])
 			register_action(k_action_desc);
 	}
-		
 
 	install_hexrays_callback(static_cast<hexrays_cb_t*>(callback), nullptr);
 	logmsg(INFO, "Hex-rays version %s has been detected\n", get_hexrays_version());
@@ -790,30 +812,10 @@ plugmod_t *idaapi init(void)
 		logmsg(INFO, "\nHexRaysCodeXplorer plugin by @REhints exiting...\n\n\n");
 	}
 
-	g_replace_id = register_place_class(&replace_template, 0/*| PCF_EA_CAPABLE*/, &PLUGIN);
+	// You should always pass at least PCF_MAKEPLACE_ALLOCATES
+	g_replace_id = register_place_class(&replace_template, PCF_MAKEPLACE_ALLOCATES, &PLUGIN);
 
-
-	return PLUGIN_KEEP;
-}
-
-//--------------------------------------------------------------------------
-void idaapi term(void)
-{
-	if (inited)
-	{
-		logmsg(INFO, "\nHexRaysCodeXplorer plugin by @REhints terminated.\n\n\n");
-		remove_hexrays_callback(static_cast<hexrays_cb_t*>(callback), nullptr);
-		re_types_form_fini();
-		term_hexrays_plugin();
-	}
-}
-
-//--------------------------------------------------------------------------
-bool idaapi run(size_t)
-{
-	// This function won't be called because our plugin is invisible (no menu
-	// item in the Edit, Plugins menu) because of PLUGIN_HIDE
-	return true;
+	return new codexplorer_ctx_t;
 }
 
 //--------------------------------------------------------------------------
@@ -827,13 +829,13 @@ static const char comment[] = "HexRaysCodeXplorer plugin by @REhints";
 plugin_t PLUGIN =
 {
 	IDP_INTERFACE_VERSION,
-	PLUGIN_HIDE,          // plugin flags
+	PLUGIN_HIDE | PLUGIN_MULTI,	// plugin flags
 	init,						// initialize
-	term,						// terminate. this pointer may be NULL.
-	run,						// invoke plugin
-	comment,				// long comment about the plugin
+	nullptr,					// terminate. this pointer may be NULL.
+	nullptr,					// invoke plugin
+	comment,					// long comment about the plugin
 								// it could appear in the status line or as a hint
-	"",					// multiline help about the plugin
+	"",							// multiline help about the plugin
 	"HexRaysCodeXplorer by @REhints", // the preferred short name of the plugin (PLUGIN.wanted_name)
-	""              // the preferred hotkey to run the plugin
+	""							// the preferred hotkey to run the plugin
 };
