@@ -274,9 +274,11 @@ static ssize_t idaapi migr_callback(void* ud, const int code, va_list va)
 
 	switch (code)
 	{
+#if IDA_SDK_VERSION < 760
 	case grcode_user_gentext:
 		result = true;
 		break;
+#endif
 
 		// refresh user-defined graph nodes and edges
 	case grcode_user_refresh:
@@ -358,9 +360,11 @@ static ssize_t idaapi mgr_callback(void* ud, const int code, va_list va)
 
 	switch (code)
 	{
+#if IDA_SDK_VERSION < 760
 	case grcode_user_gentext:
 		result = true;
 		break;
+#endif
 
 		// refresh user-defined graph nodes and edges
 	case grcode_user_refresh:
