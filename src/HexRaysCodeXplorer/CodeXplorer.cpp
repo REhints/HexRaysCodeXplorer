@@ -51,8 +51,10 @@ IObjectFormatParser *object_format_parser = nullptr;
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #endif
 
+#if IDA_SDK_VERSION < 760
 // Hex-Rays API pointer
 hexdsp_t *hexdsp = nullptr;
+#endif
 
 namespace {
 
