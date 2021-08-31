@@ -53,6 +53,9 @@ struct type_reference {
 	// size of the field after all checks
 	int final_size;
 
+	// is the field a pointer?
+	bool is_pointer;
+
 	void idaapi init(cexpr_t *e);
 
 	void idaapi update_hlpr(int off, int num);
@@ -77,10 +80,23 @@ void idaapi type_reference::init(cexpr_t *e) {
 
 	hlpr_size = 0;
 	final_size = 0;
+
+	is_pointer = false;
 }
 
 void idaapi type_reference::update_type(cexpr_t *e) {
 	type = e->type;
+
+    // The variable we're scanning is assumed to be a pointer to some structure.
+	// Therefore, we mark a member as a pointer only if it is casted to a pointer-to-a-pointer.
+	if (type.is_ptr()) {
+		ptr_type_data_t ptr_deets;
+		type.get_ptr_details(&ptr_deets);
+
+		if (ptr_deets.obj_type.is_ptr()) {
+			is_pointer = true;
+		}
+	}
 }
 
 int idaapi type_reference::get_type_increment_val() {
@@ -136,6 +152,7 @@ struct type_builder_t : public ctree_parentee_t
 		int offset;
 		int size;
 		ea_t vftbl;
+		bool is_pointer;
 	};
 
 	std::map<int, struct_filed> structure;
@@ -298,6 +315,7 @@ bool idaapi type_builder_t::check_ptr(cexpr_t *e, struct_filed &str_fld)
 	str_fld.offset = 0;
 	str_fld.size = 0;
 	str_fld.vftbl = BADADDR;
+	str_fld.is_pointer = false;
 
 	type_reference referInfo;
 	referInfo.init(e);
@@ -400,6 +418,8 @@ bool idaapi type_builder_t::check_ptr(cexpr_t *e, struct_filed &str_fld)
 
 			logmsg(DEBUG, tmp);
 		}
+
+		str_fld.is_pointer = referInfo.is_pointer;
 	}
 
 	return done;
@@ -524,6 +544,10 @@ tid_t type_builder_t::get_structure(const qstring& name)
 				else if (i->second.size == 8)
 					member_flgs = qword_flag();
 
+				if (i->second.is_pointer)
+					member_flgs |= off_flag();
+
+
 				qstring field_name;
 
 				if ((i->second.vftbl != BADADDR) && get_vbtbl_by_ea(i->second.vftbl, vtbl))
@@ -552,7 +576,22 @@ tid_t type_builder_t::get_structure(const qstring& name)
 				{
 					field_name.cat_sprnt("field_%X", i->second.offset);
 					const char *fncstr = field_name.c_str();
-					int iRet = add_struc_member(struc, fncstr, i->second.offset, member_flgs, NULL, i->second.size);
+
+					std::unique_ptr<opinfo_t> refinfo = nullptr;
+					if (member_flgs & off_flag()) {
+						refinfo.reset(new opinfo_t());
+						if (member_flgs & qword_flag()) {
+							// 64-bit pointer
+							refinfo->ri.init(REF_OFF64);
+						} else {
+							// 32-bit pointer
+							refinfo->ri.init(REF_OFF32);
+						}
+					}
+
+					int iRet = add_struc_member(struc, fncstr, i->second.offset, member_flgs, refinfo.get(), i->second.size);
+					if (iRet < 0)
+						logmsg(ERROR, "Error %d occurred while adding struct member %s\n", iRet, fncstr);
 				}
 				j ++;
 			}
