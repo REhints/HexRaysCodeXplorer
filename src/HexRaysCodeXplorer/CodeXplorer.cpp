@@ -748,14 +748,15 @@ struct codexplorer_ctx_t : public plugmod_t
 			term_hexrays_plugin();
 		}
 	}
-	virtual bool idaapi run(size_t) override;
+	virtual bool idaapi run(size_t arg) override;
 };
 
-bool idaapi codexplorer_ctx_t::run(size_t)
+
+
+bool idaapi codexplorer_ctx_t::run(size_t arg)
 {
-	// This function won't be called because our plugin is invisible (no menu
-	// item in the Edit, Plugins menu) because of PLUGIN_HIDE
-	return true;
+    auto reconstruct_type_params = *reinterpret_cast<reconstruct_type_params_t *>(arg);
+    return reconstruct_type(reconstruct_type_params);
 }
 
 //--------------------------------------------------------------------------
