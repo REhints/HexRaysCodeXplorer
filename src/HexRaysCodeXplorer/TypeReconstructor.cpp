@@ -718,3 +718,22 @@ bool idaapi reconstruct_type(cfuncptr_t cfunc, const qstring& var_name, const qs
 
 	return bResult;
 }
+
+bool idaapi reconstruct_type(const reconstruct_type_params_t & params)
+{
+	auto func = get_func(params.func_ea);
+	if (!func) {
+		logmsg(ERROR, "Failed to get function at 0x%x...\n", params.func_ea);
+		return false;
+	}
+
+    // Decompile.
+    hexrays_failure_t hf{};
+    auto cfunc = decompile(func, &hf);
+	if (!cfunc) {
+		logmsg(ERROR, "Failed to decompile function at 0x%x...\n", params.func_ea);
+		return false;
+	}
+
+	return reconstruct_type(cfunc, params.var_name, params.type_name);
+}
