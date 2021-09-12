@@ -487,6 +487,12 @@ int idaapi type_builder_t::visit_expr(cexpr_t *e)
 				if (!ret.second && str_fld.vftbl != BADADDR) {
 					structure[str_fld.offset] = str_fld;
 				}
+
+				// we want to keep updating the 'is_pointer' attribute in case the
+				// first access to the member did not identify it as a pointer.
+				if (str_fld.is_pointer) {
+					structure[str_fld.offset].is_pointer = true;
+				}
 			}
 		}
 	}
