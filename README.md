@@ -105,7 +105,7 @@ idaq.exe -OHexRaysCodeXplorer:dump_types:dump_ctrees:CRYPTOcrypto_path_to_idb
 
 __Compiling__:
 
-***Windows:*** 
+***Windows***: 
 * Open the solution in Visual Studio
 * Open file `src/HexRaysCodeXplorer/PropertySheet.props` in notepad(++) and update values of `IDADIR` and `IDASDK` paths to point to IDA installation path and IDA7 SDK path accordingly. HexRays SDK should be in `$IDADIR\plugins\hexrays_sdk` (like by default)
 * Build `Release | x64` and `Release x64 | x64` configurations
@@ -122,6 +122,12 @@ __Compiling__:
 * IDA 7.0 `.pmc` file extension should be `.dylib`
 * bash$ `export IDA_DIR="/Applications/IDA\ Pro\ 7.0/ida.app/Contents/MacOS" && export IDA_SDK="/Applications/IDA\ Pro\ 7.0/ida.app/Contents/MacOS/idasdk" && make -f makefile7.mac`
 * Or open project in Xcode `HexRaysCodeXplorer.xcodeproj`
+
+***With CMake***:
+* cd src/HexRaysCodeXplorer/
+* mkdir build && cd build
+* cmake .. -DIdaSdk_ROOT_DIR=<PATH_TO_IDA_SDK> -DHexRaysSdk_ROOT_DIR=<PATH_TO_HEXRAYS_SDK>
+* cmake --build . --config Release
 
 ============================================================================
 

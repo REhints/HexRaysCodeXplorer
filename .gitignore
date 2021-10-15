@@ -15,3 +15,6 @@
 /src/.vs
 /src/*.db
 /src/*.opendb
+
+# CMake
+build/
