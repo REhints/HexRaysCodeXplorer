@@ -779,7 +779,7 @@ plugmod_t *idaapi init(void)
 	qstring options = get_plugin_options(PLUGIN.wanted_name);
 	parse_plugin_options(options, dump_types, dump_ctrees, crypto_prefix);
 
-	auto config_read = read_config_file("codeexplorer.cfg", g_opts, _countof(g_opts));
+	auto config_read = read_config_file("codeexplorer.cfg", g_opts, _countof(g_opts), nullptr);
 
 	for (auto& k_action_desc : k_action_descs)
 	{
