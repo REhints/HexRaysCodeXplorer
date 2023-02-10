@@ -301,7 +301,11 @@ void find_vtables_rtti()
 		vftable_info_t.vtbl_name = it->second.vtbl_name;
 
 		qstring vtbl_info_str;
+#ifdef __EA64__
+		vtbl_info_str.cat_sprnt(" 0x%llx - 0x%llx:  %s  methods count: %d", vftable_info_t.ea_begin, vftable_info_t.ea_end, vftable_info_t.vtbl_name.c_str(), vftable_info_t.methods);
+#else
 		vtbl_info_str.cat_sprnt(" 0x%x - 0x%x:  %s  methods count: %d", vftable_info_t.ea_begin, vftable_info_t.ea_end, vftable_info_t.vtbl_name.c_str(), vftable_info_t.methods);
+#endif
 
 		vtbl_list.push_back(vtbl_info_str);
 		vtbl_t_list.push_back(vftable_info_t);
