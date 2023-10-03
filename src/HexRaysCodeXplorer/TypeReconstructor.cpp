@@ -25,6 +25,7 @@
 
 #include "Common.h"
 #include "TypeReconstructor.h"
+#include <memory>
 
 #include "Debug.h"
 #include "Utility.h"
