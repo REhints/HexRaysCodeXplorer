@@ -134,10 +134,18 @@ function(_ida_plugin name ea64 link_script) # ARGN contains sources
     target_compile_options(${t} PUBLIC -Wno-non-virtual-dtor -Wno-varargs)
   elseif(WIN32)
     if(ea64)
-      target_link_libraries(${t} ${IdaSdk_DIR}/lib/x64_win_vc_64/ida.lib)
+      set(target_bits 64)
     else()
-      target_link_libraries(${t} ${IdaSdk_DIR}/lib/x64_win_vc_32/ida.lib)
+      set(target_bits 32)
     endif()
+
+    if(exists ${IdaSdk_DIR}/lib/x64_win_vc_${target_bits}_pro)
+      set(ida_lib_dir ${IdaSdk_DIR}/lib/x64_win_vc_${target_bits}_pro)
+    elseif(exists ${IdaSdk_DIR}/lib/x64_win_vc_${target_bits})
+      set(ida_lib_dir ${IdaSdk_DIR}/lib/x64_win_vc_${target_bits})
+    endif()
+
+    target_link_libraries(${t} ${ida_lib_dir}/ida.lib)
   endif()
 endfunction()
 
