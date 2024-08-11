@@ -38,7 +38,6 @@
 #include "stddef.h"
 #include "GCCVtableInfo.h"
 #include "GCCTypeInfo.h"
-#include "struct.hpp"
 #include "Debug.h"
 #include "ReconstructableType.h"
 #include <stack>
@@ -370,7 +369,7 @@ void buildReconstructableTypesRecursive(GCCTypeInfo *type,  std::set <GCCTypeInf
 				}
 					
 				else {
-					if (ph.id == PLFM_ARM)
+					if (PH.id == PLFM_ARM)
 						funcPtr &= (ea_t)-2;
 					qstring method_name;
 					get_ea_name(&method_name, funcPtr);

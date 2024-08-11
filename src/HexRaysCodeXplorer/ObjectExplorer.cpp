@@ -25,6 +25,7 @@
 
 #include "Common.h"
 #include "ObjectExplorer.h"
+#include "Compat.h"
 #include "GCCObjectFormatParser.h"
 #include "Utility.h"
 
@@ -213,25 +214,21 @@ tid_t create_vtbl_struct(const ea_t vtbl_addr, const ea_t vtbl_addr_end, const q
 {
 	auto struc_name = vtbl_name;
 	struc_name += "::vtable";
-	auto id = add_struc(BADADDR, struc_name.c_str());
+    auto id = Compat::add_struc(BADADDR, struc_name.c_str());
 
 	if (id == BADADDR) {
 		if (!ask_str(&struc_name, HIST_IDENT, "Default name %s not correct. Enter other structure name: ", struc_name.c_str()))
 			return BADNODE;
-		id = add_struc(BADADDR, struc_name.c_str());
+        id = Compat::add_struc(BADADDR, struc_name.c_str());
 		if (id == BADADDR)
 		{
 			msg("failed to add struct: %s\n", struc_name.c_str());
 			return BADNODE;
 		}
-		set_struc_cmt(id, vtbl_name.c_str(), true);
+        Compat::set_struc_cmt(id, vtbl_name.c_str(), true);
 	}
 
-	const auto new_struc = get_struc(id);
-	if (!new_struc)
-		return BADNODE;
-
-	auto ea = vtbl_addr;
+    auto ea = vtbl_addr;
 	ea_t offset = 0;
 
 	while (ea < vtbl_addr_end) {
@@ -239,7 +236,7 @@ tid_t create_vtbl_struct(const ea_t vtbl_addr, const ea_t vtbl_addr_end, const q
 		qstring method_name;
 		auto method_ea = getEa(ea);
 
-		if (ph.id == PLFM_ARM)
+        if (PH.id == PLFM_ARM)
 		{
 			method_ea &= static_cast<ea_t>(-2);
 		}
@@ -253,21 +250,25 @@ tid_t create_vtbl_struct(const ea_t vtbl_addr, const ea_t vtbl_addr_end, const q
 			break;
 
 		const auto method_flags = get_flags(method_ea);
-		const char* struc_member_name = nullptr;
-		if (is_func(method_flags)) {
+        const char* struc_member_name = nullptr;
+        if (is_func(method_flags)) {
 			method_name = get_short_name(method_ea);
 			if (!method_name.empty())
 				struc_member_name = method_name.c_str();
 		}
 #ifndef __EA64__
-		add_struc_member(new_struc, nullptr, offset, dword_flag(), nullptr, sizeof(ea_t));
+        struc_error_t ret = Compat::add_struc_member(id, nullptr, offset, dword_flag(), nullptr, sizeof(ea_t));
 #else
-		add_struc_member(new_struc, NULL, offset, qword_flag(), NULL, sizeof(ea_t));
+        struc_error_t ret = Compat::add_struc_member(id, nullptr, offset, qword_flag(), nullptr, sizeof(ea_t));
 #endif
+
+        if (ret != STRUC_ERROR_MEMBER_OK)
+            return BADNODE;
+
 		if (struc_member_name) {
-			if (!set_member_name(new_struc, offset, struc_member_name)) {
+            if (!Compat::set_member_name(id, offset, struc_member_name)) {
 				get_ea_name(&method_name, method_ea);
-				set_member_name(new_struc, offset, struc_member_name);
+                Compat::set_member_name(id, offset, struc_member_name);
 			}
 		}
 
@@ -415,7 +416,7 @@ static int current_line_pos = 0;
 bool idaapi make_vtbl_struct_cb()
 {
 	const auto vtbl_t = vtbl_t_list[current_line_pos];
-	const auto id = add_struc(BADADDR, vtbl_t.vtbl_name.c_str());
+    const auto id = Compat::add_struc(BADADDR, vtbl_t.vtbl_name.c_str());
 
 	create_vtbl_struct(vtbl_t.ea_begin, vtbl_t.ea_end, vtbl_t.vtbl_name, id);
 

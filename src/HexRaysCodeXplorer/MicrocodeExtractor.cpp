@@ -285,7 +285,7 @@ static ssize_t idaapi migr_callback(void* ud, const int code, va_list va)
 		// in:  mutable_graph_t *g
 		// out: success
 	{
-		auto mg = va_arg(va, mutable_graph_t*);
+        auto mg = va_arg(va, interactive_graph_t*);
 
 		// we have to resize
 		mg->resize(microg->m_num_blocks);
@@ -306,7 +306,7 @@ static ssize_t idaapi migr_callback(void* ud, const int code, va_list va)
 		// out: must return 0, result must be filled
 		// NB: do not use anything calling GDI!
 	{
-		va_arg(va, mutable_graph_t*);
+        va_arg(va, interactive_graph_t*);
 		const auto node = va_arg(va, int);
 		const auto text = va_arg(va, const char**);
 
@@ -371,7 +371,7 @@ static ssize_t idaapi mgr_callback(void* ud, const int code, va_list va)
 		// in:  mutable_graph_t *g
 		// out: success
 	{
-		mutable_graph_t* mg = va_arg(va, mutable_graph_t*);
+        interactive_graph_t* mg = va_arg(va, interactive_graph_t*);
 
 		// we have to resize
 		mg->resize(mba->qty);
@@ -393,7 +393,7 @@ static ssize_t idaapi mgr_callback(void* ud, const int code, va_list va)
 		// out: must return 0, result must be filled
 		// NB: do not use anything calling GDI!
 	{
-		va_arg(va, mutable_graph_t*);
+        va_arg(va, interactive_graph_t*);
 		const auto node = va_arg(va, int);
 		const auto text = va_arg(va, const char**);
 

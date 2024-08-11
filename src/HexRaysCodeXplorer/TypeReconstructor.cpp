@@ -27,6 +27,7 @@
 #include "TypeReconstructor.h"
 #include <memory>
 
+#include "Compat.h"
 #include "Debug.h"
 #include "Utility.h"
 
@@ -520,89 +521,84 @@ int type_builder_t::get_structure_size()
 
 tid_t type_builder_t::get_structure(const qstring& name)
 {
-	tid_t struct_type_id = add_struc(BADADDR, name.c_str());
+    tid_t struct_type_id = Compat::add_struc(BADADDR, name.c_str());
 
 	if (struct_type_id == BADADDR) {
 		// the name is ill-formed or *is already used in the program*
-		struct_type_id = get_struc_id(name.c_str());
+        struct_type_id = Compat::get_struc_id(name.c_str());
 	}
 
 	if (struct_type_id != BADADDR)
 	{
-		struc_t * struc = get_struc(struct_type_id);
-		if (struc != NULL)
-		{
-			opinfo_t opinfo;
-			opinfo.tid = struct_type_id;
+        opinfo_t opinfo;
+        opinfo.tid = struct_type_id;
 
-			int j = 0;
+        int j = 0;
 
-			for (std::map<int, struct_filed>::iterator i = structure.begin(); i != structure.end() ; ++i)
-			{
-				VTBL_info_t vtbl;
+        for (std::map<int, struct_filed>::iterator i = structure.begin(); i != structure.end() ; ++i)
+        {
+            VTBL_info_t vtbl;
 
-				flags_t member_flgs = 0;
-				if (i->second.size == 1)
-					member_flgs = byte_flag();
-				else if (i->second.size == 2)
-					member_flgs = word_flag();
-				else if (i->second.size == 4)
-					member_flgs = dword_flag();
-				else if (i->second.size == 8)
-					member_flgs = qword_flag();
+            flags_t member_flgs = 0;
+            if (i->second.size == 1)
+                member_flgs = byte_flag();
+            else if (i->second.size == 2)
+                member_flgs = word_flag();
+            else if (i->second.size == 4)
+                member_flgs = dword_flag();
+            else if (i->second.size == 8)
+                member_flgs = qword_flag();
 
-				if (i->second.is_pointer)
-					member_flgs |= off_flag();
+            if (i->second.is_pointer)
+                member_flgs |= off_flag();
 
 
-				qstring field_name;
+            qstring field_name;
 
-				if ((i->second.vftbl != BADADDR) && get_vbtbl_by_ea(i->second.vftbl, vtbl))
-				{
-					qstring vftbl_name = name;
-					vftbl_name.cat_sprnt("_VTABLE_%X_%p", i->second.offset, i->second.vftbl);
+            if ((i->second.vftbl != BADADDR) && get_vbtbl_by_ea(i->second.vftbl, vtbl))
+            {
+                qstring vftbl_name = name;
+                vftbl_name.cat_sprnt("_VTABLE_%X_%p", i->second.offset, i->second.vftbl);
 
-					tid_t vtbl_str_id = create_vtbl_struct(vtbl.ea_begin, vtbl.ea_end, vftbl_name, 0);
-					if (vtbl_str_id != BADADDR) {
-						field_name.cat_sprnt("vftbl_%d_%p", j, i->second.vftbl);
-						const char *fncstr = field_name.c_str();
-						int iRet = add_struc_member(struc, fncstr, i->second.offset, member_flgs, NULL, i->second.size);
+                tid_t vtbl_str_id = create_vtbl_struct(vtbl.ea_begin, vtbl.ea_end, vftbl_name, 0);
+                if (vtbl_str_id != BADADDR) {
+                    field_name.cat_sprnt("vftbl_%d_%p", j, i->second.vftbl);
+                    const char *fncstr = field_name.c_str();
 
-						member_t * membr = get_member_by_name(struc, fncstr);
-						if (membr != NULL) {
-							qstring real_vftbl_name = vftbl_name;
-							real_vftbl_name += "::vtable";
-							tinfo_t new_type = create_typedef(real_vftbl_name.c_str());
-							if (new_type.is_correct()) {
-								smt_code_t dd = set_member_tinfo(struc, membr, 0, make_pointer(new_type), SET_MEMTI_COMPATIBLE);
-							}
-						}
-					}
-				}
-				else
-				{
-					field_name.cat_sprnt("field_%X", i->second.offset);
-					const char *fncstr = field_name.c_str();
+                    struc_error_t add = Compat::add_struc_member(struct_type_id, fncstr, i->second.offset, member_flgs, nullptr, i->second.size);
+                    if (add == STRUC_ERROR_MEMBER_OK) {
+                        qstring real_vftbl_name = vftbl_name;
+                        real_vftbl_name += "::vtable";
+                        tinfo_t new_type = create_typedef(real_vftbl_name.c_str());
+                        if (new_type.is_correct()) {
+                            Compat::set_member_tinfo(struct_type_id, i->second.offset, new_type, SET_MEMTI_COMPATIBLE);
+                        }
+                    }
+                }
+            }
+            else
+            {
+                field_name.cat_sprnt("field_%X", i->second.offset);
+                const char *fncstr = field_name.c_str();
 
-					std::unique_ptr<opinfo_t> refinfo = nullptr;
-					if (member_flgs & off_flag()) {
-						refinfo.reset(new opinfo_t());
-						if (member_flgs & qword_flag()) {
-							// 64-bit pointer
-							refinfo->ri.init(REF_OFF64);
-						} else {
-							// 32-bit pointer
-							refinfo->ri.init(REF_OFF32);
-						}
-					}
+                std::unique_ptr<opinfo_t> refinfo = nullptr;
+                if (member_flgs & off_flag()) {
+                    refinfo.reset(new opinfo_t());
+                    if (member_flgs & qword_flag()) {
+                        // 64-bit pointer
+                        refinfo->ri.init(REF_OFF64);
+                    } else {
+                        // 32-bit pointer
+                        refinfo->ri.init(REF_OFF32);
+                    }
+                }
 
-					int iRet = add_struc_member(struc, fncstr, i->second.offset, member_flgs, refinfo.get(), i->second.size);
-					if (iRet < 0)
-						logmsg(ERROR, "Error %d occurred while adding struct member %s\n", iRet, fncstr);
-				}
-				j ++;
-			}
-		}
+                struc_error_t ret = Compat::add_struc_member(struct_type_id, fncstr, i->second.offset, member_flgs, refinfo.get(), i->second.size);
+                if (ret != STRUC_ERROR_MEMBER_OK)
+                    logmsg(ERROR, "Error %d occurred while adding struct member %s\n", ret, fncstr);
+            }
+            j ++;
+        }
 	}
 	return struct_type_id;
 }

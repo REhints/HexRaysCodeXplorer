@@ -75,7 +75,6 @@
 #include <kernwin.hpp>
 #include <netnode.hpp>
 #include <gdl.hpp>
-#include <struct.hpp>
 #include <bytes.hpp>
 #include <xref.hpp>
 #include <name.hpp>
