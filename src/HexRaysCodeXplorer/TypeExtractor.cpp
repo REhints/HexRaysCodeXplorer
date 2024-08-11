@@ -1,24 +1,24 @@
 /*	Copyright (c) 2013-2015
 	REhints <info@rehints.com>
 	All rights reserved.
-	
+
 	==============================================================================
-	
+
 	This file is part of HexRaysCodeXplorer
 
- 	HexRaysCodeXplorer is free software: you can redistribute it and/or modify it
- 	under the terms of the GNU General Public License as published by
- 	the Free Software Foundation, either version 3 of the License, or
- 	(at your option) any later version.
+	HexRaysCodeXplorer is free software: you can redistribute it and/or modify it
+	under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
 
- 	This program is distributed in the hope that it will be useful, but
- 	WITHOUT ANY WARRANTY; without even the implied warranty of
- 	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- 	General Public License for more details.
+	This program is distributed in the hope that it will be useful, but
+	WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+	General Public License for more details.
 
- 	You should have received a copy of the GNU General Public License
- 	along with this program.  If not, see
- 	<http://www.gnu.org/licenses/>.
+	You should have received a copy of the GNU General Public License
+	along with this program.  If not, see
+	<http://www.gnu.org/licenses/>.
 
 	==============================================================================
 */
@@ -193,38 +193,38 @@ tid_t idaapi merge_types(const qvector<qstring>& types_to_merge, const qstring& 
 
 	std::set<ea_t> offsets;
 
-    struct_type_id = Compat::add_struc(BADADDR, type_name.c_str());
+	struct_type_id = Compat::add_struc(BADADDR, type_name.c_str());
 	if (struct_type_id == BADADDR)
 		return struct_type_id;
 
 	for (auto types_iter = types_to_merge.begin(), end = types_to_merge.end(); types_iter != end; ++types_iter) {
-        tid_t struc_id = Compat::get_struc_id(types_iter->c_str());
-        if (struc_id == BADADDR)
-            continue;
+		tid_t struc_id = Compat::get_struc_id(types_iter->c_str());
+		if (struc_id == BADADDR)
+			continue;
 
 		// enumerate members
-        for (ea_t offset = Compat::get_struc_first_offset(struc_id); offset != BADADDR;
-             offset = Compat::get_struc_next_offset(struc_id, offset)) {
-            tid_t mem_id = Compat::get_member_id(struc_id, offset);
-            if (mem_id == BADADDR || offsets.count(offset) > 0)
-                continue;
+		for (ea_t offset = Compat::get_struc_first_offset(struc_id); offset != BADADDR;
+			 offset = Compat::get_struc_next_offset(struc_id, offset)) {
+			tid_t mem_id = Compat::get_member_id(struc_id, offset);
+			if (mem_id == BADADDR || offsets.count(offset) > 0)
+				continue;
 
-            qstring member_name = Compat::get_member_name(struc_id, offset);
-            asize_t member_size = Compat::get_member_size(struc_id, offset);
+			qstring member_name = Compat::get_member_name(struc_id, offset);
+			asize_t member_size = Compat::get_member_size(struc_id, offset);
 
-            if (member_name.find("vftbl_", 0) != -1) {
-                tinfo_t tif;
-                if (Compat::get_member_tinfo(&tif, struc_id, offset)) {
-                    struc_error_t result = Compat::add_struc_member(struc_id, member_name.c_str(), offset, dword_flag(), nullptr, member_size);
-                    if (result == STRUC_ERROR_MEMBER_OK)
-                        Compat::set_member_tinfo(struc_id, offset, tif, SET_MEMTI_COMPATIBLE);
-                }
-            } else {
-                int flag = Compat::get_member_flag(struc_id, offset);
-                Compat::add_struc_member(struc_id, member_name.c_str(), offset, flag, NULL, member_size);
-            }
+			if (member_name.find("vftbl_", 0) != -1) {
+				tinfo_t tif;
+				if (Compat::get_member_tinfo(&tif, struc_id, offset)) {
+					struc_error_t result = Compat::add_struc_member(struc_id, member_name.c_str(), offset, dword_flag(), nullptr, member_size);
+					if (result == STRUC_ERROR_MEMBER_OK)
+						Compat::set_member_tinfo(struc_id, offset, tif, SET_MEMTI_COMPATIBLE);
+				}
+			} else {
+				int flag = Compat::get_member_flag(struc_id, offset);
+				Compat::add_struc_member(struc_id, member_name.c_str(), offset, flag, NULL, member_size);
+			}
 
-            offsets.insert(offset);
+			offsets.insert(offset);
 		}
 	}
 
@@ -236,29 +236,29 @@ void get_struct_key(tid_t struc_id, const VTBL_info_t& vtbl_info, qstring &file_
 	qstring vtables_sub_key;
 	int vftbales_num = 0;
 	int members_count = 0;
-    for (ea_t offset = Compat::get_struc_first_offset(struc_id); offset != BADADDR;
-         offset = Compat::get_struc_next_offset(struc_id, offset)) {
-        tid_t mem_id = Compat::get_member_id(struc_id, offset);
-        if (mem_id == BADADDR)
-            continue;
+	for (ea_t offset = Compat::get_struc_first_offset(struc_id); offset != BADADDR;
+		 offset = Compat::get_struc_next_offset(struc_id, offset)) {
+		tid_t mem_id = Compat::get_member_id(struc_id, offset);
+		if (mem_id == BADADDR)
+			continue;
 
-        qstring member_name = Compat::get_member_name(struc_id, offset);
-        asize_t member_size = Compat::get_member_size(struc_id, offset);
+		qstring member_name = Compat::get_member_name(struc_id, offset);
+		asize_t member_size = Compat::get_member_size(struc_id, offset);
 
-        if (member_name.find("vftbl_", 0) != -1) {
-            ea_t vtable_addr = 0;
-            int i;
-            if (qsscanf(member_name.c_str(), "vftbl_%d_%" FMT_EA "x", &i, &vtable_addr) > 0) {
-                if (vtbl_map.count(vtable_addr) != 0) {
-                    vtables_sub_key.cat_sprnt("_%d", vtbl_map.at(vtable_addr).methods);
-                }
-            }
-            vftbales_num++;
-        }
+		if (member_name.find("vftbl_", 0) != -1) {
+			ea_t vtable_addr = 0;
+			int i;
+			if (qsscanf(member_name.c_str(), "vftbl_%d_%" FMT_EA "x", &i, &vtable_addr) > 0) {
+				if (vtbl_map.count(vtable_addr) != 0) {
+					vtables_sub_key.cat_sprnt("_%d", vtbl_map.at(vtable_addr).methods);
+				}
+			}
+			vftbales_num++;
+		}
 
-        sub_key.cat_sprnt("_%d", member_size);
+		sub_key.cat_sprnt("_%d", member_size);
 
-        members_count ++;
+		members_count ++;
 	}
 	file_entry_key.sprnt("t_%d_%d", vtbl_info.methods, vftbales_num);
 	file_entry_key += vtables_sub_key;
@@ -269,15 +269,15 @@ void get_struct_key(tid_t struc_id, const VTBL_info_t& vtbl_info, qstring &file_
 }
 
 void idaapi dump_type_info(int file_id, const VTBL_info_t& vtbl_info, const qstring& type_name, const std::unordered_map<ea_t, VTBL_info_t>& vtbl_map) {
-    tid_t struc_id = Compat::get_struc_id(type_name.c_str());
-    if (struc_id == BADADDR)
-        return;
+	tid_t struc_id = Compat::get_struc_id(type_name.c_str());
+	if (struc_id == BADADDR)
+		return;
 
 	qstring file_entry_key;
 	qstring key_hash;
 	bool filtered = false;
 
-    get_struct_key(struc_id, vtbl_info, file_entry_key, filtered, vtbl_map);
+	get_struct_key(struc_id, vtbl_info, file_entry_key, filtered, vtbl_map);
 	get_hash_of_string(file_entry_key, key_hash);
 
 	if (filtered)
@@ -307,18 +307,18 @@ bool idaapi check_subtype(VTBL_info_t vtbl_info, qstring subtype_name) {
 	qstring search_str;
 	search_str.sprnt("_%a", vtbl_info.ea_begin);
 
-    tid_t struc_id = Compat::get_struc_id(subtype_name.c_str());
-    if (struc_id == BADADDR)
+	tid_t struc_id = Compat::get_struc_id(subtype_name.c_str());
+	if (struc_id == BADADDR)
 		return false;
 
 	// enumerate members
-    for (ea_t offset = Compat::get_struc_first_offset(struc_id); offset != BADADDR;
-         offset = Compat::get_struc_next_offset(struc_id, offset)) {
-        tid_t mem_id = Compat::get_member_id(struc_id, offset);
-        if (mem_id == BADADDR)
-            continue;
+	for (ea_t offset = Compat::get_struc_first_offset(struc_id); offset != BADADDR;
+		 offset = Compat::get_struc_next_offset(struc_id, offset)) {
+		tid_t mem_id = Compat::get_member_id(struc_id, offset);
+		if (mem_id == BADADDR)
+			continue;
 
-        qstring member_name = Compat::get_member_name(struc_id, offset);
+		qstring member_name = Compat::get_member_name(struc_id, offset);
 		if (member_name.find(search_str, 0) != member_name.npos)
 			return true;
 	}

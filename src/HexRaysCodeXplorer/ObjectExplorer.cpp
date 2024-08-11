@@ -1,23 +1,23 @@
 /*	Copyright (c) 2013-2020
 	REhints <info@rehints.com>
 	All rights reserved.
-	
+
 	==============================================================================
-	
+
 	This file is part of HexRaysCodeXplorer
 
- 	HexRaysCodeXplorer is free software: you can redistribute it and/or modify it
- 	under the terms of the GNU General Public License as published by
- 	the Free Software Foundation, either version 3 of the License, or
- 	(at your option) any later version.
+	HexRaysCodeXplorer is free software: you can redistribute it and/or modify it
+	under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
 
- 	This program is distributed in the hope that it will be useful, but
- 	WITHOUT ANY WARRANTY; without even the implied warranty of
- 	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- 	General Public License for more details.
+	This program is distributed in the hope that it will be useful, but
+	WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+	General Public License for more details.
 
- 	You should have received a copy of the GNU General Public License
- 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
+	You should have received a copy of the GNU General Public License
+	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 	==============================================================================
 */
@@ -214,21 +214,21 @@ tid_t create_vtbl_struct(const ea_t vtbl_addr, const ea_t vtbl_addr_end, const q
 {
 	auto struc_name = vtbl_name;
 	struc_name += "::vtable";
-    auto id = Compat::add_struc(BADADDR, struc_name.c_str());
+	auto id = Compat::add_struc(BADADDR, struc_name.c_str());
 
 	if (id == BADADDR) {
 		if (!ask_str(&struc_name, HIST_IDENT, "Default name %s not correct. Enter other structure name: ", struc_name.c_str()))
 			return BADNODE;
-        id = Compat::add_struc(BADADDR, struc_name.c_str());
+		id = Compat::add_struc(BADADDR, struc_name.c_str());
 		if (id == BADADDR)
 		{
 			msg("failed to add struct: %s\n", struc_name.c_str());
 			return BADNODE;
 		}
-        Compat::set_struc_cmt(id, vtbl_name.c_str(), true);
+		Compat::set_struc_cmt(id, vtbl_name.c_str(), true);
 	}
 
-    auto ea = vtbl_addr;
+	auto ea = vtbl_addr;
 	ea_t offset = 0;
 
 	while (ea < vtbl_addr_end) {
@@ -236,7 +236,7 @@ tid_t create_vtbl_struct(const ea_t vtbl_addr, const ea_t vtbl_addr_end, const q
 		qstring method_name;
 		auto method_ea = getEa(ea);
 
-        if (PH.id == PLFM_ARM)
+		if (PH.id == PLFM_ARM)
 		{
 			method_ea &= static_cast<ea_t>(-2);
 		}
@@ -250,25 +250,25 @@ tid_t create_vtbl_struct(const ea_t vtbl_addr, const ea_t vtbl_addr_end, const q
 			break;
 
 		const auto method_flags = get_flags(method_ea);
-        const char* struc_member_name = nullptr;
-        if (is_func(method_flags)) {
+		const char* struc_member_name = nullptr;
+		if (is_func(method_flags)) {
 			method_name = get_short_name(method_ea);
 			if (!method_name.empty())
 				struc_member_name = method_name.c_str();
 		}
 #ifndef __EA64__
-        struc_error_t ret = Compat::add_struc_member(id, nullptr, offset, dword_flag(), nullptr, sizeof(ea_t));
+		struc_error_t ret = Compat::add_struc_member(id, nullptr, offset, dword_flag(), nullptr, sizeof(ea_t));
 #else
-        struc_error_t ret = Compat::add_struc_member(id, nullptr, offset, qword_flag(), nullptr, sizeof(ea_t));
+		struc_error_t ret = Compat::add_struc_member(id, nullptr, offset, qword_flag(), nullptr, sizeof(ea_t));
 #endif
 
-        if (ret != STRUC_ERROR_MEMBER_OK)
-            return BADNODE;
+		if (ret != STRUC_ERROR_MEMBER_OK)
+			return BADNODE;
 
 		if (struc_member_name) {
-            if (!Compat::set_member_name(id, offset, struc_member_name)) {
+			if (!Compat::set_member_name(id, offset, struc_member_name)) {
 				get_ea_name(&method_name, method_ea);
-                Compat::set_member_name(id, offset, struc_member_name);
+				Compat::set_member_name(id, offset, struc_member_name);
 			}
 		}
 
@@ -383,7 +383,7 @@ void find_vtables()
 
 
 //---------------------------------------------------------------------------
-// Handle VTBL & RTTI 
+// Handle VTBL & RTTI
 //---------------------------------------------------------------------------
 
 bool b_scaned = false;
@@ -408,7 +408,7 @@ void search_objects(const bool b_force)
 
 
 //---------------------------------------------------------------------------
-// IDA Custom View Window Initialization 
+// IDA Custom View Window Initialization
 //---------------------------------------------------------------------------
 
 static int current_line_pos = 0;
@@ -416,7 +416,7 @@ static int current_line_pos = 0;
 bool idaapi make_vtbl_struct_cb()
 {
 	const auto vtbl_t = vtbl_t_list[current_line_pos];
-    const auto id = Compat::add_struc(BADADDR, vtbl_t.vtbl_name.c_str());
+	const auto id = Compat::add_struc(BADADDR, vtbl_t.vtbl_name.c_str());
 
 	create_vtbl_struct(vtbl_t.ea_begin, vtbl_t.ea_end, vtbl_t.vtbl_name, id);
 
@@ -577,47 +577,47 @@ ssize_t idaapi ui_object_explorer_callback(void *ud, const int code, va_list va)
 	auto*si = static_cast<object_explorer_info_t*>(ud);
 	switch (code)
 	{
-		case ui_get_custom_viewer_hint:
-		{
-			auto& hint = *va_arg(va, qstring *);
-			const auto viewer = va_arg(va, TWidget *);
-			const auto place = va_arg(va, place_t *);
-			const auto important_lines = va_arg(va, int *);
+	case ui_get_custom_viewer_hint:
+	{
+		auto& hint = *va_arg(va, qstring *);
+		const auto viewer = va_arg(va, TWidget *);
+		const auto place = va_arg(va, place_t *);
+		const auto important_lines = va_arg(va, int *);
 
-			if (si->cv == viewer)
-			{
-				if ( place == nullptr )
-					return 0;
-
-				const auto spl = reinterpret_cast<simpleline_place_t*>(place);
-				hint = get_vtbl_hint (spl->n);
-				*important_lines = 20;
-				return 1;
-			}
-			break;
-		}
-		case ui_widget_invisible:
+		if (si->cv == viewer)
 		{
-			const auto f = va_arg(va, TWidget *);
-			if ( f == si->widget )
-			{
-				delete si;
-				unhook_from_notification_point(HT_UI, ui_object_explorer_callback, nullptr);
-			}
+			if ( place == nullptr )
+				return 0;
+
+			const auto spl = reinterpret_cast<simpleline_place_t*>(place);
+			hint = get_vtbl_hint (spl->n);
+			*important_lines = 20;
+			return 1;
 		}
 		break;
-
-		case ui_populating_widget_popup:
+	}
+	case ui_widget_invisible:
+	{
+		const auto f = va_arg(va, TWidget *);
+		if ( f == si->widget )
 		{
-			const auto viewer = va_arg(va, TWidget *);
-			const auto popup = va_arg(va, TPopupMenu *);
-			if (si->widget == viewer || si->cv == viewer)
-			{
-				attach_action_to_popup(viewer, popup, "codexplorer::make_vtbl_struct");
-				attach_action_to_popup(viewer, popup, "codexplorer::show_vtbl_xrefs_window");
-			}
+			delete si;
+			unhook_from_notification_point(HT_UI, ui_object_explorer_callback, nullptr);
 		}
-		break;
+	}
+	break;
+
+	case ui_populating_widget_popup:
+	{
+		const auto viewer = va_arg(va, TWidget *);
+		const auto popup = va_arg(va, TPopupMenu *);
+		if (si->widget == viewer || si->cv == viewer)
+		{
+			attach_action_to_popup(viewer, popup, "codexplorer::make_vtbl_struct");
+			attach_action_to_popup(viewer, popup, "codexplorer::show_vtbl_xrefs_window");
+		}
+	}
+	break;
 	default: ;
 	}
 	return 0;

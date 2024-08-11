@@ -67,7 +67,7 @@ ReconstructableMember::~ReconstructableMember()
 
 }
 
-ReconstructableType::ReconstructableType(const std::string &Name) : 
+ReconstructableType::ReconstructableType(const std::string &Name) :
 	name(Name), typeId(BAD_RETYPE_ID), maxSize((unsigned long)-1), id(0)
 {
 }
@@ -84,7 +84,7 @@ unsigned ReconstructableType::getSize()
 	if (derivedMembers.size()) {
 		result = derivedMembers.rbegin()->second->offset + derivedMembers.rbegin()->second->getSize();
 	}
-	
+
 	if (ownMembers.size()) {
 		last = ownMembers.rbegin();
 		if (last->second->offset + last->second->getSize() > result)
@@ -107,7 +107,7 @@ ReconstructableMember* ReconstructableType::findMemberByOffset(unsigned long off
 	if (it == members->end())
 		return 0;
 
-	if (offset >= it->second->offset && offset < it->second->offset + it->second->getSize()) 
+	if (offset >= it->second->offset && offset < it->second->offset + it->second->getSize())
 		return it->second;
 
 	return 0;
@@ -133,11 +133,11 @@ bool ReconstructableType::SetMemberName(unsigned long offset, const char * newNa
 	{
 		member->name = newName;
 		for (std::set<ReconstructableType*>::iterator it = childrenTypes.begin(); it != childrenTypes.end(); ++it) {
-			
+
 			(*it)->SetMemberNameUpcast(offset, this, newName);
 		}
 		// if (cur) // do sync only if we do upcast change
-			SyncTypeInfo();
+		SyncTypeInfo();
 		in_type_changing = cur;
 		return true;
 	}
@@ -271,7 +271,7 @@ bool ReconstructableType::SetMemberType(unsigned long offset, ReconstructedMembe
 		(*it)->SetMemberTypeUpcast(offset, this, newType);
 	}
 	// if (cur)
-		SyncTypeInfo();
+	SyncTypeInfo();
 	in_type_changing = cur;
 	return true;
 }
@@ -310,15 +310,15 @@ bool ReconstructableType::SetMemberType(unsigned long offset, tinfo_t * info)
 		// failed to print.
 		return false;
 	}
-	if (g_ReconstractedTypes.count(type_string.c_str())) 
+	if (g_ReconstractedTypes.count(type_string.c_str()))
 		newMemberType = new ReconstructedMemberReType(g_ReconstractedTypes[type_string.c_str()]);
-	else 
+	else
 		newMemberType = new MemberTypeIDATypeInfoGate(*info);
-	
+
 	return SetMemberType(offset, newMemberType);
 }
 */
-bool ReconstructableType::AddMember( ReconstructableMember* member) 
+bool ReconstructableType::AddMember( ReconstructableMember* member)
 {
 	ReconstructableMember *upcastMember = 0;
 	ReconstructableMember *newMember = 0;
@@ -334,7 +334,7 @@ bool ReconstructableType::AddMember( ReconstructableMember* member)
 		g_ChangedTypes.clear();
 	}
 	g_ChangedTypes.emplace(this);
-	
+
 	if (!findMemberByOffset(member->offset, false))
 	{
 		ownMembers[member->offset] = member;
@@ -343,9 +343,9 @@ bool ReconstructableType::AddMember( ReconstructableMember* member)
 			(*it)->AddMemberUpcast(newMember, this);
 		}
 		//if (cur) // if we go with children
-			SyncTypeInfo();
+		SyncTypeInfo();
 	}
-	
+
 	in_type_changing = cur;
 	return true;
 }
@@ -376,23 +376,23 @@ bool ReconstructableType::AddMemberUpcast(ReconstructableMember * member, Recons
 
 void ReconstructableType::SyncTypeInfo()
 {
-    bool cur = inside_hook;
-    inside_hook = true;
+	bool cur = inside_hook;
+	inside_hook = true;
 
-    tid_t struc_id = Compat::get_struc_id(name.c_str());
-    if (struc_id == BADADDR)
-        struc_id = Compat::add_struc(BADADDR, name.c_str());
-    this->typeId = struc_id;
-    if (struc_id == BADADDR)
-    {
-        inside_hook = cur;
-        return;
-    }
+	tid_t struc_id = Compat::get_struc_id(name.c_str());
+	if (struc_id == BADADDR)
+		struc_id = Compat::add_struc(BADADDR, name.c_str());
+	this->typeId = struc_id;
+	if (struc_id == BADADDR)
+	{
+		inside_hook = cur;
+		return;
+	}
 
 	if (syncTypeInfoMethod == SyncTypeInfo_Names)
 		return;
 
-	/* lets do it in a stupid way 
+	/* lets do it in a stupid way
 	if (struc->memqty)
 	{
 		member_t *tmpArray = new member_t[struc->memqty];
@@ -405,14 +405,14 @@ void ReconstructableType::SyncTypeInfo()
 		delete[] tmpArray;
 	}
 	*/
-  	for (std::map<unsigned int, ReconstructableMember*>::iterator it = ownMembers.begin(); it != ownMembers.end(); ++it)
+	for (std::map<unsigned int, ReconstructableMember*>::iterator it = ownMembers.begin(); it != ownMembers.end(); ++it)
 	{
 
 		opinfo_t info;
 		ReconstructableMember * member = it->second;
 		std::string typeString = member->memberType->getTypeString();
 		const char * typeName = typeString.c_str();
-        info.tid = Compat::get_struc_id(typeName);
+		info.tid = Compat::get_struc_id(typeName);
 
 		//flags_t flag = it->second->memberType->get_idaapi_flags();
 		tinfo_t mt;
@@ -437,20 +437,20 @@ void ReconstructableType::SyncTypeInfo()
 			break;
 		}
 
-        error = Compat::add_struc_member(struc_id, it->second->name.c_str(), it->second->offset, flags, 0, it->second->getSize());
+		error = Compat::add_struc_member(struc_id, it->second->name.c_str(), it->second->offset, flags, 0, it->second->getSize());
 		if (error != STRUC_ERROR_MEMBER_OK) {
 			msg("Failed to add field %s::%s  cause %d\n", this->name.c_str(), it->second->name.c_str(), error);
 		}
 
-        tid_t mid = Compat::get_member_id(struc_id, it->second->offset);
-        if (mid == BADADDR) {
+		tid_t mid = Compat::get_member_id(struc_id, it->second->offset);
+		if (mid == BADADDR) {
 			msg("failed to get member  for  %s::%s . this IDA is so dead lol \n", this->name.c_str(), it->second->name.c_str());
 			continue;
 		}
 
-        if (!Compat::set_member_tinfo(struc_id, it->second->offset, mt, 0)) {
-            msg("failed to set type for  %s::%s\n", this->name.c_str(), it->second->name.c_str());
-        }
+		if (!Compat::set_member_tinfo(struc_id, it->second->offset, mt, 0)) {
+			msg("failed to set type for  %s::%s\n", this->name.c_str(), it->second->name.c_str());
+		}
 	}
 	inside_hook = cur;
 }
@@ -516,13 +516,13 @@ static bool idaapi reconstructed_keydown(TWidget *cv, int vk_key, int shift, voi
 		/* Set name of struct member */
 		if (replace->position != REPLACE_MEMBERS)
 			break;
-		
+
 		if (ask_str(&name, HIST_IDENT, "Set member name")) {
 			reType->SetMemberName(replace->own_offset, name.c_str());
 		}
 		refresh_custom_viewer(cv);
 		break;
-	
+
 
 	case 'D':
 		/* Add member with type to the end of struct */
@@ -577,7 +577,7 @@ static bool idaapi reconstructed_keydown(TWidget *cv, int vk_key, int shift, voi
 				}
 				newType = new MemberTypeIDATypeInfoGate(tinfo);
 			}
-			 
+
 			reType->SetMemberType(replace->own_offset, newType);
 			// force to sync typeinfo since it will not do it.
 			// Yes, I know, bad code.
@@ -698,92 +698,92 @@ ssize_t hook_idb_events(void *user_data, int notification_code, va_list va) {
 	ReconstructableMember *reMember;
 	ReconstructedMemberType * reMemberType;
 	func_t * func;
-    std::map<unsigned int, ReconstructableMember *> members;
-    const udm_t* udm;
+	std::map<unsigned int, ReconstructableMember *> members;
+	const udm_t* udm;
 	if (inside_hook)
 		/// just pass it as is
 		return 0;
 
 	inside_hook = true;
 	switch (notification_code) {
-    case idb_event::local_types_changed:
-    {
-        local_type_change_t ltc = va_arg(va, local_type_change_t);
-        va_arg(va, uint32_t);
-        oldname = va_arg(va, const char*);
+	case idb_event::local_types_changed:
+	{
+		local_type_change_t ltc = va_arg(va, local_type_change_t);
+		va_arg(va, uint32_t);
+		oldname = va_arg(va, const char*);
 
-        tid = Compat::get_struc_id(oldname);
-        if (tid == BADADDR)
-        {
-            result = BADADDR;
-            break;
-        }
-
-        // probably we not interested on it
-        if (g_ReconstractedTypes.count(oldname) == 0)
-        {
-            result = 0;
-            break;
-        }
-
-        switch (ltc)
-        {
-        case LTC_ADDED:
-            g_ReconstractedTypes[oldname]->typeId = tid;
-            break;
-        case LTC_DELETED:
-            g_ReconstractedTypes[oldname]->typeId = BADADDR;
-            break;
-        case LTC_EDITED:
-            // deny renaming.
-            result = BADADDR;
-            break;
-        default: break;
-        }
-
-        break;
-    }
-    case idb_event::lt_udt_expanded:
-        oldname = va_arg(va, const char*);
-        tid = va_arg(va, tid_t);
-        diff = va_arg(va, adiff_t);
-        if (g_ReconstractedTypes.count(oldname) == 0)
-			break;
-		
-		re_type = g_ReconstractedTypes[oldname];
-        if (re_type->maxSize < ea + diff)
-			// it will corrupt what we have
+		tid = Compat::get_struc_id(oldname);
+		if (tid == BADADDR)
 		{
 			result = BADADDR;
 			break;
 		}
-		
+
+		// probably we not interested on it
+		if (g_ReconstractedTypes.count(oldname) == 0)
+		{
+			result = 0;
+			break;
+		}
+
+		switch (ltc)
+		{
+		case LTC_ADDED:
+			g_ReconstractedTypes[oldname]->typeId = tid;
+			break;
+		case LTC_DELETED:
+			g_ReconstractedTypes[oldname]->typeId = BADADDR;
+			break;
+		case LTC_EDITED:
+			// deny renaming.
+			result = BADADDR;
+			break;
+		default: break;
+		}
+
 		break;
-    case idb_event::lt_udm_created:
-        oldname = va_arg(va, const char*);
-        if (g_ReconstractedTypes.count(oldname) == 0)
-            break;
-        re_type = g_ReconstractedTypes[oldname];
+	}
+	case idb_event::lt_udt_expanded:
+		oldname = va_arg(va, const char*);
+		tid = va_arg(va, tid_t);
+		diff = va_arg(va, adiff_t);
+		if (g_ReconstractedTypes.count(oldname) == 0)
+			break;
 
-        udm = va_arg(va, const udm_t*);
-        if (re_type->maxSize < udm->end())
-            // it will corrupt what we have
-        {
-            result = BADADDR;
-            break;
-        }
+		re_type = g_ReconstractedTypes[oldname];
+		if (re_type->maxSize < ea + diff)
+		// it will corrupt what we have
+		{
+			result = BADADDR;
+			break;
+		}
 
-        tinfo = udm->type;
-        reMember = new ReconstructableMember();
-        q_string = udm->name;
-        reMember->name = q_string.c_str();
-        reMember->offset = udm->offset;
+		break;
+	case idb_event::lt_udm_created:
+		oldname = va_arg(va, const char*);
+		if (g_ReconstractedTypes.count(oldname) == 0)
+			break;
+		re_type = g_ReconstractedTypes[oldname];
+
+		udm = va_arg(va, const udm_t*);
+		if (re_type->maxSize < udm->end())
+		// it will corrupt what we have
+		{
+			result = BADADDR;
+			break;
+		}
+
+		tinfo = udm->type;
+		reMember = new ReconstructableMember();
+		q_string = udm->name;
+		reMember->name = q_string.c_str();
+		reMember->offset = udm->offset;
 
 		if (tinfo.get_type_name(&q_string)) {
 			if (tinfo.is_ptr()) {
 				if (g_ReconstractedTypes.count(q_string.c_str()) != 0)
 					reMemberType = new MemberTypePointer(g_ReconstractedTypes[q_string.c_str()]->name);
-                else
+				else
 					reMemberType = new MemberTypeIDATypeInfoGate(tinfo);
 
 				reMember->memberType = reMemberType;
@@ -803,44 +803,44 @@ ssize_t hook_idb_events(void *user_data, int notification_code, va_list va) {
 		re_type->AddMember(reMember);
 
 		break;
-    case idb_event::lt_udm_deleted:
-        va_arg(va, const char*);
-        va_arg(va, tid_t);
-        udm = va_arg(va, const udm_t*);
-        q_string = udm->name;
+	case idb_event::lt_udm_deleted:
+		va_arg(va, const char*);
+		va_arg(va, tid_t);
+		udm = va_arg(va, const udm_t*);
+		q_string = udm->name;
 		oldname = q_string.c_str();
 		if (g_ReconstractedTypes.count(oldname) == 0)
 			break;
 		re_type = g_ReconstractedTypes[oldname];
-        re_type->UndefMembers(udm->offset, udm->size, true);
+		re_type->UndefMembers(udm->offset, udm->size, true);
 		break;
-    case idb_event::lt_udm_renamed:
-        newname = va_arg(va, const char*);
-        udm = va_arg(va, const udm_t*);
-        q_string = udm->name;
-        oldname = q_string.c_str();
+	case idb_event::lt_udm_renamed:
+		newname = va_arg(va, const char*);
+		udm = va_arg(va, const udm_t*);
+		q_string = udm->name;
+		oldname = q_string.c_str();
 		if (g_ReconstractedTypes.count(oldname) == 0)
 			break;
 		re_type = g_ReconstractedTypes[oldname];
-        re_type->SetMemberName(udm->offset, newname);
+		re_type->SetMemberName(udm->offset, newname);
 		break;
-    case idb_event::lt_udm_changed:
-        va_arg(va, const char*);
-        va_arg(va, tid_t);
-        va_arg(va, const udm_t*); // old udm
-        udm = va_arg(va, const udm_t*); // new udm
+	case idb_event::lt_udm_changed:
+		va_arg(va, const char*);
+		va_arg(va, tid_t);
+		va_arg(va, const udm_t*); // old udm
+		udm = va_arg(va, const udm_t*); // new udm
 
-        q_string = udm->name;
+		q_string = udm->name;
 		oldname = q_string.c_str();
 		if (g_ReconstractedTypes.count(oldname) == 0)
 			break;
 		re_type = g_ReconstractedTypes[oldname];
 
-        tinfo = udm->type;
+		tinfo = udm->type;
 		members = re_type->getOwnMembers();
-        if (members.count(udm->offset) == 0)
+		if (members.count(udm->offset) == 0)
 			assert(false);
-        reMember = members[udm->offset];
+		reMember = members[udm->offset];
 		size = tinfo.get_size();
 		if (reMember->getSize() < size) {
 			re_type->UndefMembers(reMember->getSize() + reMember->offset, size - reMember->getSize(), true);
@@ -856,7 +856,7 @@ ssize_t hook_idb_events(void *user_data, int notification_code, va_list va) {
 			reMemberType = new ReconstructedMemberReType(g_ReconstractedTypes[q_string.c_str()]);
 		else
 			reMemberType = new MemberTypeIDATypeInfoGate(tinfo);
-        re_type->SetMemberType(udm->offset, reMemberType);
+		re_type->SetMemberType(udm->offset, reMemberType);
 		break;
 	case idb_event::func_updated:
 		func = va_arg(va, func_t *);
@@ -901,7 +901,7 @@ void re_types_form_init()
 
 	auto*si = new reconstructed_types_info_t(widget);
 	if (!g_ReconstractedTypes.empty()) {
-		auto type_name = g_ReconstractedTypes.begin()->first; // bug if no any types found 
+		auto type_name = g_ReconstractedTypes.begin()->first; // bug if no any types found
 		reconstructed_place_t start(type_name);
 		type_name = g_ReconstractedTypes.rbegin()->first;
 		reconstructed_place_t end(type_name);
@@ -940,7 +940,7 @@ void re_types_form_fini() {
 		return;
 }
 
-ReconstructedMemberType::ReconstructedMemberType(MemberTypeKind k) : kind(k) 
+ReconstructedMemberType::ReconstructedMemberType(MemberTypeKind k) : kind(k)
 {
 }
 
@@ -952,9 +952,9 @@ ReconstructedMemberType::~ReconstructedMemberType()
 {
 }
 
-MemberTypeKind ReconstructedMemberType::getKind() 
-{ 
-	return kind; 
+MemberTypeKind ReconstructedMemberType::getKind()
+{
+	return kind;
 }
 
 
