@@ -6,7 +6,9 @@ namespace Compat
 {
 	tid_t add_struc(uval_t idx, const char* name, bool is_union)
 	{
-		udt_type_data_t udt { .is_union = is_union };
+		udt_type_data_t udt;
+		udt.is_union = is_union;
+
 		tinfo_t tif;
 		tif.create_udt(udt);
 		tif.set_named_type(nullptr, name);
@@ -39,8 +41,11 @@ namespace Compat
 		tinfo_t tif;
 		if (tif.get_type_by_tid(sid) && tif.is_udt())
 		{
-			udm_t udm { .offset = offset };
-			if (auto idx = tif.find_udm(&udm, STRMEM_AUTO); idx != -1)
+			udm_t udm;
+			udm.offset = offset;
+
+			int idx = tif.find_udm(&udm, STRMEM_AUTO);
+			if (idx != -1)
 				return tif.get_udm_tid(idx);
 		}
 
@@ -52,8 +57,11 @@ namespace Compat
 		tinfo_t tif;
 		if (tif.get_type_by_tid(sid) && tif.is_udt())
 		{
-			udm_t udm { .offset = offset };
-			if (auto idx = tif.find_udm(&udm, STRMEM_AUTO); idx != -1)
+			udm_t udm;
+			udm.offset = offset;
+
+			int idx = tif.find_udm(&udm, STRMEM_AUTO);
+			if (idx != -1)
 				return udm.name;
 		}
 
@@ -65,8 +73,11 @@ namespace Compat
 		tinfo_t tif;
 		if (tif.get_type_by_tid(sid) && tif.is_udt())
 		{
-			udm_t udm { .offset = offset };
-			if (auto idx = tif.find_udm(&udm, STRMEM_AUTO); idx != -1)
+			udm_t udm;
+			udm.offset = offset;
+
+			int idx = tif.find_udm(&udm, STRMEM_AUTO);
+			if (idx != -1)
 				return udm.size / 8;
 		}
 
@@ -78,8 +89,11 @@ namespace Compat
 		tinfo_t tif_local;
 		if (tif_local.get_type_by_tid(sid) && tif_local.is_udt())
 		{
-			udm_t udm { .offset = offset };
-			if (auto idx = tif_local.find_udm(&udm, STRMEM_AUTO); idx != -1)
+			udm_t udm;
+			udm.offset = offset;
+
+			int idx = tif_local.find_udm(&udm, STRMEM_AUTO);
+			if (idx != -1)
 				*tif = udm.type;
 		}
 
@@ -121,8 +135,11 @@ namespace Compat
 		tinfo_t tif;
 		if (tif.get_type_by_tid(sid) && tif.is_udt())
 		{
-			udm_t udm { .offset = offset };
-			if (auto idx = tif.find_udm(&udm, STRMEM_AUTO); idx != -1)
+			udm_t udm;
+			udm.offset = offset;
+
+			int idx = tif.find_udm(&udm, STRMEM_AUTO);
+			if (idx != -1)
 				return tif.rename_udm(idx, name) == TERR_OK;
 		}
 
