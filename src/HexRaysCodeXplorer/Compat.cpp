@@ -20,22 +20,17 @@ namespace Compat
 		if (fieldname)
 			qstr2user(&name_user, fieldname);
 
-		qstring snippet;
-		snippet.sprnt("add_struc_member(%ld, \"%s\", %ld, %llu, %ld, %ld);",
-					  (long)sid, name_user.c_str(), (long)offset, flag, mt ? (long)mt->tid : -1L, (long)nbytes);
-
 		idc_value_t result;
-		eval_idc_snippet(&result, snippet.c_str());
-		return (struc_error_t)result.num;
+		idc_value_t args[6] = { sid, name_user, offset, flag, mt ? mt->tid : BADADDR, nbytes };
+		call_idc_func(&result, "add_struc_member", args, 6);
+		return static_cast<struc_error_t>(result.num);
 	}
 
 	int get_member_flag(tid_t sid, asize_t offset)
 	{
-		qstring snippet;
-		snippet.sprnt("get_member_flag(%ld, %ld);", (long)sid, (long)offset);
-
 		idc_value_t result;
-		eval_idc_snippet(&result, snippet.c_str());
+		idc_value_t args[2] = { sid, offset };
+		call_idc_func(&result, "get_member_flag", args, 2);
 		return result.num;
 	}
 
@@ -93,12 +88,10 @@ namespace Compat
 
 	ea_t get_struc_first_offset(tid_t id)
 	{
-		qstring snippet;
-		snippet.sprnt("get_first_member(%ld);", (long)id);
-
 		idc_value_t result;
-		eval_idc_snippet(&result, snippet.c_str());
-		return result.num != -1 ? result.num : BADADDR;
+		idc_value_t args[1] = { id };
+		call_idc_func(&result, "get_first_member", args, 1);
+		return result.num;
 	}
 
 	tid_t get_struc_id(const char* name)
@@ -117,12 +110,10 @@ namespace Compat
 
 	ea_t get_struc_next_offset(tid_t id, ea_t offset)
 	{
-		qstring snippet;
-		snippet.sprnt("get_next_offset(%ld, %ld);", (long)id, (long)offset);
-
 		idc_value_t result;
-		eval_idc_snippet(&result, snippet.c_str());
-		return result.num != -1 ? result.num : BADADDR;
+		idc_value_t args[2] = { id, offset };
+		call_idc_func(&result, "get_next_offset", args, 2);
+		return result.num;
 	}
 
 	bool set_member_name(tid_t sid, ea_t offset, const char* name)
@@ -140,12 +131,9 @@ namespace Compat
 
 	bool set_member_tinfo(tid_t sid, uval_t memoff, const tinfo_t& tif, int flags)
 	{
-		qstring snippet;
-		snippet.sprnt("set_member_type(%ld, %ld, %d, %ld, %zu);",
-					  (long)sid, (long)memoff, flags, (long)tif.get_tid(), tif.get_size());
-
 		idc_value_t result;
-		eval_idc_snippet(&result, snippet.c_str());
+		idc_value_t args[5] { sid, memoff, flags, tif.get_tid(), tif.get_size() };
+		call_idc_func(&result, "set_member_type", args, 5);
 		return result.num != 0;
 	}
 
