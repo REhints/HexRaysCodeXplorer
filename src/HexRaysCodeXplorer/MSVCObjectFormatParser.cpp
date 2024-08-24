@@ -108,11 +108,11 @@ bool vftable::getTableInfo(ea_t ea, vtinfo &info)
 			fixEa(ea);
 			fixFunction(memberPtr);
 
-			ea += sizeof(ea_t);
+			ea += EA_SIZE;
 		};
 
 		// Reached the presumed end of it
-		if ((info.methodCount = ((ea - start) / sizeof(ea_t))) > 0)
+		if ((info.methodCount = ((ea - start) / EA_SIZE)) > 0)
 		{
 			info.end = ea;
 			return true;
@@ -326,13 +326,18 @@ bool RTTI::_RTTIBaseClassDescriptor::isValid(ea_t bcd, ea_t colBase64)
 		if ((attributes & 0xFFFFFF00) == 0)
 		{
 			// Check for valid type_info
-#ifndef __EA64__
-			return RTTI::type_info::isValid(getEa(bcd + ea_t(offsetof(_RTTIBaseClassDescriptor, typeDescriptor))));
-#else
-			UINT tdOffset = get_32bit(bcd + ea_t(offsetof(_RTTIBaseClassDescriptor, typeDescriptor)));
-			ea_t typeInfo = colBase64 + (UINT64)tdOffset;
+			ea_t typeInfo;
+			if (inf_is_64bit())
+			{
+				UINT tdOffset = get_32bit(bcd + ea_t(offsetof(_RTTIBaseClassDescriptor, typeDescriptor)));
+				typeInfo = colBase64 + (UINT64)tdOffset;
+			}
+			else
+			{
+				typeInfo = getEa(bcd + ea_t(offsetof(_RTTIBaseClassDescriptor, typeDescriptor)));
+			}
+
 			return RTTI::type_info::isValid(typeInfo);
-#endif
 		}
 	}
 
@@ -374,25 +379,30 @@ bool RTTI::_RTTIClassHierarchyDescriptor::isValid(ea_t chd, ea_t colBase64)
 		return false;
 
 	// Check the first BCD entry
-#ifndef __EA64__
-	ea_t baseClassArray = getEa(chd + offsetof(_RTTIClassHierarchyDescriptor, baseClassArray));
-#else
-	UINT baseClassArrayOffset = get_32bit(chd + offsetof(_RTTIClassHierarchyDescriptor, baseClassArray));
-	ea_t baseClassArray = colBase64 + (UINT64)baseClassArrayOffset;
-#endif
+	ea_t baseClassArray;
+	if (inf_is_64bit())
+	{
+		UINT baseClassArrayOffset = get_32bit(chd + offsetof(_RTTIClassHierarchyDescriptor, baseClassArray));
+		baseClassArray = colBase64 + (UINT64)baseClassArrayOffset;
+	}
+	else
+	{
+		baseClassArray = getEa(chd + offsetof(_RTTIClassHierarchyDescriptor, baseClassArray));
+	}
 
 	if (!is_loaded(baseClassArray))
 		return false;
 
-#ifndef __EA64__
-	ea_t baseClassDescriptor = getEa(baseClassArray);
-	return RTTI::_RTTIBaseClassDescriptor::isValid(baseClassDescriptor, 0);
-#else
-	ea_t baseClassDescriptor = colBase64 + (UINT64)get_32bit(baseClassArray);
-	return RTTI::_RTTIBaseClassDescriptor::isValid(baseClassDescriptor, colBase64);
-#endif
-
-	return false;
+	if (inf_is_64bit())
+	{
+		ea_t baseClassDescriptor = colBase64 + (UINT64)get_32bit(baseClassArray);
+		return RTTI::_RTTIBaseClassDescriptor::isValid(baseClassDescriptor, colBase64);
+	}
+	else
+	{
+		ea_t baseClassDescriptor = getEa(baseClassArray);
+		return RTTI::_RTTIBaseClassDescriptor::isValid(baseClassDescriptor, 0);
+	}
 }
 
 
@@ -401,14 +411,18 @@ static bool RTTI::getBCDInfo(ea_t col, bcdList &list, OUT UINT &numBaseClasses)
 {
 	numBaseClasses = 0;
 
-#ifndef __EA64__
-	ea_t chd = getEa(col + offsetof(_RTTICompleteObjectLocator, classDescriptor));
-#else
-	UINT cdOffset = get_32bit(col + offsetof(RTTI::_RTTICompleteObjectLocator, classDescriptor));
-	UINT objectLocator = get_32bit(col + offsetof(RTTI::_RTTICompleteObjectLocator, objectBase));
-	ea_t colBase = (col - (UINT64)objectLocator);
-	ea_t chd = (colBase + (UINT64)cdOffset);
-#endif
+	ea_t chd, colBase;
+	if (inf_is_64bit())
+	{
+		UINT cdOffset = get_32bit(col + offsetof(RTTI::_RTTICompleteObjectLocator, classDescriptor));
+		UINT objectLocator = get_32bit(col + offsetof(RTTI::_RTTICompleteObjectLocator, objectBase));
+		colBase = (col - (UINT64)objectLocator);
+		chd = (colBase + (UINT64)cdOffset);
+	}
+	else
+	{
+		chd = getEa(col + offsetof(_RTTICompleteObjectLocator, classDescriptor));
+	}
 
 	if (!chd)
 		return false;
@@ -419,33 +433,42 @@ static bool RTTI::getBCDInfo(ea_t col, bcdList &list, OUT UINT &numBaseClasses)
 	list.resize(numBaseClasses);
 
 	// Get pointer
-#ifndef __EA64__
-	ea_t baseClassArray = getEa(chd + offsetof(_RTTIClassHierarchyDescriptor, baseClassArray));
-#else
-	UINT bcaOffset = get_32bit(chd + offsetof(_RTTIClassHierarchyDescriptor, baseClassArray));
-	ea_t baseClassArray = (colBase + (UINT64)bcaOffset);
-#endif
+	ea_t baseClassArray;
+	if (inf_is_64bit())
+	{
+		UINT bcaOffset = get_32bit(chd + offsetof(_RTTIClassHierarchyDescriptor, baseClassArray));
+		baseClassArray = (colBase + (UINT64)bcaOffset);
+	}
+	else
+	{
+		baseClassArray = getEa(chd + offsetof(_RTTIClassHierarchyDescriptor, baseClassArray));
+	}
 
 	if (!::is_mapped(baseClassArray))
 		return false;
 
 	for (UINT i = 0; i < numBaseClasses; ++i, baseClassArray += sizeof(UINT)) // sizeof(ea_t)
 	{
-#ifndef __EA64__
-		// Get next BCD
-		ea_t bcd = getEa(baseClassArray);
-		if (!is_mapped(bcd))
-			continue;
+		ea_t bcd, typeInfo;
+		if (inf_is_64bit())
+		{
+			UINT bcdOffset = get_32bit(baseClassArray);
+			bcd = (colBase + (UINT64)bcdOffset);
 
-		// Get type name
-		ea_t typeInfo = getEa(bcd + offsetof(_RTTIBaseClassDescriptor, typeDescriptor));
-#else
-		UINT bcdOffset = get_32bit(baseClassArray);
-		ea_t bcd = (colBase + (UINT64)bcdOffset);
+			UINT tdOffset = get_32bit(bcd + offsetof(_RTTIBaseClassDescriptor, typeDescriptor));
+			typeInfo = (colBase + (UINT64)tdOffset);
+		}
+		else
+		{
+			// Get next BCD
+			bcd = getEa(baseClassArray);
+			if (!is_mapped(bcd))
+				continue;
 
-		UINT tdOffset = get_32bit(bcd + offsetof(_RTTIBaseClassDescriptor, typeDescriptor));
-		ea_t typeInfo = (colBase + (UINT64)tdOffset);
-#endif
+			// Get type name
+			typeInfo = getEa(bcd + offsetof(_RTTIBaseClassDescriptor, typeDescriptor));
+		}
+
 		if (!is_mapped(typeInfo))
 			continue;
 
@@ -672,18 +695,10 @@ void fixDword(ea_t ea)
 // Force memory location to be ea_t size
 void fixEa(ea_t ea)
 {
-#ifndef __EA64__
-	if (!is_dword(get_flags(ea)))
-#else
-	if (!is_qword(get_flags(ea)))
-#endif
+	if (!isEa(get_flags(ea)))
 	{
-		setUnknown(ea, sizeof(ea_t));
-#ifndef __EA64__
-		create_dword(ea, sizeof(ea_t));
-#else
-		create_qword(ea, sizeof(ea_t));
-#endif
+		setUnknown(ea, EA_SIZE);
+		createEa(ea, EA_SIZE);
 	}
 }
 
@@ -848,18 +863,18 @@ void idaapi findCols()
 void idaapi scanSeg4Vftables(segment_t *seg, eaRefMap &colMap)
 {
 	//UINT found = 0;
-	if (seg->size() <= sizeof(ea_t))
+	if (seg->size() <= EA_SIZE)
 		return;
 
-	ea_t startEA = ((seg->start_ea + sizeof(ea_t)) & ~((ea_t)(sizeof(ea_t) - 1)));
-	ea_t endEA = (seg->end_ea - sizeof(ea_t));
+	ea_t startEA = ((seg->start_ea + EA_SIZE) & ~((ea_t)(EA_SIZE - 1)));
+	ea_t endEA = (seg->end_ea - EA_SIZE);
 
 	if (startEA >= endEA)
 		return;
 
 	eaRefMap::iterator colEnd = colMap.end();
 
-	for (ea_t ptr = startEA; ptr < endEA; ptr += sizeof(UINT))
+	for (ea_t ptr = startEA; ptr < endEA; ptr += EA_SIZE)
 	{
 		// COL here?
 		ea_t ea = getEa(ptr);
@@ -868,7 +883,7 @@ void idaapi scanSeg4Vftables(segment_t *seg, eaRefMap &colMap)
 			continue;
 
 		// yes, look for vftable one ea_t below
-		ea_t vfptr = ptr + sizeof(ea_t);
+		ea_t vfptr = ptr + EA_SIZE;
 		ea_t method = getEa(vfptr);
 		// Points to code?
 		if (segment_t *s = getseg(method))

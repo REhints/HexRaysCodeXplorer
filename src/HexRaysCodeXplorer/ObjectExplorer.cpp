@@ -127,20 +127,14 @@ static bool get_vtbl_info(ea_t ea_address, VTBL_info_t &vtbl_info)
 				const auto value_flags = get_flags(ea_index_value);
 				if(!is_code(value_flags)) {
 					break;
-				} else {
-					if(is_unknown(index_flags)) {
-#ifndef __EA64__
-						create_dword(ea_address, sizeof(ea_t));
-#else
-						create_qword(ea_address, sizeof(ea_t));
-#endif
-					}
+				} else if(is_unknown(index_flags)) {
+					createEa(ea_address, EA_SIZE);
 				}
 
-				ea_address += sizeof(ea_t);
+				ea_address += EA_SIZE;
 			}
 
-			if((vtbl_info.methods = ((ea_address - ea_start) / sizeof(ea_t))) > 0) {
+			if((vtbl_info.methods = ((ea_address - ea_start) / EA_SIZE)) > 0) {
 				vtbl_info.ea_end = ea_address;
 				return true;
 			}
@@ -167,11 +161,10 @@ static void process_vtbl(ea_t &ea_sect)
 				vftable_info_t.vtbl_name = get_short_name(vftable_info_t.ea_begin);
 
 				qstring vtbl_info_str;
-#ifndef  __EA64__
-				vtbl_info_str.cat_sprnt(" 0x%0x - 0x%0x:  %s  methods count: %d", vftable_info_t.ea_begin, vftable_info_t.ea_end, vftable_info_t.vtbl_name.c_str(), vftable_info_t.methods);
-#else
-				vtbl_info_str.cat_sprnt(" 0x%016llx - 0x%016llx:  %s  methods count: %d", vftable_info_t.ea_begin, vftable_info_t.ea_end, vftable_info_t.vtbl_name.c_str(), vftable_info_t.methods);
-#endif // !#ifndef __EA64__
+				const auto fmt = inf_is_64bit()
+					? " 0x%016llx - 0x%016llx:  %s  methods count: %d"
+					: " 0x%0x - 0x%0x:  %s  methods count: %d";
+				vtbl_info_str.cat_sprnt(fmt, vftable_info_t.ea_begin, vftable_info_t.ea_end, vftable_info_t.vtbl_name.c_str(), vftable_info_t.methods);
 
 				vtbl_list.push_back(vtbl_info_str);
 				vtbl_t_list.push_back(vftable_info_t);
@@ -183,7 +176,7 @@ static void process_vtbl(ea_t &ea_sect)
 	}
 
 	// nothing found: increment ea_sect by size of the pointer to continue search at the next location
-	ea_sect += sizeof(ea_t);
+	ea_sect += EA_SIZE;
 	return;
 }
 
@@ -243,7 +236,7 @@ tid_t create_vtbl_struct(const ea_t vtbl_addr, const ea_t vtbl_addr_end, const q
 
 		if (method_ea == 0)
 		{
-			ea = ea + sizeof(ea_t);
+			ea += EA_SIZE;
 			continue;
 		}
 		if (!is_mapped(method_ea))
@@ -256,12 +249,9 @@ tid_t create_vtbl_struct(const ea_t vtbl_addr, const ea_t vtbl_addr_end, const q
 			if (!method_name.empty())
 				struc_member_name = method_name.c_str();
 		}
-#ifndef __EA64__
-		struc_error_t ret = Compat::add_struc_member(id, nullptr, offset, dword_flag(), nullptr, sizeof(ea_t));
-#else
-		struc_error_t ret = Compat::add_struc_member(id, nullptr, offset, qword_flag(), nullptr, sizeof(ea_t));
-#endif
 
+		struc_error_t ret = Compat::add_struc_member(id, nullptr, offset,
+			inf_is_64bit() ? qword_flag() : dword_flag(), nullptr, EA_SIZE);
 		if (ret != STRUC_ERROR_MEMBER_OK)
 			return BADNODE;
 
@@ -272,7 +262,7 @@ tid_t create_vtbl_struct(const ea_t vtbl_addr, const ea_t vtbl_addr_end, const q
 			}
 		}
 
-		ea = ea + sizeof(ea_t);
+		ea += EA_SIZE;
 		const auto ea_flags = get_flags(ea);
 
 		if (has_any_name(ea_flags))
@@ -302,11 +292,10 @@ void find_vtables_rtti()
 		vftable_info_t.vtbl_name = it->second.vtbl_name;
 
 		qstring vtbl_info_str;
-#ifdef __EA64__
-		vtbl_info_str.cat_sprnt(" 0x%llx - 0x%llx:  %s  methods count: %d", vftable_info_t.ea_begin, vftable_info_t.ea_end, vftable_info_t.vtbl_name.c_str(), vftable_info_t.methods);
-#else
-		vtbl_info_str.cat_sprnt(" 0x%x - 0x%x:  %s  methods count: %d", vftable_info_t.ea_begin, vftable_info_t.ea_end, vftable_info_t.vtbl_name.c_str(), vftable_info_t.methods);
-#endif
+		const auto fmt = inf_is_64bit()
+			? " 0x%llx - 0x%llx:  %s  methods count: %d"
+			: " 0x%x - 0x%x:  %s  methods count: %d";
+		vtbl_info_str.cat_sprnt(fmt, vftable_info_t.ea_begin, vftable_info_t.ea_end, vftable_info_t.vtbl_name.c_str(), vftable_info_t.methods);
 
 		vtbl_list.push_back(vtbl_info_str);
 		vtbl_t_list.push_back(vftable_info_t);

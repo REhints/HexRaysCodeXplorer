@@ -1107,7 +1107,7 @@ ReconstructableTypeVtable::~ReconstructableTypeVtable()
 
 bool ReconstructableTypeVtable::SetMemberName(unsigned long offset, const char * newName)
 {
-	const auto func_addr = getEa(vtable_address + sizeof(ea_t) * 2 + sizeof(ea_t) * offset);
+	const auto func_addr = getEa(vtable_address + EA_SIZE * 2 + EA_SIZE * offset);
 	auto funcname = newName;
 	const auto class_name = name.substr(0, name.length() - sizeof(VTBL_CLSNAME_POSTFIX));
 	// name.substr(0, name.length() - sizeof(VTBL_CLSNAME_POSTFIX))
@@ -1147,7 +1147,7 @@ bool ReconstructableTypeVtable::AddMember(ReconstructableMember * member)
 
 ea_t ReconstructableTypeVtable::to_ea(const unsigned long offset) const
 {
-	const auto res = getEa(vtable_address + sizeof(ea_t) * 2 + offset);
+	const auto res = getEa(vtable_address + EA_SIZE * 2 + offset);
 
 	return res;
 }

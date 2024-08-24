@@ -87,26 +87,21 @@ template <class T> bool getVerify32_t(ea_t eaPtr, T &rValue)
 // Check compiler
 bool compilerIs(const char *name);
 
+inline bool createEa(ea_t ea, asize_t length, bool force = false)
+{
+	return inf_is_64bit() ? create_qword(ea, length, force) : create_dword(ea, length, force);
+}
 
 // Get address/pointer value
 inline ea_t getEa(ea_t ea)
 {
-#ifndef __EA64__
-	return (ea_t)get_32bit(ea);
-#else // __EA64__
-	return (ea_t)get_64bit(ea);
-#endif // __EA64__
+	return inf_is_64bit() ? (ea_t)get_64bit(ea) : (ea_t)get_32bit(ea);
 }
-
 
 // Returns TRUE if ea_t sized value flags
 inline bool isEa(flags_t f)
 {
-#ifndef __EA64__
-	return is_dword(f);
-#else // __EA64__
-	return is_qword(f);
-#endif // __EA64__
+	return inf_is_64bit() ? is_qword(f) : is_dword(f);
 }
 
 #ifndef _SHA_enum_

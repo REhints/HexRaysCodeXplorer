@@ -479,11 +479,8 @@ static bool idaapi show_offset_in_windbg_format(void *ud) {
 	get_root_filename(module_name, 255);
 	for (auto i = 0; i < 255; i++)
 		if (module_name[i] == '.') { module_name[i] = 0; break; }
-#ifdef __EA64__
-	const auto fmt = "%llx";
-#else
-	const auto fmt = "%x";
-#endif
+
+	const auto fmt = inf_is_64bit() ? "%llx" : "%x";
 	sprintf(_offset, fmt, offset);
 	result.cat_sprnt("%s+0x%s", module_name, _offset);
 

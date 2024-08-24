@@ -91,11 +91,7 @@ namespace RTTI
 
 	struct _RTTIBaseClassDescriptor
 	{
-#ifndef __EA64__
-		ea_t typeDescriptor;        // 00 Type descriptor of the class
-#else
-		UINT typeDescriptor;        // 00 Type descriptor of the class  *X64 int32 offset
-#endif
+		UINT typeDescriptor;        // 00 Type descriptor of the class
 		UINT numContainedBases;		// 04 Number of nested classes following in the Base Class Array
 		PMD  pmd;					// 08 Pointer-to-member displacement info
 		UINT attributes;			// 14 Flags
@@ -117,14 +113,9 @@ namespace RTTI
 		UINT signature;			// 00 Zero until loaded
 		UINT attributes;		// 04 Flags
 		UINT numBaseClasses;	// 08 Number of classes in the following 'baseClassArray'
-#ifndef __EA64__
-		ea_t baseClassArray;    // 0C _RTTIBaseClassArray*
-#else
-		UINT baseClassArray;    // 0C *X64 int32 offset to _RTTIBaseClassArray*
-#endif
+		UINT baseClassArray;    // 0C _RTTIBaseClassArray*
 
 		static bool isValid(ea_t chd, ea_t colBase64 = 0);
-
 	};
 
 	// "Complete Object Locator" location of the complete object from a specific vftable pointer
@@ -134,19 +125,12 @@ namespace RTTI
 		UINT offset;				// 04 Offset of this vftable in the complete class
 		UINT cdOffset;				// 08 Constructor displacement offset
 
-#ifndef __EA64__
-		ea_t typeDescriptor;	    // 0C (type_info *) of the complete class
-		ea_t classDescriptor;       // 10 (_RTTIClassHierarchyDescriptor *) Describes inheritance hierarchy
-#else
-		UINT typeDescriptor;	    // 0C (type_info *) of the complete class  *X64 int32 offset
-		UINT classDescriptor;       // 10 (_RTTIClassHierarchyDescriptor *) Describes inheritance hierarchy  *X64 int32 offset
+		UINT typeDescriptor;	    // 0C (type_info *) of the complete class
+		UINT classDescriptor;       // 10 (_RTTIClassHierarchyDescriptor *) Describes inheritance hierarchy
 		UINT objectBase;            // 14 Object base offset (base = ptr col - objectBase)
-#endif
-
 
 		static bool isValid(ea_t col);
 		static bool isValid2(ea_t col);
-
 	};
 #pragma pack(pop)
 
