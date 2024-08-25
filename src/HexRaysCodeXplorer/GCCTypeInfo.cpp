@@ -134,8 +134,8 @@ GCCTypeInfo *GCCTypeInfo::parseTypeInfo(ea_t ea)
 	result->parentsTypes = new GCCParentType*[result->parentsCount];
 	ea_t addr = ea + ea_t(offsetof(GCC_RTTI::__vmi_class_type_info, vmi_bases));
 
-	setUnknown(ea + ea_t(offsetof(GCC_RTTI::__vmi_class_type_info, vmi_flags)), sizeof(ea_t));
-	create_dword(ea + ea_t(offsetof(GCC_RTTI::__vmi_class_type_info, vmi_flags)), sizeof(ea_t));
+	setUnknown(ea + ea_t(offsetof(GCC_RTTI::__vmi_class_type_info, vmi_flags)), EA_SIZE);
+	create_dword(ea + ea_t(offsetof(GCC_RTTI::__vmi_class_type_info, vmi_flags)), EA_SIZE);
 
 	setUnknown(ea + ea_t(offsetof(GCC_RTTI::__vmi_class_type_info, vmi_base_count)), sizeof(int));
 	create_dword(ea + ea_t(offsetof(GCC_RTTI::__vmi_class_type_info, vmi_base_count)), sizeof(int));
@@ -161,10 +161,10 @@ GCCTypeInfo *GCCTypeInfo::parseTypeInfo(ea_t ea)
 		//baseReType->AddSubType(reType);
 		//reType->SetParent(baseReType, baseInfo.vmi_offset_flags >> GCC_RTTI::offset_shift);
 		
-		setUnknown(addr + ea_t(offsetof(GCC_RTTI::__base_class_info, base)), sizeof(ea_t));
+		setUnknown(addr + ea_t(offsetof(GCC_RTTI::__base_class_info, base)), EA_SIZE);
 		op_plain_offset(addr + offsetof(GCC_RTTI::__base_class_info, base), 0, addr);
 
-		setUnknown(addr + ea_t(offsetof(GCC_RTTI::__base_class_info, vmi_offset_flags)), sizeof(ea_t));
+		setUnknown(addr + ea_t(offsetof(GCC_RTTI::__base_class_info, vmi_offset_flags)), EA_SIZE);
 		create_dword(addr + ea_t(offsetof(GCC_RTTI::__base_class_info, vmi_offset_flags)), sizeof(int));
 		result->parentsTypes[i] = new GCCParentType();
 		result->parentsTypes[i]->ea = base->ea;

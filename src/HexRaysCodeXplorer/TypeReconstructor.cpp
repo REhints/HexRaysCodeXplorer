@@ -1,24 +1,24 @@
 /*	Copyright (c) 2013-2016
 	REhints <info@rehints.com>
 	All rights reserved.
-	
+
 	==============================================================================
-	
+
 	This file is part of HexRaysCodeXplorer
 
- 	HexRaysCodeXplorer is free software: you can redistribute it and/or modify it
- 	under the terms of the GNU General Public License as published by
- 	the Free Software Foundation, either version 3 of the License, or
- 	(at your option) any later version.
+	HexRaysCodeXplorer is free software: you can redistribute it and/or modify it
+	under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
 
- 	This program is distributed in the hope that it will be useful, but
- 	WITHOUT ANY WARRANTY; without even the implied warranty of
- 	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- 	General Public License for more details.
+	This program is distributed in the hope that it will be useful, but
+	WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+	General Public License for more details.
 
- 	You should have received a copy of the GNU General Public License
- 	along with this program.  If not, see
- 	<http://www.gnu.org/licenses/>.
+	You should have received a copy of the GNU General Public License
+	along with this program.  If not, see
+	<http://www.gnu.org/licenses/>.
 
 	==============================================================================
 */
@@ -27,6 +27,7 @@
 #include "TypeReconstructor.h"
 #include <memory>
 
+#include "Compat.h"
 #include "Debug.h"
 #include "Utility.h"
 
@@ -88,7 +89,7 @@ void idaapi type_reference::init(cexpr_t *e) {
 void idaapi type_reference::update_type(cexpr_t *e) {
 	type = e->type;
 
-    // The variable we're scanning is assumed to be a pointer to some structure.
+	// The variable we're scanning is assumed to be a pointer to some structure.
 	// Therefore, we mark a member as a pointer only if it is casted to a pointer-to-a-pointer.
 	if (type.is_ptr()) {
 		ptr_type_data_t ptr_deets;
@@ -338,7 +339,7 @@ bool idaapi type_builder_t::check_ptr(cexpr_t *e, struct_filed &str_fld)
 		for (size_t i = 0 ; i < parents.size() - 1 ; i ++) {
 			citem_t *parent_i = parents[parents.size() - i - 1];
 
-			// if its parent is addition 
+			// if its parent is addition
 			if(parent_i->is_expr() && (parent_i->op == cot_add))
 			{
 				cexpr_t *expr_2 = (cexpr_t *)parent_i;
@@ -410,11 +411,9 @@ bool idaapi type_builder_t::check_ptr(cexpr_t *e, struct_filed &str_fld)
 		if (str_fld.vftbl != BADADDR) {
 			char tmp[1024];
 			memset(tmp, 0x00, sizeof(tmp));
-#ifdef __EA64__
-			const char *fmt = "vftbl reference detected at offset 0x%X, ea=0x%08llX\r\n";
-#else
-			const char *fmt = "vftbl reference detected at offset 0x%X, ea=0x%08X\r\n";
-#endif
+			const auto fmt = inf_is_64bit()
+				? "vftbl reference detected at offset 0x%X, ea=0x%08llX\r\n"
+				: "vftbl reference detected at offset 0x%X, ea=0x%08X\r\n";
 			sprintf_s(tmp, sizeof(tmp), fmt, str_fld.offset, str_fld.vftbl);
 
 			logmsg(DEBUG, tmp);
@@ -433,7 +432,7 @@ bool idaapi type_builder_t::check_idx(struct_filed &str_fld)
 	{
 		citem_t *parent_1 = parents.back();
 
-		// if its parrent is 
+		// if its parrent is
 		if(parent_1->is_expr() && (parent_1->op == cot_memptr))
 		{
 			citem_t *parent_2 = parents[parents.size() - 2];
@@ -450,7 +449,7 @@ bool idaapi type_builder_t::check_idx(struct_filed &str_fld)
 				citem_t *parent_3 = parents[parents.size() - 3];
 				if(parent_3->is_expr() && (parent_3->op == cot_asg))
 				{
-					cexpr_t *expr_1 = (cexpr_t *)parent_1;	
+					cexpr_t *expr_1 = (cexpr_t *)parent_1;
 
 					str_fld.offset = expr_1->m + num;
 					str_fld.size = get_idx_type_size(expr_2);
@@ -520,88 +519,83 @@ int type_builder_t::get_structure_size()
 
 tid_t type_builder_t::get_structure(const qstring& name)
 {
-	tid_t struct_type_id = add_struc(BADADDR, name.c_str());
+	tid_t struct_type_id = Compat::add_struc(BADADDR, name.c_str());
 
 	if (struct_type_id == BADADDR) {
 		// the name is ill-formed or *is already used in the program*
-		struct_type_id = get_struc_id(name.c_str());
+		struct_type_id = Compat::get_struc_id(name.c_str());
 	}
 
 	if (struct_type_id != BADADDR)
 	{
-		struc_t * struc = get_struc(struct_type_id);
-		if (struc != NULL)
+		opinfo_t opinfo;
+		opinfo.tid = struct_type_id;
+
+		int j = 0;
+
+		for (std::map<int, struct_filed>::iterator i = structure.begin(); i != structure.end() ; ++i)
 		{
-			opinfo_t opinfo;
-			opinfo.tid = struct_type_id;
+			VTBL_info_t vtbl;
 
-			int j = 0;
+			flags_t member_flgs = 0;
+			if (i->second.size == 1)
+				member_flgs = byte_flag();
+			else if (i->second.size == 2)
+				member_flgs = word_flag();
+			else if (i->second.size == 4)
+				member_flgs = dword_flag();
+			else if (i->second.size == 8)
+				member_flgs = qword_flag();
 
-			for (std::map<int, struct_filed>::iterator i = structure.begin(); i != structure.end() ; ++i)
+			if (i->second.is_pointer)
+				member_flgs |= off_flag();
+
+
+			qstring field_name;
+
+			if ((i->second.vftbl != BADADDR) && get_vbtbl_by_ea(i->second.vftbl, vtbl))
 			{
-				VTBL_info_t vtbl;
+				qstring vftbl_name = name;
+				vftbl_name.cat_sprnt("_VTABLE_%X_%p", i->second.offset, i->second.vftbl);
 
-				flags_t member_flgs = 0;
-				if (i->second.size == 1)
-					member_flgs = byte_flag();
-				else if (i->second.size == 2)
-					member_flgs = word_flag();
-				else if (i->second.size == 4)
-					member_flgs = dword_flag();
-				else if (i->second.size == 8)
-					member_flgs = qword_flag();
-
-				if (i->second.is_pointer)
-					member_flgs |= off_flag();
-
-
-				qstring field_name;
-
-				if ((i->second.vftbl != BADADDR) && get_vbtbl_by_ea(i->second.vftbl, vtbl))
-				{
-					qstring vftbl_name = name;
-					vftbl_name.cat_sprnt("_VTABLE_%X_%p", i->second.offset, i->second.vftbl);
-
-					tid_t vtbl_str_id = create_vtbl_struct(vtbl.ea_begin, vtbl.ea_end, vftbl_name, 0);
-					if (vtbl_str_id != BADADDR) {
-						field_name.cat_sprnt("vftbl_%d_%p", j, i->second.vftbl);
-						const char *fncstr = field_name.c_str();
-						int iRet = add_struc_member(struc, fncstr, i->second.offset, member_flgs, NULL, i->second.size);
-
-						member_t * membr = get_member_by_name(struc, fncstr);
-						if (membr != NULL) {
-							qstring real_vftbl_name = vftbl_name;
-							real_vftbl_name += "::vtable";
-							tinfo_t new_type = create_typedef(real_vftbl_name.c_str());
-							if (new_type.is_correct()) {
-								smt_code_t dd = set_member_tinfo(struc, membr, 0, make_pointer(new_type), SET_MEMTI_COMPATIBLE);
-							}
-						}
-					}
-				}
-				else
-				{
-					field_name.cat_sprnt("field_%X", i->second.offset);
+				tid_t vtbl_str_id = create_vtbl_struct(vtbl.ea_begin, vtbl.ea_end, vftbl_name, 0);
+				if (vtbl_str_id != BADADDR) {
+					field_name.cat_sprnt("vftbl_%d_%p", j, i->second.vftbl);
 					const char *fncstr = field_name.c_str();
 
-					std::unique_ptr<opinfo_t> refinfo = nullptr;
-					if (member_flgs & off_flag()) {
-						refinfo.reset(new opinfo_t());
-						if (member_flgs & qword_flag()) {
-							// 64-bit pointer
-							refinfo->ri.init(REF_OFF64);
-						} else {
-							// 32-bit pointer
-							refinfo->ri.init(REF_OFF32);
+					struc_error_t add = Compat::add_struc_member(struct_type_id, fncstr, i->second.offset, member_flgs, nullptr, i->second.size);
+					if (add == STRUC_ERROR_MEMBER_OK) {
+						qstring real_vftbl_name = vftbl_name;
+						real_vftbl_name += "::vtable";
+						tinfo_t new_type = create_typedef(real_vftbl_name.c_str());
+						if (new_type.is_correct()) {
+							Compat::set_member_tinfo(struct_type_id, i->second.offset, new_type, SET_MEMTI_COMPATIBLE);
 						}
 					}
-
-					int iRet = add_struc_member(struc, fncstr, i->second.offset, member_flgs, refinfo.get(), i->second.size);
-					if (iRet < 0)
-						logmsg(ERROR, "Error %d occurred while adding struct member %s\n", iRet, fncstr);
 				}
-				j ++;
 			}
+			else
+			{
+				field_name.cat_sprnt("field_%X", i->second.offset);
+				const char *fncstr = field_name.c_str();
+
+				std::unique_ptr<opinfo_t> refinfo = nullptr;
+				if (member_flgs & off_flag()) {
+					refinfo.reset(new opinfo_t());
+					if (member_flgs & qword_flag()) {
+						// 64-bit pointer
+						refinfo->ri.init(REF_OFF64);
+					} else {
+						// 32-bit pointer
+						refinfo->ri.init(REF_OFF32);
+					}
+				}
+
+				struc_error_t ret = Compat::add_struc_member(struct_type_id, fncstr, i->second.offset, member_flgs, refinfo.get(), i->second.size);
+				if (ret != STRUC_ERROR_MEMBER_OK)
+					logmsg(ERROR, "Error %d occurred while adding struct member %s\n", ret, fncstr);
+			}
+			j ++;
 		}
 	}
 	return struct_type_id;
@@ -734,9 +728,9 @@ bool idaapi reconstruct_type(const reconstruct_type_params_t & params)
 		return false;
 	}
 
-    // Decompile.
-    hexrays_failure_t hf{};
-    auto cfunc = decompile(func, &hf);
+	// Decompile.
+	hexrays_failure_t hf{};
+	auto cfunc = decompile(func, &hf);
 	if (!cfunc) {
 		logmsg(ERROR, "Failed to decompile function at 0x%x...\n", params.func_ea);
 		return false;

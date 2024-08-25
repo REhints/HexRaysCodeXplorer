@@ -40,11 +40,11 @@ unsigned int findMethodsCount(ea_t addr)
 			}
 		}
 		++methodsCount;
-		addr += sizeof(ea_t);
+		addr += EA_SIZE;
 	}
 	// Now lets remove ending zeroes.
 	while (methodsCount) {
-		addr -= sizeof(ea_t);
+		addr -= EA_SIZE;
 		func = getEa(addr);
 		if (func != 0)
 			break;
@@ -87,8 +87,8 @@ GCCVtableInfo *GCCVtableInfo::parseVtableInfo(ea_t ea)
 	type->vtable = result;
 	
 
-	addr += methodsCount * sizeof(ea_t);
-	// tid_t vtbl_stru = create_vtbl_struct1(result->ea_start + sizeof(GCC_RTTI::__vtable_info), result->ea_start + sizeof(GCC_RTTI::__vtable_info) + methodsCount * sizeof(ea_t), type->typeName);
+	addr += methodsCount * EA_SIZE;
+	// tid_t vtbl_stru = create_vtbl_struct1(result->ea_start + sizeof(GCC_RTTI::__vtable_info), result->ea_start + sizeof(GCC_RTTI::__vtable_info) + methodsCount * EA_SIZE, type->typeName);
 
 	std::string vtbl_name = type->typeName + VTBL_CLSNAME_POSTFIX;
 
@@ -112,7 +112,7 @@ GCCVtableInfo *GCCVtableInfo::parseVtableInfo(ea_t ea)
 				return nullptr;
 			}
 			addr += sizeof(GCC_RTTI::__vtable_info);
-			addr += result->vtables[i].methodsCount * sizeof(ea_t);
+			addr += result->vtables[i].methodsCount * EA_SIZE;
 		}
 	}
 

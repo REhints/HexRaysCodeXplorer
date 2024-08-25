@@ -241,26 +241,26 @@ int microcode_instruction_graph::insert(mop_t& op, const int i_parent, const int
 	switch (op.t)
 	{
 	case mop_d: // result of another instruction
-		{
-			const auto i_dest_block = insert(op.d, i_this_block);
-			add_edge(i_this_block, i_dest_block, 0);
-			break;
-		}
+	{
+		const auto i_dest_block = insert(op.d, i_this_block);
+		add_edge(i_this_block, i_dest_block, 0);
+		break;
+	}
 	case mop_f: // list of arguments
 		for (auto i = 0; i < op.f->args.size(); ++i)
 			insert(op.f->args[i], i_this_block, i);
 		break;
 	case mop_p: // operand pair
-		{
-			insert(op.pair->lop, i_this_block, 0);
-			insert(op.pair->hop, i_this_block, 1);
-			break;
-		}
+	{
+		insert(op.pair->lop, i_this_block, 0);
+		insert(op.pair->hop, i_this_block, 1);
+		break;
+	}
 	case mop_a: // result of another instruction
-		{
-			insert(*op.a, i_this_block, 0);
-			break;
-		}
+	{
+		insert(*op.a, i_this_block, 0);
+		break;
+	}
 	default: ;
 	}
 	return i_this_block;
@@ -280,12 +280,12 @@ static ssize_t idaapi migr_callback(void* ud, const int code, va_list va)
 		break;
 #endif
 
-		// refresh user-defined graph nodes and edges
+	// refresh user-defined graph nodes and edges
 	case grcode_user_refresh:
-		// in:  mutable_graph_t *g
-		// out: success
+	// in:  mutable_graph_t *g
+	// out: success
 	{
-		auto mg = va_arg(va, mutable_graph_t*);
+		auto mg = va_arg(va, interactive_graph_t*);
 
 		// we have to resize
 		mg->resize(microg->m_num_blocks);
@@ -299,14 +299,14 @@ static ssize_t idaapi migr_callback(void* ud, const int code, va_list va)
 
 	// retrieve text for user-defined graph node
 	case grcode_user_text:
-		//mutable_graph_t *g
-		//      int node
-		//      const char **result
-		//      bgcolor_t *bg_color (maybe NULL)
-		// out: must return 0, result must be filled
-		// NB: do not use anything calling GDI!
+	//mutable_graph_t *g
+	//      int node
+	//      const char **result
+	//      bgcolor_t *bg_color (maybe NULL)
+	// out: must return 0, result must be filled
+	// NB: do not use anything calling GDI!
 	{
-		va_arg(va, mutable_graph_t*);
+		va_arg(va, interactive_graph_t*);
 		const auto node = va_arg(va, int);
 		const auto text = va_arg(va, const char**);
 
@@ -368,10 +368,10 @@ static ssize_t idaapi mgr_callback(void* ud, const int code, va_list va)
 
 		// refresh user-defined graph nodes and edges
 	case grcode_user_refresh:
-		// in:  mutable_graph_t *g
-		// out: success
+	// in:  mutable_graph_t *g
+	// out: success
 	{
-		mutable_graph_t* mg = va_arg(va, mutable_graph_t*);
+		interactive_graph_t* mg = va_arg(va, interactive_graph_t*);
 
 		// we have to resize
 		mg->resize(mba->qty);
@@ -384,16 +384,16 @@ static ssize_t idaapi mgr_callback(void* ud, const int code, va_list va)
 	}
 	break;
 
-	// retrieve text for user-defined graph node
+		// retrieve text for user-defined graph node
 	case grcode_user_text:
-		//mutable_graph_t *g
-		//      int node
-		//      const char **result
-		//      bgcolor_t *bg_color (maybe NULL)
-		// out: must return 0, result must be filled
-		// NB: do not use anything calling GDI!
+	//mutable_graph_t *g
+	//      int node
+	//      const char **result
+	//      bgcolor_t *bg_color (maybe NULL)
+	// out: must return 0, result must be filled
+	// NB: do not use anything calling GDI!
 	{
-		va_arg(va, mutable_graph_t*);
+		va_arg(va, interactive_graph_t*);
 		const auto node = va_arg(va, int);
 		const auto text = va_arg(va, const char**);
 
@@ -479,7 +479,7 @@ static bool idaapi ct_keyboard(TWidget* /*v*/, const int key, const int shift, v
 		case IK_ESCAPE:
 			close_widget(si->cv, WCLS_SAVE | WCLS_CLOSE_LATER);
 			return true;
-	default: ;
+		default: ;
 		}
 	}
 	return false;
@@ -511,7 +511,7 @@ ssize_t idaapi ui_callback(void* ud, const int code, va_list va)
 		}
 	}
 	break;
-default: ;
+	default: ;
 	}
 	return 0;
 }

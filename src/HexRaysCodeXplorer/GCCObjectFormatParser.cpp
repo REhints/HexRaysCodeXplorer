@@ -38,7 +38,6 @@
 #include "stddef.h"
 #include "GCCVtableInfo.h"
 #include "GCCTypeInfo.h"
-#include "struct.hpp"
 #include "Debug.h"
 #include "ReconstructableType.h"
 #include <stack>
@@ -231,8 +230,8 @@ void GCCObjectFormatParser::scanSeg4Vftables(segment_t *seg)
 	size_t size = (std::max)(sizeof(GCC_RTTI::__vtable_info), sizeof(GCC_RTTI::type_info));
 	unsigned char buffer[(std::max)(sizeof(GCC_RTTI::__vtable_info), sizeof(GCC_RTTI::type_info))];
 
-	ea_t startEA = ((seg->start_ea + sizeof(ea_t)) & ~((ea_t)(sizeof(ea_t) - 1)));
-	ea_t endEA = (seg->end_ea - sizeof(ea_t));
+	ea_t startEA = ((seg->start_ea + EA_SIZE) & ~((ea_t)(EA_SIZE - 1)));
+	ea_t endEA = (seg->end_ea - EA_SIZE);
 	ea_t ea = startEA;
 	while (ea < endEA)
 	{
@@ -246,7 +245,7 @@ void GCCObjectFormatParser::scanSeg4Vftables(segment_t *seg)
 			continue;
 		}
 		if (!get_bytes(buffer, size, ea)) {
-			ea += sizeof(ea_t);
+			ea += EA_SIZE;
 			continue;
 		}
 
@@ -276,7 +275,7 @@ void GCCObjectFormatParser::scanSeg4Vftables(segment_t *seg)
 		if (typeInfo)
 			ea += typeInfo->size;
 		else
-			ea += sizeof(ea_t);
+			ea += EA_SIZE;
 	}
 	return;
 }
@@ -370,7 +369,7 @@ void buildReconstructableTypesRecursive(GCCTypeInfo *type,  std::set <GCCTypeInf
 				}
 					
 				else {
-					if (ph.id == PLFM_ARM)
+					if (PH.id == PLFM_ARM)
 						funcPtr &= (ea_t)-2;
 					qstring method_name;
 					get_ea_name(&method_name, funcPtr);

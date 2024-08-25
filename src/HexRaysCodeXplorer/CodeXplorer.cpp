@@ -228,7 +228,7 @@ static ssize_t idaapi gr_callback(void *ud, const int code, va_list va)
 	{
 		// refresh user-defined graph nodes and edges
 	case grcode_user_refresh:
-		// in:  mutable_graph_t *g
+		// in:  interactive_graph_t *g
 		// out: success
 	{
 		DECLARE_GI_VARS;
@@ -239,7 +239,7 @@ static ssize_t idaapi gr_callback(void *ud, const int code, va_list va)
 		graph_builder_t gb(*fg);       // Graph builder helper class
 		gb.apply_to(&gi->vu->cfunc->body, nullptr);
 
-		auto mg = va_arg(va, mutable_graph_t *);
+		auto mg = va_arg(va, interactive_graph_t *);
 
 		// we have to resize
 		mg->resize(fg->count());
@@ -259,7 +259,7 @@ static ssize_t idaapi gr_callback(void *ud, const int code, va_list va)
 
 	// retrieve text for user-defined graph node
 	case grcode_user_text:
-		//mutable_graph_t *g
+		//interactive_graph_t *g
 		//      int node
 		//      const char **result
 		//      bgcolor_t *bg_color (maybe NULL)
@@ -267,7 +267,7 @@ static ssize_t idaapi gr_callback(void *ud, const int code, va_list va)
 		// NB: do not use anything calling GDI!
 	{
 		DECLARE_GI_VARS;
-		va_arg(va, mutable_graph_t *);
+		va_arg(va, interactive_graph_t *);
 		const auto node = va_arg(va, int);
 		const auto text = va_arg(va, const char **);
 		const auto bgcolor = va_arg(va, bgcolor_t *);
@@ -286,7 +286,7 @@ static ssize_t idaapi gr_callback(void *ud, const int code, va_list va)
 	case grcode_user_hint:
 	{
 		DECLARE_GI_VARS;
-		va_arg(va, mutable_graph_t *);
+		va_arg(va, interactive_graph_t *);
 		const auto mousenode = va_argi(va, int);
 		const auto to = va_argi(va, int);
 		const auto from = va_argi(va, int);
@@ -479,11 +479,8 @@ static bool idaapi show_offset_in_windbg_format(void *ud) {
 	get_root_filename(module_name, 255);
 	for (auto i = 0; i < 255; i++)
 		if (module_name[i] == '.') { module_name[i] = 0; break; }
-#ifdef __EA64__
-	const auto fmt = "%llx";
-#else
-	const auto fmt = "%x";
-#endif
+
+	const auto fmt = inf_is_64bit() ? "%llx" : "%x";
 	sprintf(_offset, fmt, offset);
 	result.cat_sprnt("%s+0x%s", module_name, _offset);
 

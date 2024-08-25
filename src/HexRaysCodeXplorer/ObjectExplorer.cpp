@@ -1,23 +1,23 @@
 /*	Copyright (c) 2013-2020
 	REhints <info@rehints.com>
 	All rights reserved.
-	
+
 	==============================================================================
-	
+
 	This file is part of HexRaysCodeXplorer
 
- 	HexRaysCodeXplorer is free software: you can redistribute it and/or modify it
- 	under the terms of the GNU General Public License as published by
- 	the Free Software Foundation, either version 3 of the License, or
- 	(at your option) any later version.
+	HexRaysCodeXplorer is free software: you can redistribute it and/or modify it
+	under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
 
- 	This program is distributed in the hope that it will be useful, but
- 	WITHOUT ANY WARRANTY; without even the implied warranty of
- 	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- 	General Public License for more details.
+	This program is distributed in the hope that it will be useful, but
+	WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+	General Public License for more details.
 
- 	You should have received a copy of the GNU General Public License
- 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
+	You should have received a copy of the GNU General Public License
+	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 	==============================================================================
 */
@@ -25,6 +25,7 @@
 
 #include "Common.h"
 #include "ObjectExplorer.h"
+#include "Compat.h"
 #include "GCCObjectFormatParser.h"
 #include "Utility.h"
 
@@ -126,20 +127,14 @@ static bool get_vtbl_info(ea_t ea_address, VTBL_info_t &vtbl_info)
 				const auto value_flags = get_flags(ea_index_value);
 				if(!is_code(value_flags)) {
 					break;
-				} else {
-					if(is_unknown(index_flags)) {
-#ifndef __EA64__
-						create_dword(ea_address, sizeof(ea_t));
-#else
-						create_qword(ea_address, sizeof(ea_t));
-#endif
-					}
+				} else if(is_unknown(index_flags)) {
+					createEa(ea_address, EA_SIZE);
 				}
 
-				ea_address += sizeof(ea_t);
+				ea_address += EA_SIZE;
 			}
 
-			if((vtbl_info.methods = ((ea_address - ea_start) / sizeof(ea_t))) > 0) {
+			if((vtbl_info.methods = ((ea_address - ea_start) / EA_SIZE)) > 0) {
 				vtbl_info.ea_end = ea_address;
 				return true;
 			}
@@ -166,11 +161,10 @@ static void process_vtbl(ea_t &ea_sect)
 				vftable_info_t.vtbl_name = get_short_name(vftable_info_t.ea_begin);
 
 				qstring vtbl_info_str;
-#ifndef  __EA64__
-				vtbl_info_str.cat_sprnt(" 0x%0x - 0x%0x:  %s  methods count: %d", vftable_info_t.ea_begin, vftable_info_t.ea_end, vftable_info_t.vtbl_name.c_str(), vftable_info_t.methods);
-#else
-				vtbl_info_str.cat_sprnt(" 0x%016llx - 0x%016llx:  %s  methods count: %d", vftable_info_t.ea_begin, vftable_info_t.ea_end, vftable_info_t.vtbl_name.c_str(), vftable_info_t.methods);
-#endif // !#ifndef __EA64__
+				const auto fmt = inf_is_64bit()
+					? " 0x%016llx - 0x%016llx:  %s  methods count: %d"
+					: " 0x%0x - 0x%0x:  %s  methods count: %d";
+				vtbl_info_str.cat_sprnt(fmt, vftable_info_t.ea_begin, vftable_info_t.ea_end, vftable_info_t.vtbl_name.c_str(), vftable_info_t.methods);
 
 				vtbl_list.push_back(vtbl_info_str);
 				vtbl_t_list.push_back(vftable_info_t);
@@ -182,7 +176,7 @@ static void process_vtbl(ea_t &ea_sect)
 	}
 
 	// nothing found: increment ea_sect by size of the pointer to continue search at the next location
-	ea_sect += sizeof(ea_t);
+	ea_sect += EA_SIZE;
 	return;
 }
 
@@ -213,23 +207,19 @@ tid_t create_vtbl_struct(const ea_t vtbl_addr, const ea_t vtbl_addr_end, const q
 {
 	auto struc_name = vtbl_name;
 	struc_name += "::vtable";
-	auto id = add_struc(BADADDR, struc_name.c_str());
+	auto id = Compat::add_struc(BADADDR, struc_name.c_str());
 
 	if (id == BADADDR) {
 		if (!ask_str(&struc_name, HIST_IDENT, "Default name %s not correct. Enter other structure name: ", struc_name.c_str()))
 			return BADNODE;
-		id = add_struc(BADADDR, struc_name.c_str());
+		id = Compat::add_struc(BADADDR, struc_name.c_str());
 		if (id == BADADDR)
 		{
 			msg("failed to add struct: %s\n", struc_name.c_str());
 			return BADNODE;
 		}
-		set_struc_cmt(id, vtbl_name.c_str(), true);
+		Compat::set_struc_cmt(id, vtbl_name.c_str(), true);
 	}
-
-	const auto new_struc = get_struc(id);
-	if (!new_struc)
-		return BADNODE;
 
 	auto ea = vtbl_addr;
 	ea_t offset = 0;
@@ -239,14 +229,14 @@ tid_t create_vtbl_struct(const ea_t vtbl_addr, const ea_t vtbl_addr_end, const q
 		qstring method_name;
 		auto method_ea = getEa(ea);
 
-		if (ph.id == PLFM_ARM)
+		if (PH.id == PLFM_ARM)
 		{
 			method_ea &= static_cast<ea_t>(-2);
 		}
 
 		if (method_ea == 0)
 		{
-			ea = ea + sizeof(ea_t);
+			ea += EA_SIZE;
 			continue;
 		}
 		if (!is_mapped(method_ea))
@@ -259,19 +249,20 @@ tid_t create_vtbl_struct(const ea_t vtbl_addr, const ea_t vtbl_addr_end, const q
 			if (!method_name.empty())
 				struc_member_name = method_name.c_str();
 		}
-#ifndef __EA64__
-		add_struc_member(new_struc, nullptr, offset, dword_flag(), nullptr, sizeof(ea_t));
-#else
-		add_struc_member(new_struc, NULL, offset, qword_flag(), NULL, sizeof(ea_t));
-#endif
+
+		struc_error_t ret = Compat::add_struc_member(id, nullptr, offset,
+			inf_is_64bit() ? qword_flag() : dword_flag(), nullptr, EA_SIZE);
+		if (ret != STRUC_ERROR_MEMBER_OK)
+			return BADNODE;
+
 		if (struc_member_name) {
-			if (!set_member_name(new_struc, offset, struc_member_name)) {
+			if (!Compat::set_member_name(id, offset, struc_member_name)) {
 				get_ea_name(&method_name, method_ea);
-				set_member_name(new_struc, offset, struc_member_name);
+				Compat::set_member_name(id, offset, struc_member_name);
 			}
 		}
 
-		ea = ea + sizeof(ea_t);
+		ea += EA_SIZE;
 		const auto ea_flags = get_flags(ea);
 
 		if (has_any_name(ea_flags))
@@ -301,11 +292,10 @@ void find_vtables_rtti()
 		vftable_info_t.vtbl_name = it->second.vtbl_name;
 
 		qstring vtbl_info_str;
-#ifdef __EA64__
-		vtbl_info_str.cat_sprnt(" 0x%llx - 0x%llx:  %s  methods count: %d", vftable_info_t.ea_begin, vftable_info_t.ea_end, vftable_info_t.vtbl_name.c_str(), vftable_info_t.methods);
-#else
-		vtbl_info_str.cat_sprnt(" 0x%x - 0x%x:  %s  methods count: %d", vftable_info_t.ea_begin, vftable_info_t.ea_end, vftable_info_t.vtbl_name.c_str(), vftable_info_t.methods);
-#endif
+		const auto fmt = inf_is_64bit()
+			? " 0x%llx - 0x%llx:  %s  methods count: %d"
+			: " 0x%x - 0x%x:  %s  methods count: %d";
+		vtbl_info_str.cat_sprnt(fmt, vftable_info_t.ea_begin, vftable_info_t.ea_end, vftable_info_t.vtbl_name.c_str(), vftable_info_t.methods);
 
 		vtbl_list.push_back(vtbl_info_str);
 		vtbl_t_list.push_back(vftable_info_t);
@@ -382,7 +372,7 @@ void find_vtables()
 
 
 //---------------------------------------------------------------------------
-// Handle VTBL & RTTI 
+// Handle VTBL & RTTI
 //---------------------------------------------------------------------------
 
 bool b_scaned = false;
@@ -407,7 +397,7 @@ void search_objects(const bool b_force)
 
 
 //---------------------------------------------------------------------------
-// IDA Custom View Window Initialization 
+// IDA Custom View Window Initialization
 //---------------------------------------------------------------------------
 
 static int current_line_pos = 0;
@@ -415,7 +405,7 @@ static int current_line_pos = 0;
 bool idaapi make_vtbl_struct_cb()
 {
 	const auto vtbl_t = vtbl_t_list[current_line_pos];
-	const auto id = add_struc(BADADDR, vtbl_t.vtbl_name.c_str());
+	const auto id = Compat::add_struc(BADADDR, vtbl_t.vtbl_name.c_str());
 
 	create_vtbl_struct(vtbl_t.ea_begin, vtbl_t.ea_end, vtbl_t.vtbl_name, id);
 
@@ -576,47 +566,47 @@ ssize_t idaapi ui_object_explorer_callback(void *ud, const int code, va_list va)
 	auto*si = static_cast<object_explorer_info_t*>(ud);
 	switch (code)
 	{
-		case ui_get_custom_viewer_hint:
-		{
-			auto& hint = *va_arg(va, qstring *);
-			const auto viewer = va_arg(va, TWidget *);
-			const auto place = va_arg(va, place_t *);
-			const auto important_lines = va_arg(va, int *);
+	case ui_get_custom_viewer_hint:
+	{
+		auto& hint = *va_arg(va, qstring *);
+		const auto viewer = va_arg(va, TWidget *);
+		const auto place = va_arg(va, place_t *);
+		const auto important_lines = va_arg(va, int *);
 
-			if (si->cv == viewer)
-			{
-				if ( place == nullptr )
-					return 0;
-
-				const auto spl = reinterpret_cast<simpleline_place_t*>(place);
-				hint = get_vtbl_hint (spl->n);
-				*important_lines = 20;
-				return 1;
-			}
-			break;
-		}
-		case ui_widget_invisible:
+		if (si->cv == viewer)
 		{
-			const auto f = va_arg(va, TWidget *);
-			if ( f == si->widget )
-			{
-				delete si;
-				unhook_from_notification_point(HT_UI, ui_object_explorer_callback, nullptr);
-			}
+			if ( place == nullptr )
+				return 0;
+
+			const auto spl = reinterpret_cast<simpleline_place_t*>(place);
+			hint = get_vtbl_hint (spl->n);
+			*important_lines = 20;
+			return 1;
 		}
 		break;
-
-		case ui_populating_widget_popup:
+	}
+	case ui_widget_invisible:
+	{
+		const auto f = va_arg(va, TWidget *);
+		if ( f == si->widget )
 		{
-			const auto viewer = va_arg(va, TWidget *);
-			const auto popup = va_arg(va, TPopupMenu *);
-			if (si->widget == viewer || si->cv == viewer)
-			{
-				attach_action_to_popup(viewer, popup, "codexplorer::make_vtbl_struct");
-				attach_action_to_popup(viewer, popup, "codexplorer::show_vtbl_xrefs_window");
-			}
+			delete si;
+			unhook_from_notification_point(HT_UI, ui_object_explorer_callback, nullptr);
 		}
-		break;
+	}
+	break;
+
+	case ui_populating_widget_popup:
+	{
+		const auto viewer = va_arg(va, TWidget *);
+		const auto popup = va_arg(va, TPopupMenu *);
+		if (si->widget == viewer || si->cv == viewer)
+		{
+			attach_action_to_popup(viewer, popup, "codexplorer::make_vtbl_struct");
+			attach_action_to_popup(viewer, popup, "codexplorer::show_vtbl_xrefs_window");
+		}
+	}
+	break;
 	default: ;
 	}
 	return 0;

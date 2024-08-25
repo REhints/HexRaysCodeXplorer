@@ -24,6 +24,8 @@ include_directories(${PROJECT_SOURCE_DIR})
 set(src
     "CodeXplorer.cpp"
     "Common.h"
+    "Compat.cpp"
+    "Compat.h"
     "CtreeExtractor.cpp"
     "CtreeExtractor.h"
     "CtreeGraphBuilder.cpp"

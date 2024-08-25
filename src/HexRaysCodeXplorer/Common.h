@@ -75,7 +75,6 @@
 #include <kernwin.hpp>
 #include <netnode.hpp>
 #include <gdl.hpp>
-#include <struct.hpp>
 #include <bytes.hpp>
 #include <xref.hpp>
 #include <name.hpp>
@@ -96,6 +95,12 @@
 #endif // __NT__
 #ifdef __clang__
 #pragma clang diagnostic pop
+#endif
+
+#if IDA_SDK_VERSION < 800
+#define EA_SIZE sizeof(ea_t)
+#else
+#define EA_SIZE EAH.ea_size
 #endif
 
 template<typename T>
