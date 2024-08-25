@@ -3705,6 +3705,8 @@
 				LIBRARY_SEARCH_PATHS = (
 					"$(IDA_SDK)/lib/x64_mac_gcc_32/",
 					"$(IDA_SDK)/lib/x64_mac_gcc_64/",
+					"$(IDA_SDK)/lib/x64_mac_gcc_32_pro/",
+					"$(IDA_SDK)/lib/x64_mac_gcc_64_pro/",
 					"$(IDA_SDK)/lib/",
 				);
 				OTHER_CFLAGS = "";
@@ -3743,6 +3745,8 @@
 				LIBRARY_SEARCH_PATHS = (
 					"$(IDA_SDK)/lib/x64_mac_gcc_32/",
 					"$(IDA_SDK)/lib/x64_mac_gcc_64/",
+					"$(IDA_SDK)/lib/x64_mac_gcc_32_pro/",
+					"$(IDA_SDK)/lib/x64_mac_gcc_64_pro/",
 					"$(IDA_SDK)/lib/",
 				);
 				OTHER_CFLAGS = "";
@@ -3884,6 +3888,8 @@
 				LIBRARY_SEARCH_PATHS = (
 					"$(IDA_SDK)/lib/x64_mac_gcc_32/",
 					"$(IDA_SDK)/lib/x64_mac_gcc_64/",
+					"$(IDA_SDK)/lib/x64_mac_gcc_32_pro/",
+					"$(IDA_SDK)/lib/x64_mac_gcc_64_pro/",
 					"$(IDA_SDK)/lib/",
 				);
 				OTHER_CFLAGS = "";
@@ -3922,6 +3928,8 @@
 				LIBRARY_SEARCH_PATHS = (
 					"$(IDA_SDK)/lib/x64_mac_gcc_32/",
 					"$(IDA_SDK)/lib/x64_mac_gcc_64/",
+					"$(IDA_SDK)/lib/x64_mac_gcc_32_pro/",
+					"$(IDA_SDK)/lib/x64_mac_gcc_64_pro/",
 					"$(IDA_SDK)/lib/",
 				);
 				OTHER_CFLAGS = "";
