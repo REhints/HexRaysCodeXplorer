@@ -185,6 +185,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Compat.cpp" />
     <ClCompile Include="Debug.cpp" />
     <ClCompile Include="CtreeExtractor.cpp" />
     <ClCompile Include="GCCObjectFormatParser.cpp" />
@@ -204,6 +205,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Common.h" />
+    <ClInclude Include="Compat.h" />
     <ClInclude Include="Debug.h" />
     <ClInclude Include="CtreeExtractor.h" />
     <ClInclude Include="GCCObjectFormatParser.h" />
