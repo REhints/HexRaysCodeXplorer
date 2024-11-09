@@ -686,10 +686,8 @@ ssize_t hook_idb_events(void *user_data, int notification_code, va_list va) {
 	tid_t tid{};
 	const char *oldname;
 	const char *newname;
-	struc_t *struc;
 	ea_t ea;
 	adiff_t diff;
-	member_t *member;
 	flags_t flags;
 	const opinfo_t *info;
 	asize_t size;
