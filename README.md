@@ -128,6 +128,7 @@ __Compiling__:
 * mkdir build && cd build
 * cmake .. -DIdaSdk_ROOT_DIR=<PATH_TO_IDA_SDK> -DHexRaysSdk_ROOT_DIR=<PATH_TO_HEXRAYS_SDK>
 * cmake --build . --config Release
+* or simply run `python3 ../../build.py --ida <PATH_TO_IDA_SDK> --hexrays <PATH_TO_HEXRAYS_SDK>`
 
 ============================================================================
 

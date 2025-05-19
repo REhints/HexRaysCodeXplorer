@@ -2,8 +2,9 @@ cmake_minimum_required(VERSION 3.7)
 
 project(HexRaysCodeXplorer CXX)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 if(APPLE)
@@ -61,7 +62,7 @@ set(src
 
 add_ida_plugin(HexRaysCodeXplorer ${PROJECT_SOURCE_DIR}/CodeXplorer.cpp)
 
-set_ida_target_properties(HexRaysCodeXplorer PROPERTIES CXX_STANDARD 17)
+set_ida_target_properties(HexRaysCodeXplorer PROPERTIES CXX_STANDARD 23)
 ida_target_include_directories(HexRaysCodeXplorer PRIVATE
                                ${IdaSdk_INCLUDE_DIRS})
 

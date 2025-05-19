@@ -203,7 +203,7 @@ bool idaapi type_builder_t::check_helper(citem_t *parent, int &off, int &num)
 		if(!strcmp(get_ctype_name(expr_2->x->op), "helper"))
 		{
 			qstring expr;
-			print1wrapper(expr_2->x, &expr, NULL);
+			print1wrapper(expr_2->x, &expr, nullptr);
 			tag_remove(&expr);
 
 			if(expr == "LOBYTE")
@@ -259,7 +259,7 @@ bool idaapi type_builder_t::check_memptr(struct_filed &str_fld)
 		if(parent_1->is_expr() && (parent_1->op == cot_memptr))
 		{
 			citem_t *parent_2 = parents[parents.size() - 2];
-			citem_t *parent_3 = NULL;
+			citem_t *parent_3 = nullptr;
 
 			int num = 0;
 			int off = 0;
@@ -298,10 +298,10 @@ ea_t idaapi type_builder_t::get_vftbl(cexpr_t *e) {
 	ea_t vftbl = BADADDR;
 
 	if (e->is_expr()) {
-		if ((e->op == cot_cast) && (e->x != NULL))
+		if ((e->op == cot_cast) && (e->x != nullptr))
 			e = e->x;
 
-		if ((e->op == cot_ref) && (e->x != NULL))
+		if ((e->op == cot_ref) && (e->x != nullptr))
 			e = e->x;
 
 		if (e->op == cot_obj) {
@@ -346,14 +346,14 @@ bool idaapi type_builder_t::check_ptr(cexpr_t *e, struct_filed &str_fld)
 
 				// get index_value
 				qstring s;
-				print1wrapper(expr_2->y, &s, NULL);
+				print1wrapper(expr_2->y, &s, nullptr);
 				tag_remove(&s);
 
 				int base = 10;
 				if (s.find("0x") == 0)
 					base = 16;
 
-				offset = strtol(s.c_str(), NULL, base);
+				offset = strtol(s.c_str(), nullptr, base);
 
 				referInfo.update_offset(offset);
 			} else if(parent_i->is_expr() && (parent_i->op == cot_cast)) {
@@ -378,7 +378,7 @@ bool idaapi type_builder_t::check_ptr(cexpr_t *e, struct_filed &str_fld)
 			} else if(parent_i->is_expr() && (parent_i->op == cot_asg)) {
 				if (((cexpr_t *)parent_i)->y == e) { //parents[parents.size() - i]) {
 					qstring s;
-					print1wrapper(((cexpr_t *)parent_i)->x, &s, NULL);
+					print1wrapper(((cexpr_t *)parent_i)->x, &s, nullptr);
 					tag_remove(&s);
 
 					char comment[258];
@@ -442,7 +442,7 @@ bool idaapi type_builder_t::check_idx(struct_filed &str_fld)
 
 				// get index_value
 				qstring s;
-				print1wrapper(expr_2->y, &s, NULL);
+				print1wrapper(expr_2->y, &s, nullptr);
 				tag_remove(&s);
 				int num = atoi(s.c_str());
 
@@ -474,7 +474,7 @@ int idaapi type_builder_t::visit_expr(cexpr_t *e)
 	{
 		// get the variable name
 		qstring s;
-		print1wrapper(e, &s, NULL);
+		print1wrapper(e, &s, nullptr);
 		tag_remove(&s);
 
 		// check for the target variable
@@ -505,14 +505,14 @@ int type_builder_t::get_structure_size()
 	int highest_offset = 0;
 	int reference_size = 0;
 
-	for (std::map<int, struct_filed>::iterator i = structure.begin(); i != structure.end() ; ++i)
-	{
-		if (highest_offset < i->second.offset)
-		{
-			highest_offset = i ->second.offset;
-			reference_size = i->second.size;
-		}
-	}
+        for (const auto &[key, value] : structure)
+        {
+                if (highest_offset < value.offset)
+                {
+                        highest_offset = value.offset;
+                        reference_size = value.size;
+                }
+        }
 
 	return highest_offset + reference_size;
 }
@@ -533,65 +533,65 @@ tid_t type_builder_t::get_structure(const qstring& name)
 
 		int j = 0;
 
-		for (std::map<int, struct_filed>::iterator i = structure.begin(); i != structure.end() ; ++i)
-		{
-			VTBL_info_t vtbl;
+                for (const auto &[key, info] : structure)
+                {
+                        VTBL_info_t vtbl;
 
-			flags_t member_flgs = 0;
-			if (i->second.size == 1)
-				member_flgs = byte_flag();
-			else if (i->second.size == 2)
-				member_flgs = word_flag();
-			else if (i->second.size == 4)
-				member_flgs = dword_flag();
-			else if (i->second.size == 8)
-				member_flgs = qword_flag();
+                        flags_t member_flgs = 0;
+                        if (info.size == 1)
+                                member_flgs = byte_flag();
+                        else if (info.size == 2)
+                                member_flgs = word_flag();
+                        else if (info.size == 4)
+                                member_flgs = dword_flag();
+                        else if (info.size == 8)
+                                member_flgs = qword_flag();
 
-			if (i->second.is_pointer)
-				member_flgs |= off_flag();
+                        if (info.is_pointer)
+                                member_flgs |= off_flag();
 
 
 			qstring field_name;
 
-			if ((i->second.vftbl != BADADDR) && get_vbtbl_by_ea(i->second.vftbl, vtbl))
-			{
-				qstring vftbl_name = name;
-				vftbl_name.cat_sprnt("_VTABLE_%X_%p", i->second.offset, i->second.vftbl);
+                        if ((info.vftbl != BADADDR) && get_vbtbl_by_ea(info.vftbl, vtbl))
+                        {
+                                qstring vftbl_name = name;
+                                vftbl_name.cat_sprnt("_VTABLE_%X_%p", info.offset, info.vftbl);
 
-				tid_t vtbl_str_id = create_vtbl_struct(vtbl.ea_begin, vtbl.ea_end, vftbl_name, 0);
-				if (vtbl_str_id != BADADDR) {
-					field_name.cat_sprnt("vftbl_%d_%p", j, i->second.vftbl);
+                                tid_t vtbl_str_id = create_vtbl_struct(vtbl.ea_begin, vtbl.ea_end, vftbl_name, 0);
+                                if (vtbl_str_id != BADADDR) {
+                                        field_name.cat_sprnt("vftbl_%d_%p", j, info.vftbl);
 					const char *fncstr = field_name.c_str();
 
-					struc_error_t add = Compat::add_struc_member(struct_type_id, fncstr, i->second.offset, member_flgs, nullptr, i->second.size);
+                                        struc_error_t add = Compat::add_struc_member(struct_type_id, fncstr, info.offset, member_flgs, nullptr, info.size);
 					if (add == STRUC_ERROR_MEMBER_OK) {
 						qstring real_vftbl_name = vftbl_name;
 						real_vftbl_name += "::vtable";
 						tinfo_t new_type = create_typedef(real_vftbl_name.c_str());
 						if (new_type.is_correct()) {
-							Compat::set_member_tinfo(struct_type_id, i->second.offset, new_type, SET_MEMTI_COMPATIBLE);
+                                                        Compat::set_member_tinfo(struct_type_id, info.offset, new_type, SET_MEMTI_COMPATIBLE);
 						}
 					}
 				}
 			}
 			else
 			{
-				field_name.cat_sprnt("field_%X", i->second.offset);
+                                field_name.cat_sprnt("field_%X", info.offset);
 				const char *fncstr = field_name.c_str();
 
-				std::unique_ptr<opinfo_t> refinfo = nullptr;
-				if (member_flgs & off_flag()) {
-					refinfo.reset(new opinfo_t());
-					if (member_flgs & qword_flag()) {
-						// 64-bit pointer
-						refinfo->ri.init(REF_OFF64);
-					} else {
-						// 32-bit pointer
-						refinfo->ri.init(REF_OFF32);
-					}
-				}
+                                std::unique_ptr<opinfo_t> refinfo = nullptr;
+                                if (member_flgs & off_flag()) {
+                                        refinfo = std::make_unique<opinfo_t>();
+                                        if (member_flgs & qword_flag()) {
+                                                // 64-bit pointer
+                                                refinfo->ri.init(REF_OFF64);
+                                        } else {
+                                                // 32-bit pointer
+                                                refinfo->ri.init(REF_OFF32);
+                                        }
+                                }
 
-				struc_error_t ret = Compat::add_struc_member(struct_type_id, fncstr, i->second.offset, member_flgs, refinfo.get(), i->second.size);
+                                struc_error_t ret = Compat::add_struc_member(struct_type_id, fncstr, info.offset, member_flgs, refinfo.get(), info.size);
 				if (ret != STRUC_ERROR_MEMBER_OK)
 					logmsg(ERROR, "Error %d occurred while adding struct member %s\n", ret, fncstr);
 			}
@@ -608,8 +608,8 @@ bool type_builder_t::get_structure(std::map<int, struct_filed> &struc)
 	if (structure.empty())
 		return false;
 
-	for(auto i = structure.begin(); i != structure.end() ; ++i)
-		struc[i->first] = i->second;
+        for(const auto &[key, value] : structure)
+                struc[key] = value;
 
 	return true;
 }
@@ -620,7 +620,7 @@ bool idaapi reconstruct_type_cb(void *ud)
 
 	// Determine the ctree item to highlight
 	vu.get_current_item(USE_KEYBOARD);
-	lvar_t* lvar = NULL;
+	lvar_t* lvar = nullptr;
 
 	if (vu.item.is_citem()) {
 		citem_t *highlight = vu.item.e;
@@ -631,14 +631,14 @@ bool idaapi reconstruct_type_cb(void *ud)
 		lvar = vu.item.get_lvar();
 	}
 
-	if (lvar != NULL) {
+	if (lvar != nullptr) {
 		// initialize type rebuilder
 		type_builder_t type_bldr;
 		type_bldr.expression_to_match.insert(lvar->name);
 		// traverse the ctree structure
-		type_bldr.apply_to(&vu.cfunc->body, NULL);
+		type_bldr.apply_to(&vu.cfunc->body, nullptr);
 
-		if (!type_bldr.structure.empty() && lvar != NULL)
+		if (!type_bldr.structure.empty() && lvar != nullptr)
 		{
 			qstring type_name{ "struct_name" };
 
@@ -660,7 +660,7 @@ bool idaapi reconstruct_type_cb(void *ud)
 				if (new_type.is_correct())
 				{
 					qstring type_str;
-					if (new_type.print(&type_str, NULL, PRTYPE_DEF | PRTYPE_MULTI))
+					if (new_type.print(&type_str, nullptr, PRTYPE_DEF | PRTYPE_MULTI))
 					{
 						msg("New type created:\r\n%s\n", type_str.c_str());
 						logmsg(DEBUG, "New type created:\r\n%s\n", type_str.c_str());
@@ -697,7 +697,7 @@ bool idaapi reconstruct_type(cfuncptr_t cfunc, const qstring& var_name, const qs
 	type_bldr.expression_to_match.insert(var_name.c_str());
 
 	// traverse the ctree structure
-	type_bldr.apply_to(&cfunc->body, NULL);
+	type_bldr.apply_to(&cfunc->body, nullptr);
 
 	if (type_bldr.structure.size() != 0) {
 		tid_t struct_type_id = type_bldr.get_structure(type_name);
@@ -706,7 +706,7 @@ bool idaapi reconstruct_type(cfuncptr_t cfunc, const qstring& var_name, const qs
 			tinfo_t new_type = create_typedef(type_name.c_str());
 			if(new_type.is_correct()) {
 				qstring type_str = type_name;
-				//if (new_type.print(&type_str, NULL, PRTYPE_DEF | PRTYPE_MULTI))
+				//if (new_type.print(&type_str, nullptr, PRTYPE_DEF | PRTYPE_MULTI))
 				logmsg(DEBUG, "New type created: %s\n", type_str.c_str());
 
 				bResult = true;

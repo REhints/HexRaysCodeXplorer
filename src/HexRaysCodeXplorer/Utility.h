@@ -48,13 +48,15 @@ bool idaapi show_string_in_custom_view(void *ud, const qstring& title, const qst
 //#define SIZESTR(x) (sizeof(x) - 1)
 
 #ifndef _countof
-#	define _countof(x) (sizeof((x)) / sizeof((x)[0]))
+template <typename T, size_t N>
+constexpr size_t countof(const T (&)[N]) noexcept { return N; }
+#   define _countof(x) countof(x)
 #endif // _countof
 
 
-typedef qlist<ea_t> eaList;
-typedef std::set<ea_t> eaSet;
-typedef std::map<ea_t, UINT> eaRefMap;
+using eaList = qlist<ea_t>;
+using eaSet = std::set<ea_t>;
+using eaRefMap = std::map<ea_t, UINT>;
 struct earef
 {
 	ea_t ea;
@@ -106,17 +108,17 @@ inline bool isEa(flags_t f)
 
 #ifndef _SHA_enum_
 #define _SHA_enum_
-enum
+enum class ShaResult
 {
-	shaSuccess = 0,
-	shaNull,  // Null pointer parameter
-	shaInputTooLong, // input data too long
-	shaStateError // called Input after Result
+        Success = 0,
+        Null,  // Null pointer parameter
+        InputTooLong, // input data too long
+        StateError // called Input after Result
 };
 #endif
 #define SHA1HashSize 20
 
-typedef struct SHA1Context
+struct SHA1Context
 {
 	uint32_t Intermediate_Hash[SHA1HashSize / 4]; // Message Digest
 	uint32_t Length_Low; // Message length in bits
@@ -125,12 +127,12 @@ typedef struct SHA1Context
 	int_least16_t Message_Block_Index;
 	uint8_t Message_Block[64]; // 512-bit message blocks
 	int Computed; // Is the digest computed?
-	int Corrupted; // Is the message digest corrupted?
-} SHA1Context;
+        int Corrupted; // Is the message digest corrupted?
+};
 
-int SHA1Reset(SHA1Context *);
-int SHA1Input(SHA1Context *, const uint8_t *, unsigned int);
-int SHA1Result(SHA1Context *, uint8_t Message_Digest[SHA1HashSize]);
+ShaResult SHA1Reset(SHA1Context *);
+ShaResult SHA1Input(SHA1Context *, const uint8_t *, unsigned int);
+ShaResult SHA1Result(SHA1Context *, uint8_t Message_Digest[SHA1HashSize]);
 void SHA1MessageDigestToString(uint8_t Message_Digest[SHA1HashSize], char outbuffer[SHA1HashSize * 2]);
 
 void split_qstring(const qstring &options, const qstring &splitter, qvector<qstring> &result);
