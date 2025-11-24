@@ -23,7 +23,7 @@ public:
 	uval_t index;
 	reconstructed_place_pos_t position;
 	bool atOwnMembers;
-	uval_t own_offset;
+	ulong own_offset;
 	reconstructed_place_t();
 	reconstructed_place_t(std::string n);
 	reconstructed_place_t(const reconstructed_place_t &other);

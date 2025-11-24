@@ -9,7 +9,7 @@ LIBDIR=-L$(IDA_DIR)
 SRCDIR=./
 HEXRAYS_SDK=$(IDA_DIR)/plugins/hexrays_sdk
 INCLUDES=-I$(IDA_SDK)/include -I$(HEXRAYS_SDK)/include
-__X64__=1
+EA64=1
 
 SRC=$(SRCDIR)CodeXplorer.cpp \
     $(SRCDIR)CtreeExtractor.cpp \
@@ -30,12 +30,17 @@ SRC=$(SRCDIR)CodeXplorer.cpp \
 
 OBJS=$(subst .cpp,.o,$(SRC))
 
-CFLAGS=-m64 -fPIC -D__LINUX__ -D__PLUGIN__ -std=c++11 -D__X64__ -D_GLIBCXX_USE_CXX11_ABI=0
+# C++ 11 didnt support constexpr functions with more than one statement at body
+#CFLAGS=-m64 -fPIC -D__LINUX__ -D__PLUGIN__ -std=c++11 -D__X64__ -D_GLIBCXX_USE_CXX11_ABI=0 -trigraphs
+# Use C++ 14 for that: 
+CFLAGS=-m64 -fPIC -D__LINUX__ -D__PLUGIN__ -std=c++14 -D__X64__ -D_GLIBCXX_USE_CXX11_ABI=0 -trigraphs -Wno-invalid-offsetof
+# C++ 20 improved support the offsetof for non-standard layout-types
+#CFLAGS=-m64 -fPIC -D__LINUX__ -D__PLUGIN__ -std=c++20 -D__X64__ -D_GLIBCXX_USE_CXX11_ABI=0 -trigraphs -Wno-invalid-offsetof
 LIBS=-lc -lpthread -ldl
 
 ifeq ($(EA64),1)
 	CFLAGS+=-D__EA64__
-	LIBS+=-lida64
+	LIBS+=-lida
 	EXT=so
     SUFFIX=64
 else

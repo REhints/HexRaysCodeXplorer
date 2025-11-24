@@ -490,7 +490,7 @@ int idaapi reconstructed_place_t::generate(qstrvec_t * out, int * out_deflnnum,
 	case REPLACE_MEMBERS:
 		if (atOwnMembers) {
 			if (reType->getOwnMembers().count(own_offset)) {
-				char * format = COLSTR("\t %s", SCOLOR_DCHAR) " %s";
+				const char * format = COLSTR("\t %s", SCOLOR_DCHAR) " %s";
 				std::map<unsigned int, ReconstructableMember*> derived = reType->getDerivedMembers();
 				for (std::map<unsigned int, ReconstructableMember*>::iterator derIt = derived.begin(); derIt != derived.end(); derIt++) {
 					if (own_offset == derIt->first || (own_offset > derIt->first && own_offset <= derIt->second->getSize() + derIt->first)) {

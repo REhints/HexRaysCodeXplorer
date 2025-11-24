@@ -211,6 +211,8 @@ bool ReconstructableType::AddDerivedMember(ReconstructableMember* member)
 	derivedMembers[member->offset] = member;
 	parentType->CopyMembersToOther(this, member->offset, member->name);
 	parentType->AddSubType(this);
+
+	return true;
 }
 
 void ReconstructableType::CopyMembersToOther(ReconstructableType *other, unsigned long offset, std::string &namePrefix)
@@ -594,7 +596,7 @@ static bool idaapi reconstructed_keydown(TWidget *cv, int vk_key, int shift, voi
 				return jumpto(cv, plce, 0, 0);
 			}
 			else {
-				int offset = strtol(sname.c_str(), 0, 16);
+				uintptr_t offset = strtol(sname.c_str(), 0, 16);
 				if (reType->getSize() >= offset) {
 					place_t *plce = replace->makeplace((void *)offset, reType->typeId, reType->typeId);
 					return jumpto(cv, plce, 0, 0);
@@ -686,10 +688,8 @@ ssize_t hook_idb_events(void *user_data, int notification_code, va_list va) {
 	tid_t tid{};
 	const char *oldname;
 	const char *newname;
-	struc_t *struc;
 	ea_t ea;
 	adiff_t diff;
-	member_t *member;
 	flags_t flags;
 	const opinfo_t *info;
 	asize_t size;
@@ -708,7 +708,7 @@ ssize_t hook_idb_events(void *user_data, int notification_code, va_list va) {
 	switch (notification_code) {
 	case idb_event::local_types_changed:
 	{
-		local_type_change_t ltc = va_arg(va, local_type_change_t);
+		int ltc = va_arg(va, int);
 		va_arg(va, uint32_t);
 		oldname = va_arg(va, const char*);
 
@@ -732,7 +732,7 @@ ssize_t hook_idb_events(void *user_data, int notification_code, va_list va) {
 			g_ReconstractedTypes[oldname]->typeId = tid;
 			break;
 		case LTC_DELETED:
-			g_ReconstractedTypes[oldname]->typeId = BADADDR;
+			g_ReconstractedTypes[oldname]->typeId = BAD_RETYPE_ID;
 			break;
 		case LTC_EDITED:
 			// deny renaming.
@@ -876,8 +876,8 @@ void re_types_form_init()
 		NULL);
 	/*if (vtbl_list.empty() || vtbl_t_list.empty())
 	{
-		warning("ObjectExplorer not found any virtual tables here ...\n");
-		logmsg(DEBUG, "ObjectExplorer not found any virtual tables here ...\n");
+		warning("ObjectExplorer did not find any virtual tables here ...\n");
+		logmsg(DEBUG, "ObjectExplorer did not find any virtual tables here ...\n");
 		return;
 	}
 	*/
