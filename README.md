@@ -43,7 +43,7 @@ __HexRaysCodeXplorer__ - Hex-Rays Decompiler plugin for easier code navigation. 
 
 ![2](img/2.png)
 
-The reconstructed structure is displayed in “Output window”. Detailed information about type Reconstruction feature is provided in the blog post “[Type REconstruction in HexRaysCodeXplorer](http://rehints.com/2013-09-02-Type-REconstruction-in-HexRaysCodeXplorer.html)”.
+The reconstructed structure is displayed in “Output window”. Detailed information about type Reconstruction feature is provided in the blog post “[Type REconstruction in HexRaysCodeXplorer](https://github.com/REhints/REhints.com/blob/gh-pages/_posts/2013-09-02-Type-REconstruction-in-HexRaysCodeXplorer.md)”.
 
 Also CodeXplorer plugin supports auto REconstruction type into IDA local types storage.
 
