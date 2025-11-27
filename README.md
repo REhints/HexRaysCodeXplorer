@@ -1,143 +1,262 @@
-<pre>
- _   _          ______                _____           _     __   __      _                     
-| | | |         | ___ \              /  __ \         | |    \ \ / /     | |                    
-| |_| | _____  _| |_/ /__ _ _   _ ___| /  \/ ___   __| | ___ \ V / _ __ | | ___  _ __ ___ _ __ 
+# HexRaysCodeXplorer
+
+```
+ _   _          ______                _____           _     __   __      _
+| | | |         | ___ \              /  __ \         | |    \ \ / /     | |
+| |_| | _____  _| |_/ /__ _ _   _ ___| /  \/ ___   __| | ___ \ V / _ __ | | ___  _ __ ___ _ __
 |  _  |/ _ \ \/ /    // _` | | | / __| |    / _ \ / _` |/ _ \/   \| '_ \| |/ _ \| '__/ _ \ '__|
-| | | |  __/>  <| |\ \ (_| | |_| \__ \ \__/\ (_) | (_| |  __/ /^\ \ |_) | | (_) | | |  __/ |   
-\_| |_/\___/_/\_\_| \_\__,_|\__, |___/\____/\___/ \__,_|\___\/   \/ .__/|_|\___/|_|  \___|_|   
-                             __/ |                                | |                          
-                            |___/                                 |_|</pre>
-============================================================================
+| | | |  __/>  <| |\ \ (_| | |_| \__ \ \__/\ (_) | (_| |  __/ /^\ \ |_) | | (_) | | |  __/ |
+\_| |_/\___/_/\_\_| \_\__,_|\__, |___/\____/\___/ \__,_|\___\/   \/ .__/|_|\___/|_|  \___|_|
+                             __/ |                                | |
+                            |___/                                 |_|
+```
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](http://www.gnu.org/licenses/gpl-3.0)
 [![Code Climate](https://codeclimate.com/github/REhints/HexRaysCodeXplorer/badges/gpa.svg)](https://codeclimate.com/github/REhints/HexRaysCodeXplorer)
 [![Issue Count](https://codeclimate.com/github/REhints/HexRaysCodeXplorer/badges/issue_count.svg)](https://codeclimate.com/github/REhints/HexRaysCodeXplorer)
 
-The Hex-Rays Decompiler plugin for better code navigation in RE process. CodeXplorer automates code REconstruction of C++ applications or modern malware like Stuxnet, Flame, Equation, Animal Farm ... :octocat:
+**Hex-Rays Decompiler plugin for better code navigation in reverse engineering.** CodeXplorer automates C++ code reconstruction for applications and malware analysis (Stuxnet, Flame, Equation, Animal Farm, etc.).
 
-The CodeXplorer plugin is one of the [first publicly available](https://www.hex-rays.com/products/decompiler/manual/third_party.shtml) Hex-Rays Decompiler plugins. We keep updated this project [since summer of 2013](https://www.hex-rays.com/contests/2013/) and continue contributing new features frequently. Also most interesting feutures of CodeXplorer have been presented on numerous security conferences like: REcon, ZeroNights, H2HC, NSEC and BHUS :space_invader:
+---
 
-__Contributors__: 
+## Table of Contents
 
-Alex Matrosov ([@matrosov](https://github.com/matrosov))
+- [Overview](#overview)
+- [Features](#features)
+- [Installation](#installation)
+- [Building from Source](#building-from-source)
+- [Usage](#usage)
+- [Batch Mode](#batch-mode)
+- [Contributors](#contributors)
+- [Conference Talks](#conference-talks)
 
-Eugene Rodionov ([@rodionov](https://github.com/rodionov)) 
+---
 
-Rodrigo Branco ([@rrbranco](https://github.com/rrbranco))
+## Overview
 
-Gabriel Barbosa ([@gabrielnb](https://github.com/gabrielnb))
+CodeXplorer is one of the [first publicly available](https://www.hex-rays.com/products/decompiler/manual/third_party.shtml) Hex-Rays Decompiler plugins. The project has been actively maintained [since summer 2013](https://www.hex-rays.com/contests/2013/) with frequent feature updates. Key features have been presented at major security conferences including REcon, ZeroNights, H2HC, NSEC, and Black Hat USA.
 
-__Supported versions of Hex-Rays products:__ everytime we focus on last versions of IDA and Decompiler because trying to use new interesting features in new SDK releases. It's also mean we tested just on last versions of Hex-Rays products and not guaranteed stable work on previous ones. 
+### Supported Platforms
 
-__Why not IdaPython:__ all code developed on C/C++ because it's more stable way to support complex plugin for Hex-Rays Decompiler.
+| Platform | Architectures |
+|----------|---------------|
+| Windows  | x86, x64      |
+| Linux    | x86, x64      |
+| macOS    | x86, x64      |
 
-__Supported Platforms:__ x86/x64 for Win, Linux and Mac.
+### Why C++ Instead of IDAPython?
 
-__HexRaysCodeXplorer__ - Hex-Rays Decompiler plugin for easier code navigation. Right-click context menu in the Pseudocode window shows CodeXplorer plugin commands: 
+All code is developed in C/C++ for better stability when supporting complex Hex-Rays Decompiler functionality.
 
-![1](img/1.jpg)
+### IDA Version Compatibility
 
-:gem: __Here are the main features of the CodeXplorer plugin:__ :gem:
+We focus on the latest versions of IDA and the Decompiler to leverage new SDK features. Stable operation is only guaranteed on the most recent Hex-Rays products.
 
-* ***Automatic type REconstruction*** for C++ objects. To be able to reconstruct a type using HexRaysCodeXplorer one needs to select the variable holding pointer to the instance of position independed code or to an object and by right-button mouse click select from the context menu «REconstruct Type» option:
+---
 
-![2](img/2.png)
+## Features
 
-The reconstructed structure is displayed in “Output window”. Detailed information about type Reconstruction feature is provided in the blog post “[Type REconstruction in HexRaysCodeXplorer](http://rehints.com/2013-09-02-Type-REconstruction-in-HexRaysCodeXplorer.html)”.
+Access CodeXplorer through the right-click context menu in the Pseudocode window:
 
-Also CodeXplorer plugin supports auto REconstruction type into IDA local types storage.
+![Context Menu](img/1.jpg)
 
-![6](img/6.png)
+### Automatic Type Reconstruction
 
-* ***Virtual function table identification***  - automatically identifies references to virtual function tables during type reconstruction. When a reference to a virtual function table is identified the plugin generates a corresponding C-structure. As shown below during reconstructing `struct_local_data_storage` two virtual function tables were identified and, as a result, two corresponding structures were generated: `struct_local_data_storage_VTABLE_0` and `struct_local_data_storage_VTABLE_4`.
+Reconstruct C++ object types by selecting a variable holding a pointer to an object instance, then choosing **REconstruct Type** from the context menu:
 
-![12](img/12.png)
-  
-* ***C-tree graph visualization*** – a special tree-like structure representing a decompiled routine in citem_t terms (hexrays.hpp). Useful feature for understanding how the decompiler works. The highlighted graph node corresponds to the current cursor position in the HexRays Pseudocode window:
+![Type Reconstruction](img/2.png)
 
-![3](img/3.png)
+The reconstructed structure appears in the Output window. For detailed information, see the blog post: [Type REconstruction in HexRaysCodeXplorer](http://rehints.com/2013-09-02-Type-REconstruction-in-HexRaysCodeXplorer.html).
 
-* ***Ctree Item View*** – show ctree representation for highlighted element:
+CodeXplorer also supports automatic type reconstruction directly into IDA's local types storage:
 
-![16](img/16.PNG)
+![Local Types](img/6.png)
 
-* ***Extract Ctrees to File*** – dump calculate SHA1 hash and dump all ctrees to file. 
+### Virtual Function Table Identification
 
-![14](img/14.PNG)
+Automatically identifies references to virtual function tables during type reconstruction and generates corresponding C-structures. For example, reconstructing `struct_local_data_storage` identifies two vtables and generates `struct_local_data_storage_VTABLE_0` and `struct_local_data_storage_VTABLE_4`:
 
-* ***Extract Types to File*** – dump all types information (include reconstructed types) into file.
+![VTable Identification](img/12.png)
 
-* ***Navigation through virtual function calls*** in HexRays Pseudocode window. After representing C++ objects by C-structures this feature make possible navigation by mouse clicking to the virtual function calls as structure fields:
+### C-tree Graph Visualization
 
-![4](img/4.png)
+Visualize the decompiled routine as a tree structure in `citem_t` terms (`hexrays.hpp`). Useful for understanding decompiler internals. The highlighted node corresponds to the cursor position in the Pseudocode window:
 
-* ***Jump to Disasm*** - small feature for navigate to assembly code into "IDA View window" from current Pseudocode line position. It is help to find a place in assembly code associated with decompiled line. 
+![C-tree Graph](img/3.png)
 
-![8](img/8.png)
+### Ctree Item View
 
-* ***Object Explorer*** – useful interface for navigation through virtual tables (VTBL) structures. Object Explorer outputs VTBL information into IDA custom view window. The output window is shown by choosing «Object Explorer» option in right-button mouse click context menu:
+Display the ctree representation for any highlighted element:
 
-![5](img/5.png)
+![Ctree Item View](img/16.PNG)
 
-__Object Explorer supports following features:__
-* Auto structures generation for VTBL into IDA local types
+### Extract Ctrees to File
 
-* Navigation in virtual table list and jump to VTBL address into "IDA View" window by click
+Calculate SHA1 hash and dump all ctrees to a file for analysis:
 
-* Show hints for current position in virtual table list
+![Extract Ctrees](img/14.PNG)
 
-* Shows cross-references list by click into menu on "Show XREFS to VTBL"
+### Extract Types to File
 
-![11](img/11.png)
+Export all type information (including reconstructed types) to a file.
 
-* Support auto parsing RTTI objects:
+### Virtual Function Call Navigation
 
-![13](img/13.png)
+Navigate through virtual function calls in the Pseudocode window. After representing C++ objects as C-structures, click on virtual function calls (structure fields) to navigate directly:
 
-__The Batch mode contains following features:__
+![VFunc Navigation](img/4.png)
 
-* Batch mode - useful feature to use CodeXplorer for processing multiple files without any interaction from user. We add this feature after Black Hat research in 2015 for processing 2 millions samples.
+### Jump to Disassembly
 
+Quickly navigate from the current Pseudocode line to the corresponding assembly code in the IDA View window:
+
+![Jump to Disasm](img/8.png)
+
+### Object Explorer
+
+A dedicated interface for navigating virtual table (VTBL) structures. Access via **Object Explorer** in the context menu:
+
+![Object Explorer](img/5.png)
+
+**Object Explorer capabilities:**
+
+- Auto-generate VTBL structures in IDA local types
+- Navigate and jump to VTBL addresses in IDA View
+- Display hints for the current vtable position
+- Show cross-references via "Show XREFS to VTBL"
+
+![XREFS](img/11.png)
+
+- Automatic RTTI object parsing:
+
+![RTTI Parsing](img/13.png)
+
+---
+
+## Installation
+
+1. Download the appropriate plugin binary for your platform from the [Releases](https://github.com/REhints/HexRaysCodeXplorer/releases) page
+2. Copy the plugin file to your IDA `plugins` directory:
+   - **Windows**: `%IDADIR%\plugins\`
+   - **Linux**: `~/.idapro/plugins/` or `$IDADIR/plugins/`
+   - **macOS**: `~/.idapro/plugins/` or `$IDADIR/plugins/`
+3. Restart IDA Pro
+
+---
+
+## Building from Source
+
+### Prerequisites
+
+- IDA Pro with Hex-Rays Decompiler
+- IDA SDK
+- HexRays SDK (typically at `$IDADIR/plugins/hexrays_sdk`)
+
+### Windows
+
+1. Open the solution in Visual Studio
+2. Edit `src/HexRaysCodeXplorer/PropertySheet.props` and update:
+   - `IDADIR` - Path to IDA installation
+   - `IDASDK` - Path to IDA SDK
+3. Build configurations:
+   - `Release | x64` (for 32-bit IDA)
+   - `Release x64 | x64` (for 64-bit IDA)
+
+### Linux
+
+```bash
+cd src/HexRaysCodeXplorer/
+
+# Build
+IDA_DIR=<PATH_TO_IDA> IDA_SDK=<PATH_TO_IDA_SDK> EA64=0 make -f makefile.lnx
+
+# Install
+IDA_DIR=<PATH_TO_IDA> IDA_SDK=<PATH_TO_IDA_SDK> EA64=0 make -f makefile.lnx install
 ```
-Example (dump types and ctrees for functions with name prefix "crypto_"):
+
+### macOS
+
+```bash
+cd src/HexRaysCodeXplorer/
+
+# Option 1: Using makefile
+IDA_DIR=<PATH_TO_IDA> IDA_SDK=<PATH_TO_IDA_SDK> make -f makefile.mac
+
+# Option 2: Using Xcode
+open HexRaysCodeXplorer.xcodeproj
+```
+
+**Note:** For IDA 7.0+, the plugin extension should be `.dylib`.
+
+Example with full paths:
+```bash
+export IDA_DIR="/Applications/IDA Pro 7.0/ida.app/Contents/MacOS"
+export IDA_SDK="/Applications/IDA Pro 7.0/ida.app/Contents/MacOS/idasdk"
+make -f makefile.mac
+```
+
+### CMake (Cross-platform)
+
+```bash
+cd src/HexRaysCodeXplorer/
+mkdir build && cd build
+cmake .. -DIdaSdk_ROOT_DIR=<PATH_TO_IDA_SDK> -DHexRaysSdk_ROOT_DIR=<PATH_TO_HEXRAYS_SDK>
+cmake --build . --config Release
+```
+
+---
+
+## Usage
+
+1. Open a binary in IDA Pro with the Hex-Rays Decompiler
+2. Navigate to the Pseudocode window (press `F5` on a function)
+3. Right-click to access CodeXplorer features in the context menu
+4. Use keyboard shortcuts for quick access to common features
+
+---
+
+## Batch Mode
+
+Process multiple files without user interaction - useful for large-scale malware analysis. This feature was added after Black Hat 2015 research for processing 2 million samples.
+
+**Syntax:**
+```
+idaq.exe -OHexRaysCodeXplorer:<options>:<function_prefix><path_to_idb>
+```
+
+**Example:** Dump types and ctrees for functions with prefix "crypto_":
+```bash
 idaq.exe -OHexRaysCodeXplorer:dump_types:dump_ctrees:CRYPTOcrypto_path_to_idb
 ```
 
-__Compiling__:
+---
 
-***Windows***: 
-* Open the solution in Visual Studio
-* Open file `src/HexRaysCodeXplorer/PropertySheet.props` in notepad(++) and update values of `IDADIR` and `IDASDK` paths to point to IDA installation path and IDA7 SDK path accordingly. HexRays SDK should be in `$IDADIR\plugins\hexrays_sdk` (like by default)
-* Build `Release | x64` and `Release x64 | x64` configurations
+## Contributors
 
-***Linux***:
-* cd src/HexRaysCodeXplorer/
-* IDA_DIR=<PATH_TO_IDA> IDA_SDK=<PATH_TO_IDA_SDK> EA64=0 make -f makefile.lnx
-* IDA_DIR=<PATH_TO_IDA> IDA_SDK=<PATH_TO_IDA_SDK> EA64=0 make -f makefile.lnx install
-  
-***Mac***:
-* cd src/HexRaysCodeXplorer/
-* IDA_DIR=<PATH_TO_IDA> IDA_SDK=<PATH_TO_IDA_SDK> make -f makefile.mac
-* The Mac makefile might need some hand editing, pull requests welcome!
-* IDA 7.0 `.pmc` file extension should be `.dylib`
-* bash$ `export IDA_DIR="/Applications/IDA\ Pro\ 7.0/ida.app/Contents/MacOS" && export IDA_SDK="/Applications/IDA\ Pro\ 7.0/ida.app/Contents/MacOS/idasdk" && make -f makefile7.mac`
-* Or open project in Xcode `HexRaysCodeXplorer.xcodeproj`
+| Name | GitHub |
+|------|--------|
+| Alex Matrosov | [@matrosov](https://github.com/matrosov) |
+| Eugene Rodionov | [@rodionov](https://github.com/rodionov) |
+| Rodrigo Branco | [@rrbranco](https://github.com/rrbranco) |
+| Gabriel Barbosa | [@gabrielnb](https://github.com/gabrielnb) |
 
-***With CMake***:
-* cd src/HexRaysCodeXplorer/
-* mkdir build && cd build
-* cmake .. -DIdaSdk_ROOT_DIR=<PATH_TO_IDA_SDK> -DHexRaysSdk_ROOT_DIR=<PATH_TO_HEXRAYS_SDK>
-* cmake --build . --config Release
-* or simply run `python3 ../../build.py --ida <PATH_TO_IDA_SDK> --hexrays <PATH_TO_HEXRAYS_SDK>`
+---
 
-============================================================================
+## Conference Talks
 
-__Conference talks about CodeXplorer plugin:__
-* **2015**
- * "Distributing the REconstruction of High-Level IR for Large Scale Malware Analysis", BHUS [[slides]](https://github.com/REhints/Publications/blob/master/Conferences/BH'2015/BH_2015.pdf) 
- * "Object Oriented Code RE with HexraysCodeXplorer", NSEC [[slides]](https://github.com/REhints/Publications/raw/master/Conferences/Nsec'2015/nsec_2015.pdf)
-* **2014**
- * "HexRaysCodeXplorer: object oriented RE for fun and profit", H2HC [[slides]](https://github.com/REhints/Publications/blob/master/Conferences/ZeroNights'2013/ZN_2013_pdf.pdf)
-* **2013**
- * "HexRaysCodeXplorer: make object-oriented RE easier", ZeroNights [[slides]](https://github.com/REhints/Publications/blob/master/Conferences/ZeroNights'2013/ZN_2013_pdf.pdf)
- * "Reconstructing Gapz: Position-Independent Code Analysis Problem", REcon [[slides]](https://github.com/REhints/Publications/blob/master/Conferences/RECON'2013/RECON_2013.pdf)
+### 2015
+- **"Distributing the REconstruction of High-Level IR for Large Scale Malware Analysis"** - Black Hat USA [[slides]](https://github.com/REhints/Publications/blob/master/Conferences/BH'2015/BH_2015.pdf)
+- **"Object Oriented Code RE with HexRaysCodeXplorer"** - NSEC [[slides]](https://github.com/REhints/Publications/raw/master/Conferences/Nsec'2015/nsec_2015.pdf)
+
+### 2014
+- **"HexRaysCodeXplorer: Object Oriented RE for Fun and Profit"** - H2HC [[slides]](https://github.com/REhints/Publications/blob/master/Conferences/ZeroNights'2013/ZN_2013_pdf.pdf)
+
+### 2013
+- **"HexRaysCodeXplorer: Make Object-Oriented RE Easier"** - ZeroNights [[slides]](https://github.com/REhints/Publications/blob/master/Conferences/ZeroNights'2013/ZN_2013_pdf.pdf)
+- **"Reconstructing Gapz: Position-Independent Code Analysis Problem"** - REcon [[slides]](https://github.com/REhints/Publications/blob/master/Conferences/RECON'2013/RECON_2013.pdf)
+
+---
+
+## License
+
+This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](http://www.gnu.org/licenses/gpl-3.0) for details.

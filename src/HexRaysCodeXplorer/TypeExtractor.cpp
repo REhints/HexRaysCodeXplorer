@@ -63,7 +63,7 @@ int idaapi obj_fint_t::visit_expr(cexpr_t *e)
 
 	// get the variable name
 	qstring s;
-	print1wrapper(e, &s, nullptr);
+	print1wrapper(e, &s, NULL);
 	tag_remove(&s);
 
 	// check for the target variable
@@ -80,12 +80,12 @@ int idaapi obj_fint_t::visit_expr(cexpr_t *e)
 		if (parent->is_expr() && parent->op == cot_asg) {
 			cexpr_t * target_expr = (cexpr_t *)parent;
 
-			while (target_expr->x != nullptr && target_expr->op != cot_var && target_expr->op != cot_obj)
+			while (target_expr->x != NULL && target_expr->op != cot_var && target_expr->op != cot_obj)
 				target_expr = target_expr->x;
 
 			if (target_expr->op == cot_var) {
 				s.clear();
-				print1wrapper(target_expr, &s, nullptr);
+				print1wrapper(target_expr, &s, NULL);
 				tag_remove(&s);
 
 				var_name = s;
@@ -99,20 +99,22 @@ int idaapi obj_fint_t::visit_expr(cexpr_t *e)
 }
 
 void idaapi reset_pointer_type(cfuncptr_t cfunc, const qstring &var_name) {
-        lvars_t * locals = cfunc->get_lvars();
-        if (locals == nullptr)
-                return;
+	lvars_t * locals = cfunc->get_lvars();
+	if (locals == NULL)
+		return;
 
-        for (auto &local : *locals) {
-                if (var_name != local.name)
-                        continue;
+	qvector<lvar_t>::iterator locals_iter;
 
-                tinfo_t int_type = tinfo_t(BT_INT32);
-                local.set_final_lvar_type(int_type);
-                local.set_user_type();
-                cfunc->build_c_tree();
-                break;
-        }
+	for (locals_iter = locals->begin(); locals_iter != locals->end(); locals_iter++) {
+		if (var_name != locals_iter->name)
+			continue;
+
+		tinfo_t int_type = tinfo_t(BT_INT32);
+		locals_iter->set_final_lvar_type(int_type);
+		locals_iter->set_user_type();
+		cfunc->build_c_tree();
+		break;
+	}
 }
 
 bool idaapi find_var(void *ud)
@@ -121,9 +123,9 @@ bool idaapi find_var(void *ud)
 
 	// Determine the ctree item to highlight
 	vu.get_current_item(USE_KEYBOARD);
-	citem_t *highlight = vu.item.is_citem() ? vu.item.e : nullptr;
+	citem_t *highlight = vu.item.is_citem() ? vu.item.e : NULL;
 
-	// highlight == nullptr might happen if one chooses variable at local variables declaration statement
+	// highlight == NULL might happen if one chooses variable at local variables declaration statement
 	if (!highlight)
 	{
 		logmsg(DEBUG, "Invalid item is choosen");
@@ -136,7 +138,7 @@ bool idaapi find_var(void *ud)
 		cexpr_t *highl_expr = (cexpr_t *)highlight;
 
 		qstring s;
-		print1wrapper(highlight, &s, nullptr);
+		print1wrapper(highlight, &s, NULL);
 		tag_remove(&s);
 
 		// initialize type rebuilder
@@ -144,7 +146,7 @@ bool idaapi find_var(void *ud)
 		obj_find.vtbl_name = s;
 
 		// traverse the ctree structure
-		obj_find.apply_to(&vu.cfunc->body, nullptr);
+		obj_find.apply_to(&vu.cfunc->body, NULL);
 
 		if (obj_find.bFound) {
 			logmsg(DEBUG, (obj_find.var_name + "\n").c_str());
@@ -171,7 +173,7 @@ bool idaapi find_var(cfuncptr_t cfunc, const qstring& vtbl_name, qstring &var_na
 		obj_find.vtbl_name.remove(0, 6);
 
 	// traverse the ctree structure
-	obj_find.apply_to(&cfunc->body, nullptr);
+	obj_find.apply_to(&cfunc->body, NULL);
 
 	if (!obj_find.bFound) {
 		logmsg(DEBUG, "Failed to find variable...\n");
@@ -219,7 +221,7 @@ tid_t idaapi merge_types(const qvector<qstring>& types_to_merge, const qstring& 
 				}
 			} else {
 				int flag = Compat::get_member_flag(struc_id, offset);
-				Compat::add_struc_member(struc_id, member_name.c_str(), offset, flag, nullptr, member_size);
+				Compat::add_struc_member(struc_id, member_name.c_str(), offset, flag, NULL, member_size);
 			}
 
 			offsets.insert(offset);
@@ -284,7 +286,7 @@ void idaapi dump_type_info(int file_id, const VTBL_info_t& vtbl_info, const qstr
 	qstring file_entry_val;
 	tinfo_t new_type = create_typedef(type_name.c_str());
 
-	if (new_type.is_correct() && new_type.print(&file_entry_val, nullptr, PRTYPE_DEF | PRTYPE_1LINE)) {
+	if (new_type.is_correct() && new_type.print(&file_entry_val, NULL, PRTYPE_DEF | PRTYPE_1LINE)) {
 		qstring line;
 
 		line = key_hash + ";" + file_entry_key + ";";
@@ -373,7 +375,7 @@ bool idaapi extract_all_types(void *ud)
 
 			hexrays_failure_t hf;
 			cfuncptr_t cfunc = decompile(pfn, &hf);
-			if (cfunc != nullptr) {
+			if (cfunc != NULL) {
 				qstring var_name;
 				info_msg.clear();
 

@@ -217,11 +217,11 @@ int get_hash_of_string(const qstring &string_to_hash, qstring &hash) {
 	uint8_t message_digest[SHA1HashSize];
 
 	auto err = SHA1Reset(&sha);
-	if (err == ShaResult::Success) {
+	if (err == shaSuccess) {
 		err = SHA1Input(&sha, (uint8_t *)string_to_hash.c_str(), static_cast<unsigned>(string_to_hash.length()));
-		if (err == ShaResult::Success) {
+		if (err == shaSuccess) {
 			err = SHA1Result(&sha, message_digest);
-			if (err == ShaResult::Success) {
+			if (err == shaSuccess) {
 				char digest_hex[SHA1HashSize * 2 + 1];
 				memset(digest_hex, 0x00, sizeof(digest_hex));
 				SHA1MessageDigestToString(message_digest, digest_hex);
@@ -249,14 +249,14 @@ void dump_ctrees_in_file(std::map<ea_t, ctree_dump_line> &data_to_dump, const qs
 
 		qstring sha_hash;
 		auto err = get_hash_of_string(cdl.ctree_for_hash, sha_hash);
-		if (err != ShaResult::Success) {
+		if (err != shaSuccess) {
 			logmsg(ERROR, "Error in computing SHA1 hash\r\n");
 			continue;
 		}
 
 		auto dump_line = sha_hash + ";";
 		err = get_hash_of_string(cdl.ctree_dump, sha_hash);
-		if (err != ShaResult::Success) {
+		if (err != shaSuccess) {
 			logmsg(ERROR, "Error in computing SHA1 hash\r\n");
 			continue;
 		}

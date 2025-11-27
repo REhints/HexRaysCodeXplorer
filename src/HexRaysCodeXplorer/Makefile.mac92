@@ -1,0 +1,120 @@
+# Makefile for HexRaysCodeXplorer with IDA SDK 9.2
+# macOS ARM64/x64 build
+
+CXX ?= clang++
+MACSDK=$(shell xcrun --show-sdk-path --sdk macosx)
+
+# Architecture detection
+ARCH := $(shell uname -m)
+ifeq ($(ARCH),arm64)
+    ARCH_FLAGS = -arch arm64
+    LIB_ARCH = arm64_mac_clang_64
+    PLUGIN_EXT = dylib
+else
+    ARCH_FLAGS = -arch x86_64
+    LIB_ARCH = x64_mac_clang_64
+    PLUGIN_EXT = dylib64
+endif
+
+# Output directory based on architecture
+BIN_DIR = ../../bin/$(LIB_ARCH)
+
+# Compiler flags for IDA SDK 9.2
+CXXFLAGS = $(ARCH_FLAGS) -std=c++17 -fPIC -D__MAC__ -D__PLUGIN__ -D__EA64__ \
+           -Wall -Wextra -isysroot $(MACSDK) \
+           -DUSE_DANGEROUS_FUNCTIONS=1 -DUSE_STANDARD_FILE_FUNCTIONS=1
+
+# Linker flags
+LDFLAGS = $(ARCH_FLAGS) -dynamiclib -undefined dynamic_lookup \
+          -isysroot $(MACSDK) -mmacosx-version-min=10.15
+
+# Libraries
+LIBS = -lc++ -lpthread -framework CoreFoundation
+
+# Include directories
+INCLUDES = -I$(IDASDK)/include -I$(IDASDK)/module
+
+# Library directories
+LIBDIR = -L$(IDASDK)/lib/$(LIB_ARCH)
+
+# Source directory
+SRCDIR = ./
+
+# All source files including new ones
+SOURCES = \
+    $(SRCDIR)CodeXplorer.cpp \
+    $(SRCDIR)CtreeExtractor.cpp \
+    $(SRCDIR)CtreeGraphBuilder.cpp \
+    $(SRCDIR)Debug.cpp \
+    $(SRCDIR)GCCObjectFormatParser.cpp \
+    $(SRCDIR)GCCTypeInfo.cpp \
+    $(SRCDIR)GCCVtableInfo.cpp \
+    $(SRCDIR)IObjectFormatParser.cpp \
+    $(SRCDIR)MSVCObjectFormatParser.cpp \
+    $(SRCDIR)ObjectExplorer.cpp \
+    $(SRCDIR)ReconstructableType.cpp \
+    $(SRCDIR)reconstructed_place_t.cpp \
+    $(SRCDIR)TypeExtractor.cpp \
+    $(SRCDIR)TypeReconstructor.cpp \
+    $(SRCDIR)MicrocodeExtractor.cpp \
+    $(SRCDIR)Utility.cpp \
+    $(SRCDIR)Compat.cpp \
+    $(SRCDIR)ImprovedObjectExplorer.cpp \
+    $(SRCDIR)ModernObjectExplorer.cpp \
+    $(SRCDIR)ClangVTableParser.cpp \
+    $(SRCDIR)TreeVTableExplorer.cpp \
+    $(SRCDIR)IntegratedTreeExplorer.cpp \
+    $(SRCDIR)CompilerRTTIParser.cpp \
+    $(SRCDIR)ClassHierarchyGraph.cpp \
+    $(SRCDIR)UnifiedObjectExplorer.cpp
+
+# Object files
+OBJS = $(SOURCES:.cpp=.o)
+
+# Target
+TARGET = $(BIN_DIR)/HexRaysCodeXplorer.$(PLUGIN_EXT)
+
+# Build rules
+all: check-env create-dirs $(TARGET)
+
+create-dirs:
+	@mkdir -p $(BIN_DIR)
+	@echo "[OK] Created output directory: $(BIN_DIR)"
+
+$(TARGET): $(OBJS)
+	@echo "[LD] Linking $(TARGET)..."
+	$(CXX) $(LDFLAGS) -o $(TARGET) $(OBJS) $(LIBDIR)/libida.dylib $(LIBS)
+	@echo "[OK] Plugin built: $(TARGET)"
+
+%.o: %.cpp
+	@echo "[CC] Compiling $<..."
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
+
+clean:
+	@echo "[CLEAN] Removing object files and plugin..."
+	rm -f $(OBJS) $(TARGET) HexRaysCodeXplorer.$(PLUGIN_EXT)
+
+install: $(TARGET)
+	@echo "[INSTALL] Installing to IDA plugins directory..."
+	cp -f $(TARGET) $(IDA_DIR)/plugins/
+	@echo "[OK] Plugin installed to $(IDA_DIR)/plugins/"
+
+check-env:
+ifndef IDASDK
+	$(error IDASDK is undefined. Set it to IDA SDK 9.2 path, e.g., export IDASDK=/Users/am/Desktop/idasdk92)
+endif
+ifndef IDA_DIR
+	@echo "[WARN] IDA_DIR is undefined. Using default IDA Pro installation path"
+	$(eval IDA_DIR := /Applications/IDA\ Pro\ 9.2/ida.app/Contents/MacOS)
+endif
+
+info:
+	@echo "Architecture: $(ARCH)"
+	@echo "Library arch: $(LIB_ARCH)"
+	@echo "Plugin extension: $(PLUGIN_EXT)"
+	@echo "Output directory: $(BIN_DIR)"
+	@echo "Target: $(TARGET)"
+	@echo "IDA SDK: $(IDASDK)"
+	@echo "IDA Dir: $(IDA_DIR)"
+
+.PHONY: all clean install check-env create-dirs info

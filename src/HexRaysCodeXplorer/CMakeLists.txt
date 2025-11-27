@@ -2,9 +2,8 @@ cmake_minimum_required(VERSION 3.7)
 
 project(HexRaysCodeXplorer CXX)
 
-set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 if(APPLE)
@@ -41,7 +40,11 @@ set(src
     "GCCVtableInfo.h"
     "IObjectFormatParser.cpp"
     "IObjectFormatParser.h"
+    "IntegratedTreeExplorer.cpp"
+    "IntegratedTreeExplorer.h"
     "Linux.h"
+    "ModernObjectExplorer.cpp"
+    "ModernObjectExplorer.h"
     "MSVCObjectFormatParser.cpp"
     "MSVCObjectFormatParser.h"
     "MicrocodeExtractor.cpp"
@@ -54,6 +57,10 @@ set(src
     "TypeExtractor.h"
     "TypeReconstructor.cpp"
     "TypeReconstructor.h"
+    "TreeVTableExplorer.cpp"
+    "TreeVTableExplorer.h"
+    "UnifiedObjectExplorer.cpp"
+    "UnifiedObjectExplorer.h"
     "Utility.cpp"
     "Utility.h"
     "gcc_rtti_til.h"
@@ -62,7 +69,7 @@ set(src
 
 add_ida_plugin(HexRaysCodeXplorer ${PROJECT_SOURCE_DIR}/CodeXplorer.cpp)
 
-set_ida_target_properties(HexRaysCodeXplorer PROPERTIES CXX_STANDARD 23)
+set_ida_target_properties(HexRaysCodeXplorer PROPERTIES CXX_STANDARD 17)
 ida_target_include_directories(HexRaysCodeXplorer PRIVATE
                                ${IdaSdk_INCLUDE_DIRS})
 

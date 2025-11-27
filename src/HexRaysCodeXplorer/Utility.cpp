@@ -86,10 +86,10 @@ void split_qstring(const qstring &options, const qstring &splitter, qvector<qstr
 void SHA1PadMessage(SHA1Context *);
 void SHA1ProcessMessageBlock(SHA1Context *);
 
-ShaResult SHA1Reset(SHA1Context *context)
+int SHA1Reset(SHA1Context *context)
 {
 	if (!context)
-		return ShaResult::Null;
+		return shaNull;
 
 	context->Length_Low = 0;
 	context->Length_High = 0;
@@ -101,14 +101,14 @@ ShaResult SHA1Reset(SHA1Context *context)
 	context->Intermediate_Hash[4] = 0xC3D2E1F0;
 	context->Computed = 0;
 	context->Corrupted = 0;
-	return ShaResult::Success;
+	return shaSuccess;
 }
 
-ShaResult SHA1Result(SHA1Context *context, uint8_t Message_Digest[SHA1HashSize])
+int SHA1Result(SHA1Context *context, uint8_t Message_Digest[SHA1HashSize])
 {
 	int i;
 	if (!context || !Message_Digest)
-		return ShaResult::Null;
+		return shaNull;
 	
 	if (context->Corrupted)
 		return context->Corrupted;
@@ -126,23 +126,23 @@ ShaResult SHA1Result(SHA1Context *context, uint8_t Message_Digest[SHA1HashSize])
 	for (i = 0; i < SHA1HashSize; ++i)
 		Message_Digest[i] = context->Intermediate_Hash[i >> 2] >> 8 * (3 - (i & 0x03));
 
-	return ShaResult::Success;
+	return shaSuccess;
 }
 
-ShaResult SHA1Input(SHA1Context *context, const uint8_t *message_array, unsigned int length)
+int SHA1Input(SHA1Context *context, const uint8_t *message_array, unsigned int length)
 {
 	if (!length)
 	{
-		return ShaResult::Success;
+		return shaSuccess;
 	}
 	if (!context || !message_array)
 	{
-		return ShaResult::Null;
+		return shaNull;
 	}
 	if (context->Computed)
 	{
-		context->Corrupted = ShaResult::StateError;
-		return ShaResult::StateError;
+		context->Corrupted = shaStateError;
+		return shaStateError;
 	}
 	if (context->Corrupted)
 	{
@@ -163,7 +163,7 @@ ShaResult SHA1Input(SHA1Context *context, const uint8_t *message_array, unsigned
 			SHA1ProcessMessageBlock(context);
 		message_array++;
 	}
-	return ShaResult::Success;
+	return shaSuccess;
 }
 
 void SHA1ProcessMessageBlock(SHA1Context *context)

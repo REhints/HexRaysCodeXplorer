@@ -107,7 +107,7 @@ ReconstructableMember* ReconstructableType::findMemberByOffset(unsigned long off
 	if (it == members->end())
 		return 0;
 
-	if (offset >= member->offset && offset < member->offset + member->getSize())
+	if (offset >= it->second->offset && offset < it->second->offset + it->second->getSize())
 		return it->second;
 
 	return 0;
@@ -154,10 +154,10 @@ bool ReconstructableType::SetMemberNameUpcast(unsigned long offset, Reconstructa
 
 	std::map<unsigned int, ReconstructableMember*>::iterator it = derivedMembers.begin();
 	while (it != derivedMembers.end()) {
-		assert(member->memberType->getKind() == MemberType_Reconsrtucted);
-		ReconstructedMemberReType * mType = (ReconstructedMemberReType*)member->memberType;
+		assert(it->second->memberType->getKind() == MemberType_Reconsrtucted);
+		ReconstructedMemberReType * mType = (ReconstructedMemberReType*)it->second->memberType;
 		if (mType->reType == base) {
-			offset += member->offset;
+			offset += it->second->offset;
 			SetMemberName(offset, newName);
 			return true;
 		}
@@ -215,16 +215,16 @@ bool ReconstructableType::AddDerivedMember(ReconstructableMember* member)
 
 void ReconstructableType::CopyMembersToOther(ReconstructableType *other, unsigned long offset, std::string &namePrefix)
 {
-        for (const auto &[key, memberPtr] : ownMembers)
-        {
-                ReconstructableMember *newMember = new ReconstructableMember(*memberPtr);
+	for (std::map<unsigned int, ReconstructableMember*>::iterator it = ownMembers.begin(); it != ownMembers.end(); ++it)
+	{
+		ReconstructableMember *newMember = new ReconstructableMember(*(it->second));
 
-                newMember->offset += offset;
-                newMember->name = namePrefix + newMember->name;
-                other->AddMember(newMember);
-                // assert();
+		newMember->offset += offset;
+		newMember->name = namePrefix + newMember->name;
+		other->AddMember(newMember);
+		// assert();
 
-        }
+	}
 }
 
 void ReconstructableType::UndefMembers(unsigned long startOffset, unsigned long size, bool ownMember)
@@ -284,10 +284,10 @@ bool ReconstructableType::SetMemberTypeUpcast(unsigned long offset, Reconstructa
 
 	std::map<unsigned int, ReconstructableMember*>::iterator it = derivedMembers.begin();
 	while (it != derivedMembers.end()) {
-		assert(member->memberType->getKind() == MemberType_Reconsrtucted);
-		ReconstructedMemberReType * mType = (ReconstructedMemberReType*)member->memberType;
+		assert(it->second->memberType->getKind() == MemberType_Reconsrtucted);
+		ReconstructedMemberReType * mType = (ReconstructedMemberReType*)it->second->memberType;
 		if (mType->reType == base) {
-			offset += member->offset;
+			offset += it->second->offset;
 			SetMemberType(offset, newType->clone());
 			return true;
 		}
@@ -358,10 +358,10 @@ bool ReconstructableType::AddMemberUpcast(ReconstructableMember * member, Recons
 
 	std::map<unsigned int, ReconstructableMember*>::iterator it = derivedMembers.begin();
 	while (it != derivedMembers.end()) {
-		assert(member->memberType->getKind() == MemberType_Reconsrtucted);
-		ReconstructedMemberReType * mType = (ReconstructedMemberReType*)member->memberType;
+		assert(it->second->memberType->getKind() == MemberType_Reconsrtucted);
+		ReconstructedMemberReType * mType = (ReconstructedMemberReType*)it->second->memberType;
 		if (mType->reType == base) {
-			member->offset += member->offset;
+			member->offset += it->second->offset;
 			AddMember(member);
 			return true;
 		}
@@ -405,21 +405,22 @@ void ReconstructableType::SyncTypeInfo()
 		delete[] tmpArray;
 	}
 	*/
-        for (const auto &[key, memPtr] : ownMembers)
-        {
+	for (std::map<unsigned int, ReconstructableMember*>::iterator it = ownMembers.begin(); it != ownMembers.end(); ++it)
+	{
 
-                opinfo_t info;
-                ReconstructableMember * member = memPtr;
-                std::string typeString = member->memberType->getTypeString();
-                const char * typeName = typeString.c_str();
-                info.tid = Compat::get_struc_id(typeName);
+		opinfo_t info;
+		ReconstructableMember * member = it->second;
+		std::string typeString = member->memberType->getTypeString();
+		const char * typeName = typeString.c_str();
+		info.tid = Compat::get_struc_id(typeName);
 
-                tinfo_t mt;
-                member->memberType->get_idaapi_tinfo(&mt);
+		//flags_t flag = it->second->memberType->get_idaapi_flags();
+		tinfo_t mt;
+		it->second->memberType->get_idaapi_tinfo(&mt);
 
-                struc_error_t error;
-                flags_t flags = 0;
-                switch (member->getSize()) {
+		struc_error_t error;
+		flags_t flags = 0;
+		switch (it->second->getSize()) {
 		case 1:
 			flags = byte_flag();
 			break;
@@ -436,19 +437,19 @@ void ReconstructableType::SyncTypeInfo()
 			break;
 		}
 
-		error = Compat::add_struc_member(struc_id, member->name.c_str(), member->offset, flags, 0, member->getSize());
+		error = Compat::add_struc_member(struc_id, it->second->name.c_str(), it->second->offset, flags, 0, it->second->getSize());
 		if (error != STRUC_ERROR_MEMBER_OK) {
-			msg("Failed to add field %s::%s  cause %d\n", this->name.c_str(), member->name.c_str(), error);
+			msg("Failed to add field %s::%s  cause %d\n", this->name.c_str(), it->second->name.c_str(), error);
 		}
 
-		tid_t mid = Compat::get_member_id(struc_id, member->offset);
+		tid_t mid = Compat::get_member_id(struc_id, it->second->offset);
 		if (mid == BADADDR) {
-			msg("failed to get member  for  %s::%s . this IDA is so dead lol \n", this->name.c_str(), member->name.c_str());
+			msg("failed to get member  for  %s::%s . this IDA is so dead lol \n", this->name.c_str(), it->second->name.c_str());
 			continue;
 		}
 
-		if (!Compat::set_member_tinfo(struc_id, member->offset, mt, 0)) {
-			msg("failed to set type for  %s::%s\n", this->name.c_str(), member->name.c_str());
+		if (!Compat::set_member_tinfo(struc_id, it->second->offset, mt, 0)) {
+			msg("failed to set type for  %s::%s\n", this->name.c_str(), it->second->name.c_str());
 		}
 	}
 	inside_hook = cur;
@@ -681,14 +682,16 @@ static void idaapi reconstructed_adjust_place(TWidget *v, lochist_entry_t *loc, 
 
 ssize_t hook_idb_events(void *user_data, int notification_code, va_list va) {
 	ssize_t result = 0;
+	// SDK 9.2: Commented out unused variables that use deprecated types
+	// These variables appear to be unused in the code
 	ReconstructableType *re_type;
 	tid_t tid{};
 	const char *oldname;
 	const char *newname;
-	struc_t *struc;
+	// struc_t *struc;  // SDK 9.2: deprecated type, use tinfo_t instead
 	ea_t ea;
 	adiff_t diff;
-	member_t *member;
+	// member_t *member;  // SDK 9.2: deprecated type, use udm_t instead
 	flags_t flags;
 	const opinfo_t *info;
 	asize_t size;
@@ -869,21 +872,21 @@ ssize_t hook_idb_events(void *user_data, int notification_code, va_list va) {
 
 void re_types_form_init()
 {
+	// Check if we have any reconstructed types to display
+	if (g_ReconstractedTypes.empty()) {
+		msg("[CodeXplorer] ReconstructedTypes: No reconstructed types to display.\n");
+		logmsg(DEBUG, "ReconstructedTypes: No types found, skipping form initialization.\n");
+		return;
+	}
+	
 	hook_to_notification_point(
 		HT_IDB,
 		hook_idb_events,
-		nullptr);
-	/*if (vtbl_list.empty() || vtbl_t_list.empty())
-	{
-		warning("ObjectExplorer not found any virtual tables here ...\n");
-		logmsg(DEBUG, "ObjectExplorer not found any virtual tables here ...\n");
-		return;
-	}
-	*/
+		NULL);
 	auto widget = find_widget("Reconstructed Types");
 	if (widget)
 	{
-		warning("Reconstructed Types window already open. Switching to it.\n");
+		msg("[CodeXplorer] Reconstructed Types window already open. Switching to it.\n");
 		logmsg(DEBUG, "Reconstructed Types window already open. Switching to it.\n");
 		activate_widget(widget, true);
 		return;
@@ -900,13 +903,15 @@ void re_types_form_init()
 
 	auto*si = new reconstructed_types_info_t(widget);
 	if (!g_ReconstractedTypes.empty()) {
-		auto type_name = g_ReconstractedTypes.begin()->first; // bug if no any types found
+		auto type_name = g_ReconstractedTypes.begin()->first;
 		reconstructed_place_t start(type_name);
 		type_name = g_ReconstractedTypes.rbegin()->first;
 		reconstructed_place_t end(type_name);
-		end.lnnum = g_ReconstractedTypes.rbegin()->second->id;
-		end.index = g_ReconstractedTypes.rbegin()->second->id;
-		// simpleline_place_t s2(static_cast<int>(si->sv.size()) - 1);
+		// Safety check for null pointer
+		if (g_ReconstractedTypes.rbegin()->second) {
+			end.lnnum = g_ReconstractedTypes.rbegin()->second->id;
+			end.index = g_ReconstractedTypes.rbegin()->second->id;
+		}
 		si->cv = create_custom_viewer("", static_cast<place_t*>(&start), static_cast<place_t*>(&end), &start, nullptr, nullptr, nullptr, nullptr, widget);
 	}
 	else {

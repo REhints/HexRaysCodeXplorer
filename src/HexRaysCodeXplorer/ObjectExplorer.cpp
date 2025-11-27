@@ -28,6 +28,11 @@
 #include "Compat.h"
 #include "GCCObjectFormatParser.h"
 #include "Utility.h"
+#include "ImprovedObjectExplorer.h"
+#include "ModernObjectExplorer.h"
+#include "TreeVTableExplorer.h"
+#include "IntegratedTreeExplorer.h"
+#include "ClassHierarchyGraph.h"
 
 #include "Debug.h"
 
@@ -164,7 +169,8 @@ static void process_vtbl(ea_t &ea_sect)
 				const auto fmt = inf_is_64bit()
 					? " 0x%016llx - 0x%016llx:  %s  methods count: %d"
 					: " 0x%0x - 0x%0x:  %s  methods count: %d";
-				vtbl_info_str.cat_sprnt(fmt, vftable_info_t.ea_begin, vftable_info_t.ea_end, vftable_info_t.vtbl_name.c_str(), vftable_info_t.methods);
+				const char* name = vftable_info_t.vtbl_name.empty() ? "<unknown>" : vftable_info_t.vtbl_name.c_str();
+				vtbl_info_str.cat_sprnt(fmt, vftable_info_t.ea_begin, vftable_info_t.ea_end, name, vftable_info_t.methods);
 
 				vtbl_list.push_back(vtbl_info_str);
 				vtbl_t_list.push_back(vftable_info_t);
@@ -281,7 +287,9 @@ void find_vtables_rtti()
 		return;
 
 	// get rtti_vftables map using rtti data
+	msg("[CodeXplorer] ObjectExplorer: Calling get_rtti_info()...\n");
 	object_format_parser->get_rtti_info();
+	msg("[CodeXplorer] ObjectExplorer: get_rtti_info() returned, found %zu vtables\n", rtti_vftables.size());
 
 	// store this inormation in the lists
 	for (auto it = rtti_vftables.begin(); it != rtti_vftables.end(); ++it) {
@@ -295,7 +303,8 @@ void find_vtables_rtti()
 		const auto fmt = inf_is_64bit()
 			? " 0x%llx - 0x%llx:  %s  methods count: %d"
 			: " 0x%x - 0x%x:  %s  methods count: %d";
-		vtbl_info_str.cat_sprnt(fmt, vftable_info_t.ea_begin, vftable_info_t.ea_end, vftable_info_t.vtbl_name.c_str(), vftable_info_t.methods);
+		const char* name = vftable_info_t.vtbl_name.empty() ? "<unknown>" : vftable_info_t.vtbl_name.c_str();
+		vtbl_info_str.cat_sprnt(fmt, vftable_info_t.ea_begin, vftable_info_t.ea_end, name, vftable_info_t.methods);
 
 		vtbl_list.push_back(vtbl_info_str);
 		vtbl_t_list.push_back(vftable_info_t);
@@ -319,8 +328,16 @@ void find_vtables()
 		seg_set.insert(seg);
 
 		auto ea_text = seg->start_ea;
-		while (ea_text <= seg->end_ea)
+		auto prev_ea = ea_text;
+		while (ea_text <= seg->end_ea) {
 			process_vtbl(ea_text);
+			// Safety check: ensure we're making progress
+			if (ea_text == prev_ea) {
+				msg("[CodeXplorer] WARNING: process_vtbl did not advance address, breaking loop\n");
+				break;
+			}
+			prev_ea = ea_text;
+		}
 
 	} else {
 		logmsg(DEBUG, "search_objects() - .rdata does not exist\n");
@@ -380,18 +397,26 @@ bool b_scaned = false;
 void search_objects(const bool b_force)
 {
 	if (!b_scaned || b_force) {
+		msg("[CodeXplorer] search_objects: Starting object search...\n");
 		logmsg(DEBUG, "search_objects()");
 
 		// free previously found objects
+		msg("[CodeXplorer] search_objects: Clearing previous results...\n");
 		free_vtable_lists();
 
 		// first search vtables using rtti information
+		msg("[CodeXplorer] search_objects: Searching RTTI vtables...\n");
 		find_vtables_rtti();
+		msg("[CodeXplorer] search_objects: Found %zu RTTI vtables\n", vtbl_t_list.size());
 
 		// find all the other vtables
+		msg("[CodeXplorer] search_objects: Searching additional vtables...\n");
 		find_vtables();
+		msg("[CodeXplorer] search_objects: Total vtables found: %zu\n", vtbl_t_list.size());
 
 		b_scaned = true;
+	} else {
+		msg("[CodeXplorer] search_objects: Already scanned, skipping...\n");
 	}
 }
 
@@ -404,6 +429,13 @@ static int current_line_pos = 0;
 
 bool idaapi make_vtbl_struct_cb()
 {
+	// Safety check for bounds
+	if (current_line_pos < 0 || current_line_pos >= static_cast<int>(vtbl_t_list.size()))
+	{
+		msg("[CodeXplorer] Error: Invalid vtable position\n");
+		return false;
+	}
+	
 	const auto vtbl_t = vtbl_t_list[current_line_pos];
 	const auto id = Compat::add_struc(BADADDR, vtbl_t.vtbl_name.c_str());
 
@@ -419,6 +451,13 @@ qvector<qstring> xref_list;
 qvector<ea_t> xref_addr;
 static void get_xrefs_to_vtbl()
 {
+	// Safety check for bounds
+	if (current_line_pos < 0 || current_line_pos >= static_cast<int>(vtbl_t_list.size()))
+	{
+		msg("[CodeXplorer] Error: Invalid vtable position\n");
+		return;
+	}
+	
 	const auto cur_vt_ea = vtbl_t_list[current_line_pos].ea_begin;
 	for (auto addr = get_first_dref_to(cur_vt_ea); addr != BADADDR; addr = get_next_dref_to(cur_vt_ea, addr))
 	{
@@ -454,13 +493,20 @@ static bool idaapi ct_vtbl_xrefs_window_dblclick(TWidget *v, int shift, void *ud
 
 bool idaapi show_vtbl_xrefs_window_cb()
 {
+	// Check if we have valid vtables first
+	if (vtbl_t_list.empty() || current_line_pos >= static_cast<int>(vtbl_t_list.size()))
+	{
+		msg("[CodeXplorer] No vtable selected or invalid selection.\n");
+		return false;
+	}
+
 	get_xrefs_to_vtbl();
 
 	if (xref_list.empty())
 	{
-		warning("ObjectExplorer not found any xrefs here ...\n");
+		msg("[CodeXplorer] No xrefs found to the selected vtable.\n");
 		logmsg(DEBUG, "ObjectExplorer not found any xrefs here ...\n");
-
+		// Use msg() instead of warning() to avoid modal dialog
 		return false;
 	}
 
@@ -505,6 +551,14 @@ static bool idaapi ct_object_explorer_keyboard(TWidget * /*v*/, const int key, c
 		case 88: // X
 			show_vtbl_xrefs_window_cb();
 			return true;
+			
+		case 73: // I - Show enhanced info
+			if (current_line_pos >= 0 && current_line_pos < static_cast<int>(vtbl_t_list.size()))
+			{
+				show_enhanced_vtable_info(vtbl_t_list[current_line_pos]);
+			}
+			return true;
+			
 		default: ;
 		}
 	}
@@ -643,17 +697,121 @@ static handler_cb_action_t kShowVTBLXrefsWindowActionHandler{ show_vtbl_xrefs_wi
 
 void object_explorer_form_init()
 {
+	msg("[CodeXplorer] object_explorer_form_init: Entry\n");
+	msg("[CodeXplorer] vtbl_list size: %zu, vtbl_t_list size: %zu\n", 
+	    vtbl_list.size(), vtbl_t_list.size());
+	
 	if (vtbl_list.empty() || vtbl_t_list.empty())
 	{
-		warning("ObjectExplorer not found any virtual tables here ...\n");
+		msg("[CodeXplorer] ObjectExplorer: No virtual tables found in the binary.\n");
+		msg("[CodeXplorer] This could be due to:\n");
+		msg("[CodeXplorer]   - No C++ code with virtual functions\n");
+		msg("[CodeXplorer]   - Compiler/ABI not detected (check compiler settings)\n");
+		msg("[CodeXplorer]   - Vtables stripped or optimized out\n");
 		logmsg(DEBUG, "ObjectExplorer not found any virtual tables here ...\n");
+		// Use msg() instead of warning() to avoid modal dialog that can cause crashes
 		return;
 	}
 
+	// Show statistics about found vtables
+	try {
+		show_vtable_statistics();
+	} catch (...) {
+		msg("[CodeXplorer] Exception in show_vtable_statistics\n");
+	}
+
+	// Ask user which view to use
+	int choice = -2;  // Initialize to invalid value
+	try {
+		msg("[CodeXplorer] Showing view selection dialog...\n");
+		choice = ask_buttons("Modern Table", "Tree View", "Graph View", -1, 
+			"Choose VTable Explorer Interface:\n\n"
+			"Modern Table: Flat table view with sorting and filtering\n"
+			"Tree View: Hierarchical tree organization by segment/namespace\n"
+			"Graph View: Interactive class hierarchy visualization\n"
+			"Cancel: Classic list view");
+	} catch (...) {
+		msg("[CodeXplorer] Exception in ask_buttons dialog\n");
+		choice = -2;
+	}
+	
+	msg("[CodeXplorer] User choice: %d\n", choice);
+	
+	if (choice == 1) {
+		// Modern table view
+		msg("[CodeXplorer] User selected Modern Table view\n");
+		msg("[CodeXplorer] Attempting to open modern VTable Explorer...\n");
+		
+		try {
+			ModernObjectExplorer::show();
+			if (g_modern_explorer != nullptr) {
+				msg("[CodeXplorer] Modern table UI opened successfully\n");
+				return;
+			}
+		} catch (const std::exception& e) {
+			msg("[CodeXplorer] Modern table exception: %s\n", e.what());
+		} catch (...) {
+			msg("[CodeXplorer] Modern table unknown exception\n");
+		}
+		msg("[CodeXplorer] Modern table UI failed\n");
+		
+	} else if (choice == 0) {
+		// Tree view
+		msg("[CodeXplorer] User selected Tree View\n");
+		msg("[CodeXplorer] Attempting to open Integrated VTable Tree Explorer...\n");
+		
+		try {
+			IntegratedTreeExplorer::show();
+			if (g_integrated_tree != nullptr) {
+				msg("[CodeXplorer] Integrated Tree Explorer opened successfully\n");
+				return;
+			}
+		} catch (const std::exception& e) {
+			msg("[CodeXplorer] Tree explorer exception: %s\n", e.what());
+		} catch (...) {
+			msg("[CodeXplorer] Tree explorer unknown exception\n");
+		}
+		
+		msg("[CodeXplorer] Integrated Tree Explorer failed, trying basic tree\n");
+		// Fallback to basic tree
+		try {
+			TreeVTableExplorer::show();
+			if (g_tree_explorer != nullptr) {
+				msg("[CodeXplorer] Basic Tree Explorer opened successfully\n");
+				return;
+			}
+		} catch (...) {
+			msg("[CodeXplorer] Basic Tree Explorer also failed\n");
+		}
+		
+	} else if (choice == -1) {
+		// Graph view
+		msg("[CodeXplorer] User selected Graph View\n");
+		msg("[CodeXplorer] Attempting to open Class Hierarchy Graph...\n");
+		
+		try {
+			show_class_hierarchy_graph();
+			msg("[CodeXplorer] Class Hierarchy Graph opened successfully\n");
+			return;
+		} catch (const std::exception& e) {
+			msg("[CodeXplorer] Graph view exception: %s\n", e.what());
+		} catch (...) {
+			msg("[CodeXplorer] Graph view unknown exception\n");
+		}
+		
+	} else if (choice == -2) {
+		msg("[CodeXplorer] Dialog was cancelled or failed\n");
+		return;
+	}
+	
+	// Classic view or fallback
+	msg("[CodeXplorer] Using classic Object Explorer\n");
+
+	// Fall back to classic UI
 	auto widget = find_widget("Object Explorer");
 	if (widget)
 	{
-		warning("Object Explorer window already open. Switching to it.\n");
+		msg("[CodeXplorer] Object Explorer window already open. Switching to it.\n");
 		logmsg(DEBUG, "Object Explorer window already open. Switching to it.\n");
 		activate_widget(widget, true);
 		return;

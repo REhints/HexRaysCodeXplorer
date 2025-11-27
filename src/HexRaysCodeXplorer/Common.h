@@ -40,10 +40,14 @@
 
 
 
+// Modern compiler warning management for SDK 9.2
 #if !defined (__LINUX__) && !defined (__MAC__)
-#pragma warning (disable: 4996 4800 )
+    #pragma warning (disable: 4996 4800 )
 #else
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    #if defined(__clang__)
+        #pragma clang diagnostic ignored "-Wdeprecated-declarations"
+    #endif
 #endif
 
 #if !defined (__LINUX__) && !defined (__MAC__)
@@ -53,12 +57,17 @@
 #include "Linux.h"
 #endif
 
+// SDK 9.2 compatibility - proper warning management
 #ifdef __NT__
 #pragma warning(push)
 #pragma warning(disable:4309 4244 4267)           // disable "truncation of constant value" warning from IDA SDK, conversion from 'ssize_t' to 'int', possible loss of data
 #endif // __NT__
-#ifndef USE_DANGEROUS_FUNCTIONS
-#define USE_DANGEROUS_FUNCTIONS
+
+// SDK 9.2 - USE_DANGEROUS_FUNCTIONS is deprecated, use allow_deprecated.hpp patterns instead
+#if IDA_SDK_VERSION < 900
+    #ifndef USE_DANGEROUS_FUNCTIONS
+    #define USE_DANGEROUS_FUNCTIONS
+    #endif
 #endif
 #ifdef __clang__
 #pragma clang diagnostic push
@@ -97,10 +106,14 @@
 #pragma clang diagnostic pop
 #endif
 
+// SDK version compatibility for EA size handling
 #if IDA_SDK_VERSION < 800
-#define EA_SIZE sizeof(ea_t)
+    #define EA_SIZE sizeof(ea_t)
+#elif IDA_SDK_VERSION < 900
+    #define EA_SIZE EAH.ea_size
 #else
-#define EA_SIZE EAH.ea_size
+    // SDK 9.0+ uses inf structure for EA size
+    #define EA_SIZE (inf_is_64bit() ? 8 : 4)
 #endif
 
 template<typename T>

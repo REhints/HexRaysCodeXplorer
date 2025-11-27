@@ -40,6 +40,7 @@
 #include "GCCTypeInfo.h"
 #include "Debug.h"
 #include "ReconstructableType.h"
+#include "ClangVTableParser.h"
 #include <stack>
 
 #define vmi_class_type_info_name "_ZTVN10__cxxabiv121__vmi_class_type_infoE"
@@ -203,11 +204,49 @@ int GCCObjectFormatParser::collect_info_vtbls(bool force) {
 
 void GCCObjectFormatParser::get_rtti_info()
 {
-	collect_info_vtbls();
+	msg("[CodeXplorer] GCC Parser: Starting RTTI info collection...\n");
+	
+	try {
+		msg("[CodeXplorer] GCC Parser: Calling collect_info_vtbls...\n");
+		collect_info_vtbls();
+		msg("[CodeXplorer] GCC Parser: collect_info_vtbls completed\n");
+	} catch (...) {
+		msg("[CodeXplorer] ERROR: Exception in collect_info_vtbls\n");
+		return;
+	}
+	
+	msg("[CodeXplorer] GCC Parser: Type info vtables found:\n");
+	msg("[CodeXplorer]   class_type_info_vtbl: 0x%llx\n", (unsigned long long)class_type_info_vtbl);
+	msg("[CodeXplorer]   si_class_type_info_vtbl: 0x%llx\n", (unsigned long long)si_class_type_info_vtbl);
+	msg("[CodeXplorer]   vmi_class_type_info_vtbl: 0x%llx\n", (unsigned long long)vmi_class_type_info_vtbl);
+	
 	if (class_type_info_vtbl == -1 &&
 		si_class_type_info_vtbl == -1 &&
-		vmi_class_type_info_vtbl == -1)
+		vmi_class_type_info_vtbl == -1) {
+		msg("[CodeXplorer] GCC Parser: No RTTI type info vtables found\n");
+		msg("[CodeXplorer] Trying alternative Clang/ARM vtable detection...\n");
+		
+		try {
+			// Try the alternative parser for Clang/ARM binaries
+			msg("[CodeXplorer] GCC Parser: Calling ClangVTableParser...\n");
+			if (ClangVTableParser::parse_vtables_for_rtti(rtti_vftables)) {
+				msg("[CodeXplorer] GCC Parser: Found %zu vtables using alternative parser\n", rtti_vftables.size());
+				// Don't call buildReconstructableTypes() as we don't have GCCTypeInfo structures
+				// The vtables are already in rtti_vftables which is what ObjectExplorer needs
+				return;
+			}
+		} catch (...) {
+			msg("[CodeXplorer] ERROR: Exception in ClangVTableParser\n");
+			return;
+		}
+		
+		msg("[CodeXplorer] GCC Parser: Could not find any vtables\n");
+		msg("[CodeXplorer] This may be because:\n");
+		msg("[CodeXplorer]   - Binary is stripped\n");
+		msg("[CodeXplorer]   - RTTI is disabled (-fno-rtti)\n");
+		msg("[CodeXplorer]   - No C++ virtual functions in binary\n");
 		return;
+	}
 		// if no any rtti vtables, we cant read it.
 	// now we can scan  segments for vtables.
 	int segCount = get_segm_qty();
@@ -325,7 +364,7 @@ void buildReconstructableTypesRecursive(GCCTypeInfo *type,  std::set <GCCTypeInf
 			std::string parentName = vtblInfo->vtables[i].name.c_str();
 			std::string vtblName = vtbl_class_name;
 			if (i != 0) {
-				snprintf(buffer, sizeof(buffer), "%s_%x_of_%s", vtbl_class_name.c_str(), offset, parentName.c_str());
+				qsnprintf(buffer, sizeof(buffer), "%s_%x_of_%s", vtbl_class_name.c_str(), offset, parentName.c_str());
 				vtblName = buffer;
 			}
 			ReconstructableType * reVtbl = ReconstructableTypeVtable::get_reconstructable_type_vtable(vtblName, vtblInfo->ea_start);

@@ -27,6 +27,8 @@ along with this program.  If not, see
 #include "MicrocodeExtractor.h"
 #include "CtreeGraphBuilder.h"
 #include "ObjectExplorer.h"
+#include "IntegratedTreeExplorer.h"
+#include "UnifiedObjectExplorer.h"
 #include "TypeReconstructor.h"
 #include "TypeExtractor.h"
 #include "CtreeExtractor.h"
@@ -202,7 +204,7 @@ struct ida_local renamer_t final : public ctree_visitor_t
 			}
 
 			postfixes.insert(pair<qstring, int>(rvar_name, 2));
-			sprintf(pstx_buf, "%d", postfixes[rvar_name]++);
+			qsnprintf(pstx_buf, sizeof(pstx_buf), "%d", postfixes[rvar_name]++);
 			const auto new_name = rvar_name + "_" + pstx_buf;
 			to_rename_[&lvars_[e->x->v.idx]] = new_name;
 			roots[rvar_name].push_back(new_name);
@@ -481,7 +483,7 @@ static bool idaapi show_offset_in_windbg_format(void *ud) {
 		if (module_name[i] == '.') { module_name[i] = 0; break; }
 
 	const auto fmt = inf_is_64bit() ? "%llx" : "%x";
-	sprintf(_offset, fmt, offset);
+	qsnprintf(_offset, sizeof(_offset), fmt, offset);
 	result.cat_sprnt("%s+0x%s", module_name, _offset);
 
 	qstring title;
@@ -556,12 +558,48 @@ bool init_object_format_parser()
 	{
 		if (compilerIs(MSVC_COMPILER_ABBR))
 			object_format_parser = new MSVCObjectFormatParser();
-		if (compilerIs(GCC_COMPILER_ABBR))
-			object_format_parser = new GCCObjectFormatParser();
-		if (!object_format_parser)
+		else if (compilerIs(GCC_COMPILER_ABBR) || compilerIs(CLANG_COMPILER_ABBR) || compilerIs(LLVM_COMPILER_ABBR))
+			object_format_parser = new GCCObjectFormatParser(); // GCC parser handles Itanium ABI used by both GCC and Clang
+		else
 		{
-			info("CodeXplorer doesn't support yet parsing of neither MSVC nor GCC VTBL's");
-			return false;
+			// Try to detect based on vtable patterns if compiler wasn't detected
+			// Look for Itanium ABI vtable patterns (used by GCC/Clang)
+			bool found_vtables = false;
+			for (int i = 0; i < get_segm_qty() && !found_vtables; i++)
+			{
+				auto seg = getnseg(i);
+				if (!seg) continue;
+				
+				for (ea_t ea = seg->start_ea; ea < seg->end_ea && ea < seg->start_ea + 0x10000; ea = next_head(ea, seg->end_ea))
+				{
+					qstring name;
+					if (get_name(&name, ea) > 0)
+					{
+						// Check for Itanium ABI vtable prefix (_ZTV)
+						if (strncmp(name.c_str(), "_ZTV", 4) == 0)
+						{
+							msg("[CodeXplorer] Detected Itanium ABI vtables (GCC/Clang), using GCC parser\n");
+							object_format_parser = new GCCObjectFormatParser();
+							found_vtables = true;
+							break;
+						}
+						// Check for MSVC vtable prefix (??_7)
+						if (strncmp(name.c_str(), "??_7", 4) == 0)
+						{
+							msg("[CodeXplorer] Detected MSVC vtables, using MSVC parser\n");
+							object_format_parser = new MSVCObjectFormatParser();
+							found_vtables = true;
+							break;
+						}
+					}
+				}
+			}
+			
+			if (!object_format_parser)
+			{
+				info("CodeXplorer couldn't detect compiler type. No MSVC or GCC/Clang vtables found.");
+				return false;
+			}
 		}
 	}
 	return true;
@@ -572,12 +610,38 @@ bool init_object_format_parser()
 
 static bool idaapi display_vtbl_objects(void *ud)
 {
-	if (!init_object_format_parser())
+	msg("[CodeXplorer] Starting Object Explorer...\n");
+	
+	if (!init_object_format_parser()) {
+		msg("[CodeXplorer] ERROR: Failed to initialize object format parser\n");
 		return false;
+	}
 
-	search_objects();
-	object_explorer_form_init();
-	re_types_form_init();
+	try {
+		msg("[CodeXplorer] Searching for objects...\n");
+		search_objects();
+		
+		msg("[CodeXplorer] Initializing Object Explorer form...\n");
+		object_explorer_form_init();
+		
+		msg("[CodeXplorer] Initializing Reconstructed Types form...\n");
+		re_types_form_init();
+		
+// Initialize all explorers, don't show automatically
+		// The user will choose which view to use from the menu
+		msg("[CodeXplorer] Initializing Enhanced VTable Tree Explorer support...\n");
+		init_integrated_tree_explorer();
+		
+		msg("[CodeXplorer] Initializing Unified Object Explorer support...\n");
+		init_unified_object_explorer();
+		// Don't automatically show - let user choose from menu
+		
+		msg("[CodeXplorer] Object Explorer initialization complete\n");
+	} catch (...) {
+		msg("[CodeXplorer] ERROR: Exception during Object Explorer initialization\n");
+		return false;
+	}
+	
 	return true;
 }
 
@@ -608,6 +672,7 @@ static ssize_t idaapi callback(void* ud, const hexrays_event_t event, va_list va
 			// add new command to the popup menu
 			attach_action_to_popup(vu.ct, popup, "codexplorer::display_ctree_graph");
 			attach_action_to_popup(vu.ct, popup, "codexplorer::object_explorer");
+			attach_action_to_popup(vu.ct, popup, "codexplorer::unified_explorer");
 			attach_action_to_popup(vu.ct, popup, "codexplorer::reconstruct_type");
 
 			attach_action_to_popup(vu.ct, popup, "codexplorer::extract_types_to_file");
@@ -691,8 +756,9 @@ namespace {
 		handler_t handler_;
 	};
 
-	static menu_action_handler k_display_ctree_graph_handler{ display_ctree_graph };
+static menu_action_handler k_display_ctree_graph_handler{ display_ctree_graph };
 	static menu_action_handler k_object_explorer_handler{ display_vtbl_objects };
+	static menu_action_handler k_unified_explorer_handler{ []( void* ud ) { UnifiedObjectExplorer::show(); return true; } };
 	static menu_action_handler k_reconstruct_type_handler{ reconstruct_type_cb };
 	static menu_action_handler k_extract_all_types_handler{ extract_all_types };
 	static menu_action_handler k_extract_all_ctrees_handler{ extract_all_ctrees };
@@ -705,6 +771,7 @@ namespace {
 	static action_desc_t k_action_descs[] = {
 		ACTION_DESC_LITERAL("codexplorer::display_ctree_graph", "Display Ctree Graph", &k_display_ctree_graph_handler, hotkey_dg, nullptr, -1),
 		ACTION_DESC_LITERAL("codexplorer::object_explorer", "Object Explorer", &k_object_explorer_handler, hotkey_ce, nullptr, -1),
+		ACTION_DESC_LITERAL("codexplorer::unified_explorer", "Unified VTable Explorer", &k_unified_explorer_handler, "U", nullptr, -1),
 		ACTION_DESC_LITERAL("codexplorer::reconstruct_type", "REconstruct Type", &k_reconstruct_type_handler, hotkey_rt, nullptr, -1),
 		ACTION_DESC_LITERAL("codexplorer::extract_types_to_file", "Extract Types to File", &k_extract_all_types_handler, hotkey_et, nullptr, -1),
 		ACTION_DESC_LITERAL("codexplorer::extract_ctrees_to_file", "Extract Ctrees to File", &k_extract_all_ctrees_handler, hotkey_ec, nullptr, -1),

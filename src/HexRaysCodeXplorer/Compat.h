@@ -3,6 +3,7 @@
 #include <lines.hpp>
 #include <kernwin.hpp>
 #include <nalt.hpp>
+#include <bytes.hpp>
 
 /// Return values for add_struc_member()
 enum struc_error_t

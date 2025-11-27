@@ -61,6 +61,37 @@
 		0AB30E7F202C22900002FCA7 /* TypeExtractor.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0AB30E65202C228F0002FCA7 /* TypeExtractor.cpp */; };
 		0AB30E80202C22900002FCA7 /* MSVCObjectFormatParser.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0AB30E66202C22900002FCA7 /* MSVCObjectFormatParser.cpp */; };
 		0AB30E87202C22900002FCA7 /* GCCTypeInfo.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0AB30E6D202C22900002FCA7 /* GCCTypeInfo.cpp */; };
+		4650730015840C0682E40F31 /* CFIAnalyzer.h in Headers */ = {isa = PBXBuildFile; fileRef = 3491D4ABD1BEEC523A144B00 /* CFIAnalyzer.h */; };
+		680180FF9B9DC0130A892E96 /* ClangVTableParser.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 717ED664564613E4AD4F3A34 /* ClangVTableParser.cpp */; };
+		42B7500F82A3E621073DEBFE /* ClangVTableParser.h in Headers */ = {isa = PBXBuildFile; fileRef = C5CE509DB9B4CCE8BFA0BFFE /* ClangVTableParser.h */; };
+		0B16B269B512146BB2223781 /* ClassHierarchyGraph.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 54F8016489ADFA05E9CD407C /* ClassHierarchyGraph.cpp */; };
+		AACAE8D6769E74F6E5413EE3 /* ClassHierarchyGraph.h in Headers */ = {isa = PBXBuildFile; fileRef = 095A5EB650A984DAB98C8B69 /* ClassHierarchyGraph.h */; };
+		F166ABC0C31DF92E0C84E658 /* Compat.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 583A758BB98284D7BCC4576A /* Compat.cpp */; };
+		695CEABFFFA05A02133FF52C /* Compat.h in Headers */ = {isa = PBXBuildFile; fileRef = 9A88C9C5691A514B1241B50E /* Compat.h */; };
+		3FA2B21CF3071AB309A72EAA /* CompilerRTTIParser.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FF32DE20F58C83E0FBDD40CE /* CompilerRTTIParser.cpp */; };
+		AD75E7F31A67B750076F25A9 /* CompilerRTTIParser.h in Headers */ = {isa = PBXBuildFile; fileRef = 82A793CA67FE30C71CD42107 /* CompilerRTTIParser.h */; };
+		9758C6F02AB2137F1CC5424E /* CtreeGraphBuilder_improved.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6C8CA208BBA0F85FFD91995B /* CtreeGraphBuilder_improved.cpp */; };
+		569336F82890C4C366BE449B /* gcc_rtti_til.h in Headers */ = {isa = PBXBuildFile; fileRef = 03116A56CD37354ADFB63162 /* gcc_rtti_til.h */; };
+		96CFB60DBCA753F31EC3D88E /* ImprovedObjectExplorer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9E812334AF9D315C6D94C68C /* ImprovedObjectExplorer.cpp */; };
+		F9BDCB6F365B700D13930E00 /* ImprovedObjectExplorer.h in Headers */ = {isa = PBXBuildFile; fileRef = 0E7BB3CE217419ED0AE2DA72 /* ImprovedObjectExplorer.h */; };
+		88AE410507BC7E5D9A23EAB0 /* IntegratedTreeExplorer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7E26BB6458DB6C18DB891C73 /* IntegratedTreeExplorer.cpp */; };
+		91A58B8DF0064E470FACF0E0 /* IntegratedTreeExplorer.h in Headers */ = {isa = PBXBuildFile; fileRef = EF8F552213DAB46AD4F9D341 /* IntegratedTreeExplorer.h */; };
+		06789C988F342CBA4EA7DB3B /* ItaniumABI.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 501117E16D51DF311F3BACAA /* ItaniumABI.cpp */; };
+		0E298F4C7D95FF497F58FAEB /* ItaniumABI.h in Headers */ = {isa = PBXBuildFile; fileRef = B5176FBF53F11D59B6A54CCA /* ItaniumABI.h */; };
+		D482E491065A854D89DD5977 /* MicrocodeExtractor.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 974B4B0A6179EA143539C60D /* MicrocodeExtractor.cpp */; };
+		0EE114533BE01247C6A0A3DA /* MicrocodeExtractor.h in Headers */ = {isa = PBXBuildFile; fileRef = 7DB44F3D925F107B0BBD92F6 /* MicrocodeExtractor.h */; };
+		CE313FC3B0E5C066B37468BB /* ModernObjectExplorer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D0287FD9A894A7B647133B93 /* ModernObjectExplorer.cpp */; };
+		9FB952F3ADA36F7BD2834EC1 /* ModernObjectExplorer.h in Headers */ = {isa = PBXBuildFile; fileRef = 03206ED2E16482F956940D34 /* ModernObjectExplorer.h */; };
+		8CD6D9AC8003313235A91748 /* MSVCRTTIEnhanced.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B8C9B5B6195828507F620F70 /* MSVCRTTIEnhanced.cpp */; };
+		1034B787409024F00D20472D /* MSVCRTTIEnhanced.h in Headers */ = {isa = PBXBuildFile; fileRef = 2492F620273EC4FDCB772D3B /* MSVCRTTIEnhanced.h */; };
+		4992F8A7E48E50B40F7A1C19 /* ReconstructableType.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 83C15E4C7FEC2B6B54D7E471 /* ReconstructableType.cpp */; };
+		6C1051675B7DB1736AFE5378 /* ReconstructableType.h in Headers */ = {isa = PBXBuildFile; fileRef = 21A5716E5A9301444EA5CACD /* ReconstructableType.h */; };
+		0B929D5DA7F8AB56D827B8E4 /* reconstructed_place_t.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AFFDD0B5ECE13FFF09A66CC0 /* reconstructed_place_t.cpp */; };
+		48918BD7B9B7B0A219657EE2 /* reconstructed_place_t.h in Headers */ = {isa = PBXBuildFile; fileRef = A8B9ED776708064B4C9D2692 /* reconstructed_place_t.h */; };
+		CFD39F36E7D0132043061A46 /* SimpleChooserTest.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D50ECE81AE7CBC0B0DBD4AA1 /* SimpleChooserTest.cpp */; };
+		DD9FCFAB34DEB3778A15AEC7 /* TreeVTableExplorer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 24F92B4E2225F324AF419590 /* TreeVTableExplorer.cpp */; };
+		13482CC10AAF0617FB909B4B /* TreeVTableExplorer.h in Headers */ = {isa = PBXBuildFile; fileRef = 35C3016EF2F7A4178A2CF33C /* TreeVTableExplorer.h */; };
+		B110E32E947B83077B890AC8 /* VTableDecompiler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 25DB582AB1C91D80F6DC2065 /* VTableDecompiler.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -1090,6 +1121,37 @@
 		0AB31315202C33A70002FCA7 /* readme.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = readme.txt; sourceTree = "<group>"; };
 		0AB31317202C33A70002FCA7 /* readme.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = readme.txt; sourceTree = "<group>"; };
 		0AB31318202C33A70002FCA7 /* allmake.mak */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.make; path = allmake.mak; sourceTree = "<group>"; };
+		3491D4ABD1BEEC523A144B00 /* CFIAnalyzer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CFIAnalyzer.h; sourceTree = "<group>"; };
+		717ED664564613E4AD4F3A34 /* ClangVTableParser.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ClangVTableParser.cpp; sourceTree = "<group>"; };
+		C5CE509DB9B4CCE8BFA0BFFE /* ClangVTableParser.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ClangVTableParser.h; sourceTree = "<group>"; };
+		54F8016489ADFA05E9CD407C /* ClassHierarchyGraph.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ClassHierarchyGraph.cpp; sourceTree = "<group>"; };
+		095A5EB650A984DAB98C8B69 /* ClassHierarchyGraph.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ClassHierarchyGraph.h; sourceTree = "<group>"; };
+		583A758BB98284D7BCC4576A /* Compat.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Compat.cpp; sourceTree = "<group>"; };
+		9A88C9C5691A514B1241B50E /* Compat.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Compat.h; sourceTree = "<group>"; };
+		FF32DE20F58C83E0FBDD40CE /* CompilerRTTIParser.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CompilerRTTIParser.cpp; sourceTree = "<group>"; };
+		82A793CA67FE30C71CD42107 /* CompilerRTTIParser.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CompilerRTTIParser.h; sourceTree = "<group>"; };
+		6C8CA208BBA0F85FFD91995B /* CtreeGraphBuilder_improved.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CtreeGraphBuilder_improved.cpp; sourceTree = "<group>"; };
+		03116A56CD37354ADFB63162 /* gcc_rtti_til.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = gcc_rtti_til.h; sourceTree = "<group>"; };
+		9E812334AF9D315C6D94C68C /* ImprovedObjectExplorer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ImprovedObjectExplorer.cpp; sourceTree = "<group>"; };
+		0E7BB3CE217419ED0AE2DA72 /* ImprovedObjectExplorer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ImprovedObjectExplorer.h; sourceTree = "<group>"; };
+		7E26BB6458DB6C18DB891C73 /* IntegratedTreeExplorer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = IntegratedTreeExplorer.cpp; sourceTree = "<group>"; };
+		EF8F552213DAB46AD4F9D341 /* IntegratedTreeExplorer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IntegratedTreeExplorer.h; sourceTree = "<group>"; };
+		501117E16D51DF311F3BACAA /* ItaniumABI.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ItaniumABI.cpp; sourceTree = "<group>"; };
+		B5176FBF53F11D59B6A54CCA /* ItaniumABI.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ItaniumABI.h; sourceTree = "<group>"; };
+		974B4B0A6179EA143539C60D /* MicrocodeExtractor.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = MicrocodeExtractor.cpp; sourceTree = "<group>"; };
+		7DB44F3D925F107B0BBD92F6 /* MicrocodeExtractor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MicrocodeExtractor.h; sourceTree = "<group>"; };
+		D0287FD9A894A7B647133B93 /* ModernObjectExplorer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ModernObjectExplorer.cpp; sourceTree = "<group>"; };
+		03206ED2E16482F956940D34 /* ModernObjectExplorer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ModernObjectExplorer.h; sourceTree = "<group>"; };
+		B8C9B5B6195828507F620F70 /* MSVCRTTIEnhanced.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = MSVCRTTIEnhanced.cpp; sourceTree = "<group>"; };
+		2492F620273EC4FDCB772D3B /* MSVCRTTIEnhanced.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MSVCRTTIEnhanced.h; sourceTree = "<group>"; };
+		83C15E4C7FEC2B6B54D7E471 /* ReconstructableType.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ReconstructableType.cpp; sourceTree = "<group>"; };
+		21A5716E5A9301444EA5CACD /* ReconstructableType.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ReconstructableType.h; sourceTree = "<group>"; };
+		AFFDD0B5ECE13FFF09A66CC0 /* reconstructed_place_t.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = reconstructed_place_t.cpp; sourceTree = "<group>"; };
+		A8B9ED776708064B4C9D2692 /* reconstructed_place_t.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = reconstructed_place_t.h; sourceTree = "<group>"; };
+		D50ECE81AE7CBC0B0DBD4AA1 /* SimpleChooserTest.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SimpleChooserTest.cpp; sourceTree = "<group>"; };
+		24F92B4E2225F324AF419590 /* TreeVTableExplorer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = TreeVTableExplorer.cpp; sourceTree = "<group>"; };
+		35C3016EF2F7A4178A2CF33C /* TreeVTableExplorer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TreeVTableExplorer.h; sourceTree = "<group>"; };
+		25DB582AB1C91D80F6DC2065 /* VTableDecompiler.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = VTableDecompiler.cpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -1158,7 +1220,38 @@
 				0AB30E65202C228F0002FCA7 /* TypeExtractor.cpp */,
 				0AB30E55202C228F0002FCA7 /* TypeReconstructor.cpp */,
 				0AB30E64202C228F0002FCA7 /* Utility.cpp */,
-			);
+							3491D4ABD1BEEC523A144B00 /* CFIAnalyzer.h */,
+				717ED664564613E4AD4F3A34 /* ClangVTableParser.cpp */,
+				C5CE509DB9B4CCE8BFA0BFFE /* ClangVTableParser.h */,
+				54F8016489ADFA05E9CD407C /* ClassHierarchyGraph.cpp */,
+				095A5EB650A984DAB98C8B69 /* ClassHierarchyGraph.h */,
+				583A758BB98284D7BCC4576A /* Compat.cpp */,
+				9A88C9C5691A514B1241B50E /* Compat.h */,
+				FF32DE20F58C83E0FBDD40CE /* CompilerRTTIParser.cpp */,
+				82A793CA67FE30C71CD42107 /* CompilerRTTIParser.h */,
+				6C8CA208BBA0F85FFD91995B /* CtreeGraphBuilder_improved.cpp */,
+				03116A56CD37354ADFB63162 /* gcc_rtti_til.h */,
+				9E812334AF9D315C6D94C68C /* ImprovedObjectExplorer.cpp */,
+				0E7BB3CE217419ED0AE2DA72 /* ImprovedObjectExplorer.h */,
+				7E26BB6458DB6C18DB891C73 /* IntegratedTreeExplorer.cpp */,
+				EF8F552213DAB46AD4F9D341 /* IntegratedTreeExplorer.h */,
+				501117E16D51DF311F3BACAA /* ItaniumABI.cpp */,
+				B5176FBF53F11D59B6A54CCA /* ItaniumABI.h */,
+				974B4B0A6179EA143539C60D /* MicrocodeExtractor.cpp */,
+				7DB44F3D925F107B0BBD92F6 /* MicrocodeExtractor.h */,
+				D0287FD9A894A7B647133B93 /* ModernObjectExplorer.cpp */,
+				03206ED2E16482F956940D34 /* ModernObjectExplorer.h */,
+				B8C9B5B6195828507F620F70 /* MSVCRTTIEnhanced.cpp */,
+				2492F620273EC4FDCB772D3B /* MSVCRTTIEnhanced.h */,
+				83C15E4C7FEC2B6B54D7E471 /* ReconstructableType.cpp */,
+				21A5716E5A9301444EA5CACD /* ReconstructableType.h */,
+				AFFDD0B5ECE13FFF09A66CC0 /* reconstructed_place_t.cpp */,
+				A8B9ED776708064B4C9D2692 /* reconstructed_place_t.h */,
+				D50ECE81AE7CBC0B0DBD4AA1 /* SimpleChooserTest.cpp */,
+				24F92B4E2225F324AF419590 /* TreeVTableExplorer.cpp */,
+				35C3016EF2F7A4178A2CF33C /* TreeVTableExplorer.h */,
+				25DB582AB1C91D80F6DC2065 /* VTableDecompiler.cpp */,
+);
 			path = HexRaysCodeXplorer;
 			sourceTree = "<group>";
 		};
@@ -3540,7 +3633,22 @@
 				0A9BCD6C211FF16200EF97D6 /* Common.h in Headers */,
 				0A9BCD6D211FF16200EF97D6 /* CtreeGraphBuilder.h in Headers */,
 				0A9BCD6E211FF16200EF97D6 /* TypeReconstructor.h in Headers */,
-			);
+							4650730015840C0682E40F31 /* CFIAnalyzer.h in Headers */,
+				42B7500F82A3E621073DEBFE /* ClangVTableParser.h in Headers */,
+				AACAE8D6769E74F6E5413EE3 /* ClassHierarchyGraph.h in Headers */,
+				695CEABFFFA05A02133FF52C /* Compat.h in Headers */,
+				AD75E7F31A67B750076F25A9 /* CompilerRTTIParser.h in Headers */,
+				569336F82890C4C366BE449B /* gcc_rtti_til.h in Headers */,
+				F9BDCB6F365B700D13930E00 /* ImprovedObjectExplorer.h in Headers */,
+				91A58B8DF0064E470FACF0E0 /* IntegratedTreeExplorer.h in Headers */,
+				0E298F4C7D95FF497F58FAEB /* ItaniumABI.h in Headers */,
+				0EE114533BE01247C6A0A3DA /* MicrocodeExtractor.h in Headers */,
+				9FB952F3ADA36F7BD2834EC1 /* ModernObjectExplorer.h in Headers */,
+				1034B787409024F00D20472D /* MSVCRTTIEnhanced.h in Headers */,
+				6C1051675B7DB1736AFE5378 /* ReconstructableType.h in Headers */,
+				48918BD7B9B7B0A219657EE2 /* reconstructed_place_t.h in Headers */,
+				13482CC10AAF0617FB909B4B /* TreeVTableExplorer.h in Headers */,
+);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		0AB30E44202C207F0002FCA7 /* Headers */ = {
@@ -3561,7 +3669,22 @@
 				0A9BCD4B211FE6CC00EF97D6 /* Common.h in Headers */,
 				0A9BCD4A211FE6CC00EF97D6 /* CtreeGraphBuilder.h in Headers */,
 				0A9BCD44211FE6CC00EF97D6 /* TypeReconstructor.h in Headers */,
-			);
+							4650730015840C0682E40F31 /* CFIAnalyzer.h in Headers */,
+				42B7500F82A3E621073DEBFE /* ClangVTableParser.h in Headers */,
+				AACAE8D6769E74F6E5413EE3 /* ClassHierarchyGraph.h in Headers */,
+				695CEABFFFA05A02133FF52C /* Compat.h in Headers */,
+				AD75E7F31A67B750076F25A9 /* CompilerRTTIParser.h in Headers */,
+				569336F82890C4C366BE449B /* gcc_rtti_til.h in Headers */,
+				F9BDCB6F365B700D13930E00 /* ImprovedObjectExplorer.h in Headers */,
+				91A58B8DF0064E470FACF0E0 /* IntegratedTreeExplorer.h in Headers */,
+				0E298F4C7D95FF497F58FAEB /* ItaniumABI.h in Headers */,
+				0EE114533BE01247C6A0A3DA /* MicrocodeExtractor.h in Headers */,
+				9FB952F3ADA36F7BD2834EC1 /* ModernObjectExplorer.h in Headers */,
+				1034B787409024F00D20472D /* MSVCRTTIEnhanced.h in Headers */,
+				6C1051675B7DB1736AFE5378 /* ReconstructableType.h in Headers */,
+				48918BD7B9B7B0A219657EE2 /* reconstructed_place_t.h in Headers */,
+				13482CC10AAF0617FB909B4B /* TreeVTableExplorer.h in Headers */,
+);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXHeadersBuildPhase section */
@@ -3655,7 +3778,23 @@
 				0A9BCD5C211FF16200EF97D6 /* CodeXplorer.cpp in Sources */,
 				0A9BCD5D211FF16200EF97D6 /* TypeReconstructor.cpp in Sources */,
 				0A9BCD5E211FF16200EF97D6 /* TypeExtractor.cpp in Sources */,
-			);
+							680180FF9B9DC0130A892E96 /* ClangVTableParser.cpp in Sources */,
+				0B16B269B512146BB2223781 /* ClassHierarchyGraph.cpp in Sources */,
+				F166ABC0C31DF92E0C84E658 /* Compat.cpp in Sources */,
+				3FA2B21CF3071AB309A72EAA /* CompilerRTTIParser.cpp in Sources */,
+				9758C6F02AB2137F1CC5424E /* CtreeGraphBuilder_improved.cpp in Sources */,
+				96CFB60DBCA753F31EC3D88E /* ImprovedObjectExplorer.cpp in Sources */,
+				88AE410507BC7E5D9A23EAB0 /* IntegratedTreeExplorer.cpp in Sources */,
+				06789C988F342CBA4EA7DB3B /* ItaniumABI.cpp in Sources */,
+				D482E491065A854D89DD5977 /* MicrocodeExtractor.cpp in Sources */,
+				CE313FC3B0E5C066B37468BB /* ModernObjectExplorer.cpp in Sources */,
+				8CD6D9AC8003313235A91748 /* MSVCRTTIEnhanced.cpp in Sources */,
+				4992F8A7E48E50B40F7A1C19 /* ReconstructableType.cpp in Sources */,
+				0B929D5DA7F8AB56D827B8E4 /* reconstructed_place_t.cpp in Sources */,
+				CFD39F36E7D0132043061A46 /* SimpleChooserTest.cpp in Sources */,
+				DD9FCFAB34DEB3778A15AEC7 /* TreeVTableExplorer.cpp in Sources */,
+				B110E32E947B83077B890AC8 /* VTableDecompiler.cpp in Sources */,
+);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		0AB30E42202C207F0002FCA7 /* Sources */ = {
@@ -3675,7 +3814,23 @@
 				0AB30E6E202C22900002FCA7 /* CodeXplorer.cpp in Sources */,
 				0AB30E6F202C22900002FCA7 /* TypeReconstructor.cpp in Sources */,
 				0AB30E7F202C22900002FCA7 /* TypeExtractor.cpp in Sources */,
-			);
+							680180FF9B9DC0130A892E96 /* ClangVTableParser.cpp in Sources */,
+				0B16B269B512146BB2223781 /* ClassHierarchyGraph.cpp in Sources */,
+				F166ABC0C31DF92E0C84E658 /* Compat.cpp in Sources */,
+				3FA2B21CF3071AB309A72EAA /* CompilerRTTIParser.cpp in Sources */,
+				9758C6F02AB2137F1CC5424E /* CtreeGraphBuilder_improved.cpp in Sources */,
+				96CFB60DBCA753F31EC3D88E /* ImprovedObjectExplorer.cpp in Sources */,
+				88AE410507BC7E5D9A23EAB0 /* IntegratedTreeExplorer.cpp in Sources */,
+				06789C988F342CBA4EA7DB3B /* ItaniumABI.cpp in Sources */,
+				D482E491065A854D89DD5977 /* MicrocodeExtractor.cpp in Sources */,
+				CE313FC3B0E5C066B37468BB /* ModernObjectExplorer.cpp in Sources */,
+				8CD6D9AC8003313235A91748 /* MSVCRTTIEnhanced.cpp in Sources */,
+				4992F8A7E48E50B40F7A1C19 /* ReconstructableType.cpp in Sources */,
+				0B929D5DA7F8AB56D827B8E4 /* reconstructed_place_t.cpp in Sources */,
+				CFD39F36E7D0132043061A46 /* SimpleChooserTest.cpp in Sources */,
+				DD9FCFAB34DEB3778A15AEC7 /* TreeVTableExplorer.cpp in Sources */,
+				B110E32E947B83077B890AC8 /* VTableDecompiler.cpp in Sources */,
+);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
